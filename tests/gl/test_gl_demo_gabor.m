@@ -30,6 +30,10 @@ function test_gl_demo_gabor()
     here = fileparts(mfilename('fullpath'));
     root = fileparts(fileparts(here));
     addpath(fullfile(root, 'm'), fullfile(root, 'tests'), here);
+    % This test needs no MEX, but the addpath above puts m/ ahead of
+    % dist/<arch>, and m/PsychImGui.m would then shadow the MEX for whatever
+    % runs next in the same session. PsychImGuiSetup puts the order back.
+    PsychImGuiSetup();
 
     win = [];
     try

@@ -7,6 +7,7 @@
 
 #include "gl_current.h"
 #include "imgui.h"
+#include "imgui_impl_opengl2.h"
 #include "imgui_impl_opengl3.h"
 
 #ifdef PSYCHIMGUI_IMPLOT
@@ -85,6 +86,30 @@ void set_error(Error& err, const char* id, const char* fmt, ...) {
     va_end(ap);
 }
 
+// The GLSL version the backend should compile its shaders as, for a context we
+// have just been handed. opts.glslVersion overrides this.
+//
+// A Psychtoolbox window gives a legacy compatibility context, and on macOS that
+// means OpenGL 2.1, whose shading language is 1.20. Elsewhere it is whatever
+// the driver's highest compatibility version is, which is 3.0 or better on any
+// machine that can run this binding, so 1.30 is the safe floor. macOS is the
+// exception again above 2.1: Apple's core profiles support 1.50 and 4.10 only,
+// never 1.30 or 1.40.
+int gl_version_number(const char* gl_version) {
+    int major = 0, minor = 0;
+    if (gl_version) sscanf(gl_version, "%d.%d", &major, &minor);
+    return major * 10 + minor;
+}
+
+const char* default_glsl_version(const char* gl_version) {
+    int v = gl_version_number(gl_version);
+#if defined(__APPLE__)
+    return (v > 0 && v < 30) ? "#version 120" : "#version 150";
+#else
+    return (v > 0 && v < 30) ? "#version 120" : "#version 130";
+#endif
+}
+
 // Modifier bits are derived from the mapped ImGuiKey, not from the PTB name, so
 // one keymap covers every platform.
 int modifier_bit(ImGuiKey k) {
@@ -129,6 +154,15 @@ uint64_t nowNs() {
 
 bool glContextCurrent() { return gl_context_is_current(); }
 
+const char* renderer_name(Renderer r) {
+    switch (r) {
+        case Renderer::OpenGL3: return "opengl3";
+        case Renderer::OpenGL2: return "opengl2";
+        case Renderer::Auto: return "auto";
+        default: return "none";
+    }
+}
+
 bool isInit() { return g.ctx != nullptr; }
 Renderer renderer() { return g.rend; }
 bool implotEnabled() { return g.implot; }
@@ -146,7 +180,7 @@ bool init(const InitOpts& opts, const int32_t* keymap, int keymapN, Error& err) 
                   "PsychImGui is already initialized. Call PsychImGui('Shutdown') first.");
         return false;
     }
-    if (opts.renderer == Renderer::OpenGL3 && !gl_context_is_current()) {
+    if (opts.renderer != Renderer::None && !gl_context_is_current()) {
         set_error(err, "psychimgui:NoGLContext",
                   "No current OpenGL context. Call Screen('BeginOpenGL', win) before "
                   "PsychImGui('Init', ...).");
@@ -191,20 +225,44 @@ bool init(const InitOpts& opts, const int32_t* keymap, int keymapN, Error& err) 
         for (int i = 0; i < n; ++i) g.keymap[i] = keymap[i];
     }
 
-    if (opts.renderer == Renderer::OpenGL3) {
-        const char* glsl = g.glslVersion[0] ? g.glslVersion : nullptr;
-        if (!ImGui_ImplOpenGL3_Init(glsl)) {
-            ImGui::DestroyContext(g.ctx);
-            memset(&g, 0, sizeof(g));
-            set_error(err, "psychimgui:GLInit",
-                      "ImGui_ImplOpenGL3_Init failed for GLSL version '%s'.",
-                      opts.glslVersion);
-            return false;
-        }
+    if (opts.renderer != Renderer::None) {
+        // Read the context before the backend does, so both the backend and
+        // the GLSL version can be chosen from it. A context is already
+        // current; Init checked that.
         const char* v = (const char*)glGetString(GL_VERSION);
         const char* r = (const char*)glGetString(GL_RENDERER);
         snprintf(g.glVersion, sizeof(g.glVersion), "%s", v ? v : "unknown");
         snprintf(g.glRenderer, sizeof(g.glRenderer), "%s", r ? r : "unknown");
+
+        if (g.rend == Renderer::Auto) {
+            g.rend = (gl_version_number(v) < 30) ? Renderer::OpenGL2
+                                                 : Renderer::OpenGL3;
+        }
+
+        bool ok;
+        if (g.rend == Renderer::OpenGL2) {
+            g.glslVersion[0] = 0;   // fixed function, no shaders
+            ok = ImGui_ImplOpenGL2_Init();
+        } else {
+            if (!g.glslVersion[0]) {
+                snprintf(g.glslVersion, sizeof(g.glslVersion), "%s",
+                         default_glsl_version(v));
+            }
+            ok = ImGui_ImplOpenGL3_Init(g.glslVersion);
+        }
+        if (!ok) {
+            ImGui::DestroyContext(g.ctx);
+            memset(&g, 0, sizeof(g));
+            set_error(err, "psychimgui:GLInit",
+                      "The %s backend failed to start on '%s'%s%s.",
+                      renderer_name(opts.renderer == Renderer::Auto
+                                        ? Renderer::OpenGL3
+                                        : opts.renderer),
+                      v ? v : "an unknown context",
+                      g.glslVersion[0] ? " with GLSL " : "",
+                      g.glslVersion[0] ? g.glslVersion : "");
+            return false;
+        }
     } else {
         // Without a renderer nothing claims ImGuiBackendFlags_RendererHasTextures,
         // so the atlas never gets built by a backend. NewFrame then dereferences
@@ -212,6 +270,7 @@ bool init(const InitOpts& opts, const int32_t* keymap, int keymapN, Error& err) 
         // draw data afterwards. This is the path the engine-only tests run on.
         snprintf(g.glVersion, sizeof(g.glVersion), "%s", "none");
         snprintf(g.glRenderer, sizeof(g.glRenderer), "%s", "none");
+        g.glslVersion[0] = 0;   // no shaders without a renderer
         io.BackendRendererName = "none";
         // Claim texture support so Dear ImGui builds the atlas itself. Without
         // the flag the 1.92 atlas waits for a legacy backend to build it, and
@@ -246,9 +305,12 @@ void shutdown(bool* skippedGL) {
 #ifdef PSYCHIMGUI_IMPLOT
     if (g.implot) ImPlot::DestroyContext();
 #endif
-    if (g.rend == Renderer::OpenGL3) {
+    if (g.rend != Renderer::None) {
         if (gl_context_is_current()) {
-            ImGui_ImplOpenGL3_Shutdown();
+            if (g.rend == Renderer::OpenGL2)
+                ImGui_ImplOpenGL2_Shutdown();
+            else
+                ImGui_ImplOpenGL3_Shutdown();
         } else if (skippedGL) {
             // PTB frees the GL objects with the context, so leaking them here is
             // recoverable; crashing inside a dead context is not.
@@ -354,7 +416,10 @@ void newFrame(const InputFrame& in) {
     g.haveLastTime = true;
     io.DeltaTime = (float)dt;
 
-    if (g.rend == Renderer::OpenGL3) ImGui_ImplOpenGL3_NewFrame();
+    if (g.rend == Renderer::OpenGL2)
+        ImGui_ImplOpenGL2_NewFrame();
+    else if (g.rend == Renderer::OpenGL3)
+        ImGui_ImplOpenGL3_NewFrame();
     ImGui::NewFrame();
 
     g.frame.newFrameNs = nowNs() - t0;
@@ -388,8 +453,11 @@ bool render(Error& err) {
         }
     }
 
-    if (g.rend == Renderer::OpenGL3 && dd) {
-        ImGui_ImplOpenGL3_RenderDrawData(dd);
+    if (g.rend != Renderer::None && dd) {
+        if (g.rend == Renderer::OpenGL2)
+            ImGui_ImplOpenGL2_RenderDrawData(dd);
+        else
+            ImGui_ImplOpenGL3_RenderDrawData(dd);
         // Rule R3: Screen('EndOpenGL') aborts the script on a pending GL error,
         // so drain here and name the subcommand that caused it.
         unsigned e = (unsigned)glGetError();
@@ -483,7 +551,8 @@ void versionInfo(VersionInfo& out) {
     out.imgui = IMGUI_VERSION;
     out.imguiNum = IMGUI_VERSION_NUM;
     out.psychimgui = PSYCHIMGUI_VERSION_STR;
-    out.renderer = (g.rend == Renderer::OpenGL3) ? "opengl3" : "none";
+    out.renderer = renderer_name(g.rend);
+    out.glslVersion = g.ctx ? g.glslVersion : "";
     out.glVersion = g.ctx ? g.glVersion : "";
     out.glRenderer = g.ctx ? g.glRenderer : "";
     out.build = PSYCHIMGUI_BUILD_STR;

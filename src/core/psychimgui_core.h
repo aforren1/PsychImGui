@@ -13,7 +13,15 @@ struct ImGuiContext;
 
 namespace pig {
 
-enum class Renderer { None = 0, OpenGL3 = 1 };
+// OpenGL2 is the fixed function backend. It is the only one that works in a
+// legacy OpenGL 2.1 context, which is what Psychtoolbox gives on macOS:
+// imgui_impl_opengl3 calls glGenVertexArrays unconditionally, and a 2.1
+// profile has no core vertex array objects. Auto resolves to OpenGL2 below GL
+// 3.0 and OpenGL3 otherwise, and is the default.
+enum class Renderer { None = 0, OpenGL3 = 1, OpenGL2 = 2, Auto = 3 };
+
+// The name of a resolved renderer, for PsychImGui('Version').
+const char* renderer_name(Renderer r);
 
 // Error ids and messages travel as plain buffers because only the dispatch
 // layer is allowed to raise, and it must do so after every destructor has run.
@@ -58,6 +66,7 @@ struct FrameStats {
 };
 
 struct VersionInfo {
+    const char* glslVersion;
     const char* imgui;
     int imguiNum;
     const char* psychimgui;

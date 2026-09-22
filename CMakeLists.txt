@@ -29,6 +29,7 @@ add_library(imgui_static STATIC
   ${IMGUI_DIR}/imgui_widgets.cpp
   ${IMGUI_DIR}/imgui_demo.cpp
   ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
+  ${IMGUI_DIR}/backends/imgui_impl_opengl2.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/core/psychimgui_core.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/core/gl_current.cpp
 )
@@ -81,6 +82,13 @@ if(PSYCHIMGUI_TRACY)
   target_sources(imgui_static PRIVATE ${TRACY_DIR}/public/TracyClient.cpp)
   target_include_directories(imgui_static PUBLIC ${TRACY_DIR}/public)
   target_compile_definitions(imgui_static PUBLIC TRACY_ENABLE PSYCHIMGUI_TRACY)
+endif()
+
+if(APPLE)
+  # Apple deprecated OpenGL in 10.14. It still works, and it is what
+  # Psychtoolbox draws with, so quiet the warning instead of seeing it on every
+  # file that touches GL.
+  target_compile_definitions(imgui_static PUBLIC GL_SILENCE_DEPRECATION)
 endif()
 
 if(MSVC)

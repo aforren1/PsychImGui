@@ -33,12 +33,18 @@ jobs:
   matlab-build:
     name: build · ${{ matrix.os }} · MATLAB ${{ matrix.release }}
     runs-on: ${{ matrix.os }}
+    # macOS is new and nobody here has a Mac to try it on, so its entry does
+    # not fail the run yet. Drop this line after the first green macOS run.
+    continue-on-error: ${{ startsWith(matrix.os, 'macos') }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - { os: ubuntu-22.04, release: R2021b, arch: glnxa64, asset: psychimgui-matlab-linux }
           - { os: windows-2022, release: R2022b, arch: win64,   asset: psychimgui-matlab-windows }
+          # R2023b is the first MATLAB with a native Apple silicon build, so it
+          # is the floor on macos-latest, which is Apple silicon.
+          - { os: macos-latest, release: R2023b, arch: maca64,  asset: psychimgui-matlab-macos }
     steps:
       - uses: actions/checkout@v7
         with:
@@ -92,12 +98,15 @@ jobs:
     name: test · ${{ matrix.os }} · MATLAB ${{ matrix.release }}
     needs: matlab-build
     runs-on: ${{ matrix.os }}
+    # See matlab-build. Drop after the first green macOS run.
+    continue-on-error: ${{ startsWith(matrix.os, 'macos') }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - { os: ubuntu-latest,  release: latest, asset: psychimgui-matlab-linux }
           - { os: windows-latest, release: latest, asset: psychimgui-matlab-windows }
+          - { os: macos-latest,   release: latest, asset: psychimgui-matlab-macos }
     steps:
       - uses: actions/checkout@v7      # tests/ only; no rebuild, no third_party
       - uses: matlab-actions/setup-matlab@v3
@@ -277,6 +286,67 @@ jobs:
           LIBGL_ALWAYS_SOFTWARE: '1'
         run: xvfb-run -a ./build-ci/smoke_gl
 
+  # =============================================================== macOS =====
+  # Homebrew's Octave is the only Octave on macOS, and it is whatever version
+  # Homebrew currently ships, so there is no floor to pin the way the Linux
+  # jobs do. Build, test, and ship the current one.
+  #
+  # continue-on-error until the first green run: nobody on the team has a Mac,
+  # so this job is the first real test of the macOS code paths. Drop the line
+  # once it passes.
+  octave-macos:
+    name: build · macos · Octave (Homebrew)
+    runs-on: macos-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - name: Fetch pinned third_party (no-op once they are submodules)
+        run: bash tools/fetch_third_party.sh
+      - name: Install Octave
+        run: |
+          brew update --quiet
+          brew install octave
+          octave-cli --version | head -1
+      - name: Build and test
+        run: |
+          octave-cli --no-gui --eval "build"
+          cd tests && octave-cli --no-gui --eval "run_tests"
+      - name: Upload package
+        uses: actions/upload-artifact@v7
+        with:
+          name: psychimgui-octave-macos
+          path: |
+            dist/maca64/PsychImGui.*
+            m/
+            README.md
+            SPEC.md
+          if-no-files-found: error
+
+  # The macOS half of the OpenGL coverage. A CGL context with no profile
+  # attribute is OpenGL 2.1, the same legacy profile Psychtoolbox creates, so
+  # this run exercises the fixed function imgui_impl_opengl2 path that macOS
+  # depends on. There is no window: it renders into a framebuffer object.
+  smoke-gl-macos:
+    name: smoke_gl · macos · CGL offscreen
+    runs-on: macos-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - name: Fetch pinned third_party (no-op once they are submodules)
+        run: bash tools/fetch_third_party.sh
+      - name: Configure and build
+        run: |
+          cmake -S . -B build-ci -DCMAKE_BUILD_TYPE=Release -DPSYCHIMGUI_SMOKE_GL=ON
+          cmake --build build-ci --parallel
+      - name: smoke_gl, headless path (renderer='none')
+        run: ./build-ci/smoke_gl none
+      - name: smoke_gl, legacy CGL context (the imgui_impl_opengl2 path)
+        run: ./build-ci/smoke_gl
+
   # ============================================================== Release =====
   # On a v* tag, publish the floor-built packages. Runs only after every build,
   # forward test, and the GL smoke test passes, so a release implies the shipped
@@ -290,6 +360,10 @@ jobs:
       - octave-linux-test-forward
       - octave-windows
       - smoke-gl-linux
+      # A continue-on-error job still counts as complete, so naming these here
+      # does not hold a release back while macOS is settling in.
+      - octave-macos
+      - smoke-gl-macos
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     permissions:

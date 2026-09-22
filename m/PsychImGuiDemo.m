@@ -79,6 +79,14 @@ function PsychImGuiDemo(nFrames)
         while running && frame < nFrames
             frame = frame + 1;
 
+            % The Gabor shader writes Offset + envelope * sine into every pixel
+            % of its texture rectangle and puts 0 in alpha, so the rectangle is
+            % an opaque 0.5 gray square where the envelope has faded. Alpha
+            % blending cannot hide it (alpha is 0 everywhere). Clearing to the
+            % same 0.5 gray, as ProceduralGaborDemo does, makes the edge of the
+            % rectangle invisible and gives the patch a mean luminance surround.
+            Screen('FillRect', win, 0.5);
+
             Screen('DrawTexture', win, gabor, [], dst, orientation, [], [], ...
                    [1 1 1 0], [], kPsychDontDoRotation, ...
                    [180, freq, 50, contrast, 1, 0, 0, 0]);

@@ -95,9 +95,11 @@ void bi_Init(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
     }
     InitOpts opts;
     memset(&opts, 0, sizeof(opts));
-    opts.renderer = Renderer::OpenGL3;
+    opts.renderer = Renderer::Auto;
     opts.implot = true;
-    snprintf(opts.glslVersion, sizeof(opts.glslVersion), "#version 130");
+    // Left empty on purpose: the core picks the version from the live context.
+    // opts.glslVersion overrides it.
+    opts.glslVersion[0] = 0;
 
     double rect[4] = {0, 0, 640, 480};
     if (!mxIsEmpty(args[1])) mrs::getVec(args[1], "rect", rect, 4);
@@ -134,9 +136,14 @@ void bi_Init(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
                 opts.renderer = Renderer::None;
             else if (strcmp(r, "opengl3") == 0)
                 opts.renderer = Renderer::OpenGL3;
+            else if (strcmp(r, "opengl2") == 0)
+                opts.renderer = Renderer::OpenGL2;
+            else if (strcmp(r, "auto") == 0)
+                opts.renderer = Renderer::Auto;
             else {
                 mrs::fail("psychimgui:Usage",
-                          "opts.renderer must be 'opengl3' or 'none', got '%s'.", r);
+                          "opts.renderer must be 'auto', 'opengl3', 'opengl2', "
+                          "or 'none', got '%s'.", r);
                 return;
             }
         }
@@ -287,13 +294,15 @@ void bi_Version(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
     (void)args;
     VersionInfo v;
     versionInfo(v);
-    const char* fields[] = {"imgui",     "imguiNum", "psychimgui", "renderer", "glVersion",
-                            "glRenderer", "build",   "implot",     "implotVersion"};
-    mxArray* s = mxCreateStructMatrix(1, 1, 9, fields);
+    const char* fields[] = {"imgui",      "imguiNum", "psychimgui",  "renderer",
+                            "glslVersion", "glVersion", "glRenderer", "build",
+                            "implot",     "implotVersion"};
+    mxArray* s = mxCreateStructMatrix(1, 1, 10, fields);
     mxSetField(s, 0, "imgui", mrs::fromUtf8(v.imgui));
     mxSetField(s, 0, "imguiNum", mxCreateDoubleScalar(v.imguiNum));
     mxSetField(s, 0, "psychimgui", mrs::fromUtf8(v.psychimgui));
     mxSetField(s, 0, "renderer", mrs::fromUtf8(v.renderer));
+    mxSetField(s, 0, "glslVersion", mrs::fromUtf8(v.glslVersion));
     mxSetField(s, 0, "glVersion", mrs::fromUtf8(v.glVersion));
     mxSetField(s, 0, "glRenderer", mrs::fromUtf8(v.glRenderer));
     mxSetField(s, 0, "build", mrs::fromUtf8(v.build));
@@ -607,7 +616,7 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
         raise("psychimgui:NotInit", msg);
         return;
     }
-    if ((e.flags & kEntryNeedsGL) && renderer() == Renderer::OpenGL3 && !glContextCurrent()) {
+    if ((e.flags & kEntryNeedsGL) && renderer() != Renderer::None && !glContextCurrent()) {
         char msg[220];
         snprintf(msg, sizeof(msg),
                  "PsychImGui('%s') needs a current OpenGL context. Call it between "

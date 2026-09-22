@@ -66,10 +66,15 @@ function out = PsychImGuiSetup(mode)
     % load path change while the locked MEX is loaded sends Octave 10.1 on
     % Linux into endless recursion (SPEC.md section 14.6). addpath of a
     % directory that is already present still counts as a change there.
-    if ~local_on_path(mdir)
-        addpath(mdir);
-    end
-    if ~local_on_path(distdir)
+    %
+    % "Already right" has to mean the order, not just the presence. Another
+    % script that does addpath(fullfile(root, 'm')) puts the help text in
+    % m/PsychImGui.m ahead of the MEX, and leaving that alone would make every
+    % later PsychImGui call raise psychimgui:NotBuilt.
+    if ~local_dist_wins(distdir, mdir)
+        if ~local_on_path(mdir)
+            addpath(mdir);
+        end
         addpath(distdir, '-begin');
     end
 
@@ -96,6 +101,26 @@ function a = local_arch()
         end
     else
         a = 'glnxa64';
+    end
+end
+
+function tf = local_dist_wins(distdir, mdir)
+% True when dist/<arch> is on the path and nothing in m/ can shadow it, which
+% is the only state this function has to leave behind.
+    entries = strsplit(path(), pathsep());
+    iDist = local_index(entries, distdir);
+    iM = local_index(entries, mdir);
+    tf = iDist > 0 && (iM == 0 || iDist < iM);
+end
+
+function idx = local_index(entries, dir)
+    want = local_norm(dir);
+    idx = 0;
+    for i = 1:numel(entries)
+        if strcmp(local_norm(entries{i}), want)
+            idx = i;
+            return;
+        end
     end
 end
 

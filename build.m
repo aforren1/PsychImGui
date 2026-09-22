@@ -121,15 +121,29 @@ function build(varargin)
     if is_octave
         args{end+1} = '-DPSYCHIMGUI_OCTAVE';
     end
+    if ismac
+        % Apple deprecated OpenGL in 10.14. It still works, and it is the only
+        % thing Psychtoolbox draws with, so quiet the warning rather than have
+        % it on every source file.
+        args{end+1} = '-DGL_SILENCE_DEPRECATION';
+    end
     % C++17 reaches the compiler differently per engine. Octave's mex rejects
     % a FLAGS=value argument and takes mkoctfile's flags from the environment
     % instead, so set CXXFLAGS around the call and put it back afterwards.
     envGuard = []; %#ok<NASGU>  keeps the restore alive until build returns
+    ldGuard = []; %#ok<NASGU>
     if is_octave
         oldCxxFlags = getenv('CXXFLAGS');
         base = strtrim(oct_prog('CXXFLAGS'));
         setenv('CXXFLAGS', [base ' -std=c++17']);
         envGuard = onCleanup(@() setenv('CXXFLAGS', oldCxxFlags));
+        if ismac
+            % mkoctfile takes its link flags from the environment too, and a
+            % framework cannot be named with -l.
+            oldLdFlags = getenv('LDFLAGS');
+            setenv('LDFLAGS', [strtrim(oct_prog('LDFLAGS')) ' -framework OpenGL']);
+            ldGuard = onCleanup(@() setenv('LDFLAGS', oldLdFlags));
+        end
     elseif ispc
         args{end+1} = 'COMPFLAGS=$COMPFLAGS /std:c++17 /EHsc';
     else
@@ -143,7 +157,13 @@ function build(varargin)
     if ispc
         gllib = {'-lopengl32'};
     elseif ismac
-        gllib = {'LDFLAGS=$LDFLAGS -framework OpenGL'};
+        % Octave already has the framework in LDFLAGS above; its mex rejects a
+        % FLAGS=value argument.
+        if is_octave
+            gllib = {};
+        else
+            gllib = {'LDFLAGS=$LDFLAGS -framework OpenGL'};
+        end
     else
         % -ldl for the backend's dlopen based GL loader. Harmless on glibc 2.34
         % and newer, where libdl folded into libc, and required before that.

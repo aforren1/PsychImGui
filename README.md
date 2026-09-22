@@ -20,10 +20,10 @@ place the code differs from the specification.
 
 | Item | Version | Needed for |
 |---|---|---|
-| MATLAB | R2023a, verified | Building and running the MEX |
-| GNU Octave | 10.1, verified | Building and running the MEX |
+| MATLAB | R2023a verified on Windows and Linux, R2023b or later on Apple silicon | Building and running the MEX |
+| GNU Octave | 10.1 verified on Windows and Linux, Homebrew's on macOS | Building and running the MEX |
 | CMake | 3.16 or later | Building the static Dear ImGui library |
-| C++17 compiler | MSVC 2022 for MATLAB, the bundled MinGW g++ for Octave | Building |
+| C++17 compiler | MSVC 2022 for MATLAB, the bundled MinGW g++ for Octave, clang on macOS | Building |
 | Psychtoolbox | 3.0.19 or later | The demo and the GL tests only |
 | Python and uv | Python 3.10 or later | The generator only |
 
@@ -268,6 +268,21 @@ Rules to follow:
 3. The script owns the widget values. Dear ImGui is immediate mode, and the MEX
    stores nothing between frames.
 
+### Which OpenGL backend
+
+`PsychImGui('Init')` reads `GL_VERSION` and picks a Dear ImGui backend:
+`imgui_impl_opengl3` for OpenGL 3.0 and later, and the fixed function
+`imgui_impl_opengl2` below that. `PsychImGui('Version')` reports which one is
+running, in `renderer`, along with the GLSL version in `glslVersion`.
+
+The split matters on macOS. Psychtoolbox creates a legacy OpenGL 2.1 context
+there, and `imgui_impl_opengl3` calls `glGenVertexArrays` on every frame with
+only a compile time guard, so it cannot work in a 2.1 profile. The OpenGL 2
+backend has no such call.
+
+`opts.renderer` overrides the choice: `'auto'` (the default), `'opengl3'`,
+`'opengl2'`, or `'none'` for the headless tests.
+
 ## Continuous integration
 
 `.github/workflows/ci.yml` builds and tests the binding on every push and
@@ -280,8 +295,17 @@ pull request.
 | `octave-linux` | Builds and tests in the `gnuoctave/octave` Docker images, one per binary compatible era: 6.4.0 covers Octave 6.4 to 9.4, 10.1.0 covers 10 and later |
 | `octave-linux-test-forward` | Runs the 6.4 build on Octave 9.4 and the 10.1 build on Octave 11.3. No rebuild |
 | `octave-windows` | Builds and tests with the official GNU Octave Windows zip (10.1.0, cached), using the toolchain and `make` it ships, as on a developer machine |
-| `smoke-gl-linux` | Builds `smoke_gl` and runs it against Mesa's llvmpipe under Xvfb. The only automated OpenGL coverage |
+| `smoke-gl-linux` | Builds `smoke_gl` and runs it against Mesa's llvmpipe under Xvfb |
+| `octave-macos` | Installs Homebrew's Octave on `macos-latest`, builds, and runs the headless suite. Not blocking yet |
+| `smoke-gl-macos` | Builds `smoke_gl` and runs it against an offscreen CGL context, which exercises the OpenGL 2 backend. Not blocking yet |
 | `release` | On a `v*` tag, zips every package and publishes a GitHub Release |
+
+The MATLAB jobs also carry a `macos-latest` matrix entry, on R2023b, the first
+MATLAB with a native Apple silicon build.
+
+The three macOS entries are `continue-on-error` while the macOS code paths are
+new, because nobody on the team has a Mac to try them on. They become blocking
+after the first green run.
 
 Runners have no GPU, so every engine job runs the `renderer='none'` suite. The
 OpenGL 3 backend is still compiled, because the MEX links it.
@@ -293,7 +317,8 @@ Each artifact holds only its own platform:
     README.md
     SPEC.md
 
-Artifacts are named `psychimgui-matlab-linux`, `psychimgui-matlab-windows`,
+Artifacts are named `psychimgui-matlab-macos`, `psychimgui-octave-macos`,
+`psychimgui-matlab-linux`, `psychimgui-matlab-windows`,
 `psychimgui-octave-linux-6.4`, `psychimgui-octave-linux-10`, and
 `psychimgui-octave-windows`. A `v*` tag turns each one into a zip on the
 release page.
@@ -374,3 +399,9 @@ whose arguments have no marshaling rule, and prints the reason.
     tools/smoke_gl.cpp      native OpenGL smoke test
     tools/fetch_third_party.sh   clones the PINS.md commits, for CI
     .github/workflows/ci.yml     the CI workflow
+
+## Releasing
+
+A release is a `v*` tag; CI builds and publishes the packages. The
+step-by-step checklist, including where the version string lives and how to
+recover from a failed release job, is in [RELEASING.md](RELEASING.md).

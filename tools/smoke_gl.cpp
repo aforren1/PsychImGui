@@ -89,17 +89,104 @@ void swap() { SwapBuffers(g_dc); }
 
 #elif defined(__APPLE__)
 
-// The CGL path is not implemented. Run tests/gl/test_gl_render.m under
-// Psychtoolbox on macOS instead.
+// macOS has no windowless GL context the way WGL and GLX do, so this path uses
+// CGL directly and renders into a framebuffer object. There is no window and
+// nothing reaches the screen, which is what a CI runner needs.
+//
+// No kCGLPFAOpenGLProfile attribute, so this is the legacy profile: OpenGL
+// 2.1, exactly what Psychtoolbox creates on macOS, which is the context this
+// binding has to work in. The core dispatches to imgui_impl_opengl2 there,
+// because imgui_impl_opengl3 calls glGenVertexArrays unconditionally and a 2.1
+// profile has no core vertex array objects.
+//
+// glext.h is safe to include here: this file never includes the Dear ImGui
+// loader, whose generated function pointer names would collide with it. Do not
+// include an Apple GL header in a translation unit that pulls in
+// imgui_impl_opengl3.cpp's loader.
+#include <OpenGL/OpenGL.h>
 #include <OpenGL/gl.h>
+#include <OpenGL/glext.h>
+
 namespace {
-bool create_context() {
-    printf("smoke_gl: no context creation path for macOS yet. "
-           "Run the Psychtoolbox test in tests/gl instead.\n");
-    return false;
+
+CGLContextObj g_ctx;
+GLuint g_fbo;
+GLuint g_rbo;
+
+CGLError make_context(bool software) {
+    CGLPixelFormatAttribute attribs[10];
+    int n = 0;
+    attribs[n++] = kCGLPFAColorSize;
+    attribs[n++] = (CGLPixelFormatAttribute)24;
+    attribs[n++] = kCGLPFAAlphaSize;
+    attribs[n++] = (CGLPixelFormatAttribute)8;
+    attribs[n++] = kCGLPFADepthSize;
+    attribs[n++] = (CGLPixelFormatAttribute)24;
+    if (software) {
+        // Apple's software renderer, for a runner with no usable GPU.
+        attribs[n++] = kCGLPFARendererID;
+        attribs[n++] = (CGLPixelFormatAttribute)kCGLRendererGenericFloatID;
+    }
+    attribs[n++] = (CGLPixelFormatAttribute)0;
+
+    CGLPixelFormatObj pix = NULL;
+    GLint npix = 0;
+    CGLError e = CGLChoosePixelFormat(attribs, &pix, &npix);
+    if (e != kCGLNoError || pix == NULL) {
+        return (e == kCGLNoError) ? kCGLBadPixelFormat : e;
+    }
+    e = CGLCreateContext(pix, NULL, &g_ctx);
+    CGLDestroyPixelFormat(pix);
+    return e;
 }
-void destroy_context() {}
-void swap() {}
+
+bool create_context() {
+    CGLError e = make_context(false);
+    if (e != kCGLNoError) {
+        printf("smoke_gl: hardware CGL pixel format failed (%s), trying the "
+               "software renderer\n", CGLErrorString(e));
+        e = make_context(true);
+    }
+    if (e != kCGLNoError || g_ctx == NULL) {
+        printf("smoke_gl: CGLCreateContext failed: %s\n", CGLErrorString(e));
+        return false;
+    }
+    if (CGLSetCurrentContext(g_ctx) != kCGLNoError) {
+        printf("smoke_gl: CGLSetCurrentContext failed\n");
+        return false;
+    }
+
+    // A context with no drawable needs a framebuffer object to render into.
+    // The EXT names are the ones Apple's 2.1 profile guarantees, through
+    // GL_EXT_framebuffer_object.
+    glGenFramebuffersEXT(1, &g_fbo);
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, g_fbo);
+    glGenRenderbuffersEXT(1, &g_rbo);
+    glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, g_rbo);
+    glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_RGBA8, 320, 240);
+    glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
+                                 GL_RENDERBUFFER_EXT, g_rbo);
+    if (glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT) !=
+        GL_FRAMEBUFFER_COMPLETE_EXT) {
+        printf("smoke_gl: the offscreen framebuffer is not complete\n");
+        return false;
+    }
+    glViewport(0, 0, 320, 240);
+    return true;
+}
+
+void destroy_context() {
+    if (!g_ctx) return;
+    if (g_rbo) glDeleteRenderbuffersEXT(1, &g_rbo);
+    if (g_fbo) glDeleteFramebuffersEXT(1, &g_fbo);
+    CGLSetCurrentContext(NULL);
+    CGLDestroyContext(g_ctx);
+}
+
+// Nothing is on screen, so there is nothing to swap. Flush so the driver is
+// made to do the work rather than discard it.
+void swap() { glFlush(); }
+
 }  // namespace
 
 #else
@@ -204,8 +291,11 @@ void swap() { glXSwapBuffers(g_dpy, g_win); }
 
 int main(int argc, char** argv) {
     // "smoke_gl none" exercises the headless path the engine tests run on,
-    // which needs no window at all.
+    // which needs no window at all. "smoke_gl gl2" forces the fixed function
+    // backend, which is the one a legacy OpenGL 2.1 context gets, so the macOS
+    // path can be exercised on a machine that has a modern context.
     bool headless = (argc > 1 && strcmp(argv[1], "none") == 0);
+    bool forceGl2 = (argc > 1 && strcmp(argv[1], "gl2") == 0);
     if (!headless && !create_context()) return 2;
 
     if (headless) {
@@ -217,11 +307,13 @@ int main(int argc, char** argv) {
 
     pig::InitOpts opts;
     memset(&opts, 0, sizeof(opts));
-    opts.renderer = headless ? pig::Renderer::None : pig::Renderer::OpenGL3;
+    opts.renderer = headless  ? pig::Renderer::None
+                    : forceGl2 ? pig::Renderer::OpenGL2
+                               : pig::Renderer::Auto;
     opts.displayW = 320;
     opts.displayH = 240;
     opts.implot = true;
-    snprintf(opts.glslVersion, sizeof(opts.glslVersion), "#version 130");
+    // glslVersion left empty: Init picks it from the live context.
 
     pig::Error err;
     memset(&err, 0, sizeof(err));
@@ -279,6 +371,11 @@ int main(int argc, char** argv) {
     }
 
     const pig::FrameStats& fs = pig::frameStats();
+    pig::VersionInfo vi;
+    pig::versionInfo(vi);
+    printf("smoke_gl: backend %s%s%s\n", vi.renderer,
+           vi.glslVersion[0] ? ", GLSL " : "", vi.glslVersion);
+
     printf("smoke_gl: last frame drawCalls=%llu vertices=%llu newFrameNs=%llu renderCpuNs=%llu\n",
            (unsigned long long)fs.drawCalls, (unsigned long long)fs.vertices,
            (unsigned long long)fs.newFrameNs, (unsigned long long)fs.renderCpuNs);
