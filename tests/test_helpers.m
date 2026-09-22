@@ -13,8 +13,11 @@ function test_helpers()
 %   made. tests/gl/test_gl_render covers the same helpers against a real
 %   window.
 
-    stubdir = tf_screen('install');
-    cleanup = onCleanup(@() tf_screen('remove', stubdir)); %#ok<NASGU>
+    % run_tests takes the stub folder off the path once, after every test. This
+    % file neither removes it nor calls rehash: both are path and function
+    % cache churn in the middle of a run with a MEX loaded, and they are the
+    % only calls in the suite that no other test makes. See SPEC.md 14.6.
+    tf_screen('install');
 
     if ~tf_screen('active')
         t_ok('the Screen stub shadows the real Screen', false);
@@ -25,7 +28,6 @@ function test_helpers()
     % The keyboard queue needs PsychHID, which the stubs do not provide. The
     % degraded path is the one CI takes as well, so silence its one warning.
     ws = warning('off', 'psychimgui:NoKeyboard');
-    restoreWarn = onCleanup(@() warning(ws)); %#ok<NASGU>
 
     PsychImGui('Shutdown');            % run_tests opened a context for us
     opts = struct('renderer', 'none', 'iniFile', '');
@@ -163,6 +165,8 @@ function test_helpers()
     t_eq('Frame Begin left the region after an error', tf_screen('gl'), ...
          {'BeginOpenGL', 'EndOpenGL'});
     t_eq('Frame Begin left 2D mode after an error', tf_screen('mode'), 0);
+
+    warning(ws);
 end
 
 % ------------------------------------------------------------------ helpers --

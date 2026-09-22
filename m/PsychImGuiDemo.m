@@ -6,7 +6,8 @@ function PsychImGuiDemo(nFrames)
 %
 %   The demo opens a 640x480 Psychtoolbox window, draws a Gabor patch, and
 %   draws a control panel over it. The sliders drive the contrast, the spatial
-%   frequency, and the orientation of the patch. A text field and the Dear
+%   frequency, and the orientation of the patch. The contrast slider is the
+%   Michelson contrast of the patch, from 0 to 1. A text field and the Dear
 %   ImGui demo window are there to show the rest of the binding.
 %
 %   With ImPlot compiled in, a second panel shows a live trace of the contrast
@@ -16,9 +17,11 @@ function PsychImGuiDemo(nFrames)
 %   PsychImGuiFrame, PsychImGuiClose, and PsychImGuiGL. It writes no
 %   Screen('BeginOpenGL') and Screen('EndOpenGL') pair of its own.
 %
-%   Needs Psychtoolbox. The window preferences come from
-%   tests/gl/ptb_test_window, which skips the display sync tests, so the demo
-%   starts fast. An experiment that measures timing must not do that.
+%   Needs Psychtoolbox. The demo opens with PsychDefaultSetup(2), so colors
+%   are in the normalized 0 to 1 range, as in every Psychtoolbox demo. The
+%   window preferences come from tests/gl/ptb_test_window, which skips the
+%   display sync tests, so the demo starts fast. An experiment that measures
+%   timing must not do that.
 %
 %   See also PsychImGuiOpen, PsychImGuiFrame, PsychImGuiClose, PsychImGuiGL.
 
@@ -39,6 +42,13 @@ function PsychImGuiDemo(nFrames)
     win = [];
     ig = [];
     try
+        % The standard opening line of a Psychtoolbox script: AssertOpenGL,
+        % KbName('UnifyKeyNames'), and the normalized 0 to 1 color range for
+        % every window PsychImaging opens afterwards. The [0.5 0.5 0.5 0]
+        % background offset of the Gabor below assumes that range. It has to
+        % come before the window opens.
+        PsychDefaultSetup(2);
+
         [win, rect] = ptb_test_window([0 0 640 480]); %#ok<ASGLU>
 
         ig = PsychImGuiOpen(win);
@@ -57,15 +67,44 @@ function PsychImGuiDemo(nFrames)
         trace = zeros(1, 512);
         [gx, gy] = meshgrid(linspace(-2, 2, 24), linspace(-2, 2, 24));
 
-        gabor = CreateProceduralGabor(win, 256, 256, 0, [0.5 0.5 0.5 0.0]);
+        % disableNorm = 1 and contrastPreMultiplicator = 0.5 make the
+        % 'contrast' parameter below the Michelson contrast of the patch, which
+        % is what a slider from 0 to 1 labelled "contrast" should mean. With
+        % PTB's defaults the shader scales contrast by 1/(sqrt(2*pi)*sc), about
+        % 1/125 for sc = 50, so 0.6 would draw an amplitude of 0.005 and the
+        % patch would look like a plain gray square. See CreateProceduralGabor.
+        gabor = CreateProceduralGabor(win, 256, 256, 0, [0.5 0.5 0.5 0], 1, 0.5);
         dst = CenterRectOnPoint([0 0 256 256], ig.rect(3) / 2, ig.rect(4) / 2);
 
         while running && frame < nFrames
             frame = frame + 1;
 
             Screen('DrawTexture', win, gabor, [], dst, orientation, [], [], ...
-                   [], [], kPsychDontDoRotation, ...
+                   [1 1 1 0], [], kPsychDontDoRotation, ...
                    [180, freq, 50, contrast, 1, 0, 0, 0]);
+
+            if frame == 1
+                % A procedural Gabor fails silently: wrong normalization draws
+                % a flat gray square and raises nothing. Measure the first
+                % frame instead of trusting it. Read the back buffer before the
+                % flip, because after a flip its contents are undefined.
+                gaborStd = gabor_std(win, dst);
+                fprintf('PsychImGuiDemo: Gabor pixel std %.4f at contrast %.2f\n', ...
+                        gaborStd, contrast);
+                % Measured on the development machine: 0.0734 with these
+                % parameters, 0.0021 with the normalization the demo used to
+                % have, which is the flat gray square. 0.02 sits between them
+                % with room on both sides. Contrast 1.0 only reaches 0.12, so a
+                % higher bar would fail on a correct patch.
+                if gaborStd < 0.02
+                    error('psychimgui:FlatGabor', ...
+                          ['The Gabor drew as a flat patch: pixel std %.4f, ' ...
+                           'expected well above 0.02 at contrast %.2f. Check ' ...
+                           'the CreateProceduralGabor normalization, and that ' ...
+                           'PsychDefaultSetup(2) ran before the window ' ...
+                           'opened.'], gaborStd, contrast);
+                end
+            end
 
             ig = PsychImGuiFrame('Begin', ig);
 

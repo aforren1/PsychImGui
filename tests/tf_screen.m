@@ -1,9 +1,11 @@
 function out = tf_screen(cmd, arg)
 % TF_SCREEN  Install and query the recording Screen stub used by test_helpers.
 %
-%   dir = tf_screen('install')     Write the stubs to a temporary folder and
-%                                  put that folder first on the path.
-%   tf_screen('remove', dir)       Take it off the path again and delete it.
+%   tf_screen('install')           Write the stubs to a temporary folder and
+%                                  put that folder first on the path. Does
+%                                  nothing when they are already installed.
+%   tf_screen('cleanup')           Take the folder off the path and delete it.
+%                                  run_tests calls this once, after every test.
 %   tf_screen('active')            True when the stub, not the real Screen,
 %                                  answers.
 %   tf_screen('reset')             Clear the recorded call list.
@@ -16,18 +18,35 @@ function out = tf_screen(cmd, arg)
 %
 %   The stub answers only the subcommands the four PsychImGui helpers use. It
 %   is written to a temporary folder rather than committed as a file, so a
-%   stray path entry can never shadow the real Screen outside this test.
+%   stray path entry can never shadow the real Screen outside a test run.
+%
+%   Two things this deliberately does not do, because Octave 10.1 on Linux
+%   crashed the interpreter during test_helpers and they are the only calls in
+%   the suite that no other test makes:
+%
+%     * It never calls rehash. The stub files are written before their folder
+%       joins the path, and both engines pick up a new path entry on their
+%       own. rehash is only needed when files appear inside a folder that is
+%       already on the path, which never happens here.
+%     * It does not take the folder off the path in the middle of a run.
+%       run_tests removes it once, after the last test and the last Shutdown.
+%
+%   See SPEC.md section 14.6.
 
-    global TF_SCREEN_GL TF_SCREEN_MODE TF_SCREEN_3D %#ok<GVMIS>
+    global TF_SCREEN_GL TF_SCREEN_MODE TF_SCREEN_3D TF_SCREEN_DIR %#ok<GVMIS>
     out = [];
     switch cmd
         case 'install'
+            if isempty(TF_SCREEN_DIR) || ~exist(TF_SCREEN_DIR, 'dir')
+                TF_SCREEN_DIR = local_install();
+            end
             TF_SCREEN_GL = {};
             TF_SCREEN_MODE = 0;
             TF_SCREEN_3D = 1;
-            out = local_install();
-        case 'remove'
-            local_remove(arg);
+            out = TF_SCREEN_DIR;
+        case 'cleanup'
+            local_cleanup(TF_SCREEN_DIR);
+            TF_SCREEN_DIR = '';
         case 'active'
             out = false;
             try
@@ -54,6 +73,8 @@ function dir = local_install()
     if ~exist(dir, 'dir')
         mkdir(dir);
     end
+    % Write every file first, then add the folder. A folder that joins the path
+    % with its files already in place needs no cache flush in either engine.
     local_write(fullfile(dir, 'Screen.m'), local_screen_src());
     local_write(fullfile(dir, 'GetMouse.m'), { ...
         'function [x, y, buttons] = GetMouse(win) %#ok<INUSD>'
@@ -71,32 +92,22 @@ function dir = local_install()
         '    t = 1000 + tick / 60;'
         'end'});
     addpath(dir, '-begin');
-    local_rehash();
 end
 
-function local_remove(dir)
-    if nargin < 1 || isempty(dir)
+function local_cleanup(dir)
+    if isempty(dir)
         return;
     end
     try
         rmpath(dir);
     catch
     end
-    local_rehash();
     try
         delete(fullfile(dir, '*.m'));
         rmdir(dir);
     catch
         % A locked file on Windows. The folder is in tempdir, so leaving it is
         % harmless; taking it off the path is what mattered.
-    end
-end
-
-function local_rehash()
-    try
-        rehash();
-    catch
-        % Octave refreshes its cache on addpath; nothing to do.
     end
 end
 

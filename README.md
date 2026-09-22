@@ -111,12 +111,16 @@ texture support.
 
 ### Tests that need a GPU
 
-`tests/gl/test_gl_render.m` opens a real Psychtoolbox window, draws a panel
-with a known background color, reads the frame back, and checks the color. Run
-it by hand:
+Two tests need a real Psychtoolbox window. Run them by hand:
 
     addpath(fullfile(pwd, 'tests'), fullfile(pwd, 'tests', 'gl'));
-    test_gl_render
+    test_gl_render        % the binding draws into a PTB window
+    test_gl_demo_gabor    % the demo's Gabor really is a Gabor
+
+`test_gl_render` draws a panel with a known background color, reads the frame
+back, and checks the color. `test_gl_demo_gabor` checks that the demo's patch
+has the Michelson contrast its slider asks for, because a procedural Gabor
+drawn with the wrong normalization is a plain gray square and raises nothing.
 
 Every script that opens a Psychtoolbox window calls `tests/gl/ptb_test_window`,
 which sets `SkipSyncTests` to 2 and `VisualDebugLevel` to 0 first, so a test
@@ -157,9 +161,17 @@ the MEX at any time, in any build.
 
 The demo opens a 640x480 Psychtoolbox window with a Gabor patch and a control
 panel. The sliders drive the contrast, the spatial frequency, and the
-orientation. With ImPlot compiled in, a second panel shows a live trace of the
+orientation. The contrast slider is the Michelson contrast of the patch, from
+0 to 1. With ImPlot compiled in, a second panel shows a live trace of the
 contrast and a heat map of the patch envelope. Press the Quit button or ESCAPE
 to stop. `PsychImGuiDemo(120)` runs 120 frames and returns.
+
+The demo opens with `PsychDefaultSetup(2)`, as every Psychtoolbox demo does,
+so colors are in the normalized 0 to 1 range.
+
+The demo measures its own first frame and stops with `psychimgui:FlatGabor` if
+the patch came out flat. A procedural Gabor fails silently, so this is the only
+way to notice.
 
 ## Use it in an experiment
 

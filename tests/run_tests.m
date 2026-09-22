@@ -49,6 +49,14 @@ function run_tests()
         fprintf('  %d passed, %d failed\n', TST_PASS - p0, TST_FAIL - f0);
     end
 
+    % test_helpers puts a recording Screen stub on the path. Take it off
+    % here, after the last test and the last Shutdown, rather than in the
+    % middle of the run. See SPEC.md section 14.6.
+    try
+        tf_screen('cleanup');
+    catch
+    end
+
     fprintf('\n==== %d passed, %d failed ====\n', TST_PASS, TST_FAIL);
     if TST_FAIL > 0
         error('run_tests:failed', '%d test(s) failed', TST_FAIL);
