@@ -233,10 +233,20 @@ function varargout = PsychImGui(varargin)
 %     open = PsychImGui('ImPlot.ShowDemoWindow' [, open=[]])
 %     popen = PsychImGui('ImPlot.ShowMetricsWindow' [, popen=[]])
 %
-%   See also PsychImGuiInput, PsychImGuiFrame, PsychImGuiKeymap,
+%   The four helpers own the Screen('BeginOpenGL') and
+%   Screen('EndOpenGL') pairs, so a script writes none itself:
+%
+%     ig = PsychImGuiOpen(win [, opts])
+%     ig = PsychImGuiFrame('Begin', ig)
+%     PsychImGuiFrame('End', ig)
+%     PsychImGuiClose(ig)
+%     PsychImGuiGL(ig, 'Subcommand', ...)
+%
+%   See also PsychImGuiOpen, PsychImGuiFrame, PsychImGuiClose,
+%   PsychImGuiGL, PsychImGuiSetup, PsychImGuiInput, PsychImGuiKeymap,
 %   PsychImGuiOp, PsychImGuiDemo.
 
     error('psychimgui:NotBuilt', ...
-        ['The PsychImGui MEX is not on the path. Run build, then add ' ...
-         'the dist directory to the path.']);
+        ['The PsychImGui MEX is not on the path. Run PsychImGuiSetup, ' ...
+         'or build first.']);
 end

@@ -7,15 +7,20 @@ function test_gl_render()
 %       addpath(fullfile(pwd, 'tests'), fullfile(pwd, 'tests', 'gl'));
 %       test_gl_render
 %
-%   The test opens a 640x480 window, draws one PsychImGui window filled with a
-%   known background color, flips, reads the frame back with Screen('GetImage'),
-%   and checks the mean color inside the window rectangle.
+%   The test opens a 640x480 window through the four helpers, draws one
+%   PsychImGui window filled with a known background color, flips, reads the
+%   frame back with Screen('GetImage'), and checks the mean color inside the
+%   window rectangle. It writes no Screen('BeginOpenGL') pair of its own, so it
+%   also exercises PsychImGuiOpen, PsychImGuiFrame, PsychImGuiGL, and
+%   PsychImGuiClose against a real window.
 
     global TST_PASS TST_FAIL %#ok<GVMIS>
     if isempty(TST_PASS); TST_PASS = 0; end
     if isempty(TST_FAIL); TST_FAIL = 0; end
 
-    if exist('Screen', 'file') ~= 3
+    % exist(...,'file') answers 2 for Screen when its help M-file is also on
+    % the path, so only a zero means Psychtoolbox is really absent.
+    if exist('Screen', 'file') == 0
         fprintf('SKIP test_gl_render: Psychtoolbox is not installed.\n');
         return;
     end
@@ -26,40 +31,52 @@ function test_gl_render()
     PsychImGuiSetup();
 
     win = [];
+    ig = [];
     try
         % ptb_test_window sets SkipSyncTests and VisualDebugLevel, so a test run
         % pays for neither the display timing calibration nor the splash screen.
         [win, rect, prefGuard] = ptb_test_window([0 0 640 480]); %#ok<ASGLU>
 
-        Screen('BeginOpenGL', win);
-        PsychImGui('Init', win, rect, PsychImGuiKeymap());
-        Screen('EndOpenGL', win);
+        ig = PsychImGuiOpen(win);
+        t_ok('Open returns the window', isstruct(ig) && ig.win == win);
+        t_ok('Open returns the rectangle', isequal(ig.rect, Screen('Rect', win)));
+        t_ok('Open left 2D mode', local_draw_mode() == 0);
 
         v = PsychImGui('Version');
         t_ok('renderer is opengl3', strcmp(v.renderer, 'opengl3'));
         t_ok('GL version string is present', ~isempty(v.glVersion));
 
+        % PsychImGuiGL wraps one subcommand outside a frame.
+        fonts = PsychImGuiGL(ig, 'Version');
+        t_ok('PsychImGuiGL returns a value', isstruct(fonts));
+        t_ok('PsychImGuiGL left 2D mode', local_draw_mode() == 0);
+
         % A window with no decoration and an opaque red background is easy to
         % find again in the read back image.
         bg = [0.8 0.1 0.1 1.0];
         winRect = [40 40 340 240];
+        flags = {'ImGuiWindowFlags_NoTitleBar', 'ImGuiWindowFlags_NoResize', ...
+                 'ImGuiWindowFlags_NoScrollbar', 'ImGuiWindowFlags_NoSavedSettings'};
 
         for f = 1:3
-            in = PsychImGuiInput('Empty', rect);
-            in.time = f / 60;
-            Screen('BeginOpenGL', win);
-            PsychImGui('NewFrame', in);
+            ig = PsychImGuiFrame('Begin', ig);
+            if f == 1
+                t_ok('Frame Begin entered 3D mode', local_draw_mode() > 0);
+                % Nested inside a frame, PsychImGuiGL must not wrap again.
+                PsychImGuiGL(ig, 'GetFrameCount');
+                t_ok('PsychImGuiGL nests inside a frame', local_draw_mode() > 0);
+            end
             PsychImGui('PushStyleColor', 'ImGuiCol_WindowBg', bg);
             PsychImGui('SetNextWindowPos', winRect(1:2));
             PsychImGui('SetNextWindowSize', [winRect(3) - winRect(1), ...
                                              winRect(4) - winRect(2)]);
-            flags = {'ImGuiWindowFlags_NoTitleBar', 'ImGuiWindowFlags_NoResize', ...
-                     'ImGuiWindowFlags_NoScrollbar', 'ImGuiWindowFlags_NoSavedSettings'};
             PsychImGui('Begin', 'glTest', [], flags);
             PsychImGui('End');
             PsychImGui('PopStyleColor');
-            PsychImGui('Render');
-            Screen('EndOpenGL', win);
+            PsychImGuiFrame('End', ig);
+            if f == 1
+                t_ok('Frame End left 2D mode', local_draw_mode() == 0);
+            end
             if f < 3
                 % Dear ImGui hides a window on the frame it first appears,
                 % while it auto-fits, so read back only after a few frames.
@@ -89,8 +106,7 @@ function test_gl_render()
         % extension renders too.
         if v.implot
             for f = 1:3
-                Screen('BeginOpenGL', win);
-                PsychImGui('NewFrame', PsychImGuiInput('Empty', rect));
+                ig = PsychImGuiFrame('Begin', ig);
                 PsychImGui('SetNextWindowSize', [400 300]);
                 PsychImGui('Begin', 'plotTest');
                 if PsychImGui('ImPlot.BeginPlot', 'trace', [-1 200])
@@ -99,8 +115,7 @@ function test_gl_render()
                     PsychImGui('ImPlot.EndPlot');
                 end
                 PsychImGui('End');
-                PsychImGui('Render');
-                Screen('EndOpenGL', win);
+                PsychImGuiFrame('End', ig);
                 Screen('Flip', win);
             end
             sp = PsychImGui('Stats');
@@ -109,28 +124,33 @@ function test_gl_render()
 
         % Render must leave glGetError clean, or Screen('EndOpenGL') aborts the
         % script. This is rule R3.
-        Screen('BeginOpenGL', win);
-        PsychImGui('NewFrame', PsychImGuiInput('Empty', rect));
-        PsychImGui('Render');
+        ig = PsychImGuiFrame('Begin', ig);
         err = glGetError();
-        Screen('EndOpenGL', win);
+        PsychImGuiFrame('End', ig);
         t_ok('Render leaves GL_NO_ERROR', err == 0);
 
-        Screen('BeginOpenGL', win);
-        PsychImGui('Shutdown');
-        Screen('EndOpenGL', win);
+        PsychImGuiClose(ig);
+        t_ok('Close left 2D mode', local_draw_mode() == 0);
+        PsychImGuiClose(ig);
+        t_ok('Close is safe to repeat', true);
+        ig = [];
     catch e
         TST_FAIL = TST_FAIL + 1;
         fprintf(2, '  FAIL  test_gl_render threw %s: %s\n', e.identifier, e.message);
     end
 
-    try
-        PsychImGui('Shutdown');
-    catch
-    end
+    PsychImGuiClose(ig);
     if ~isempty(win)
         sca;
     end
+    % Closing after the window is gone must still be safe.
+    PsychImGuiClose(ig);
+    t_ok('Close is safe after the window closes', true);
+
     clear prefGuard;   % restores the preferences this run changed
     fprintf('test_gl_render: %d passed, %d failed\n', TST_PASS, TST_FAIL);
+end
+
+function mode = local_draw_mode()
+    [~, mode] = Screen('GetOpenGLDrawMode');
 end

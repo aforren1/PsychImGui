@@ -1,7 +1,7 @@
 function PsychImGuiDemo(nFrames)
 % PsychImGuiDemo  A Gabor patch with a PsychImGui control panel.
 %
-%   PsychImGuiDemo()          Run until you press ESCAPE or close the panel.
+%   PsychImGuiDemo()          Run until you press ESCAPE or the Quit button.
 %   PsychImGuiDemo(n)         Run n frames and return. Useful for a smoke run.
 %
 %   The demo opens a 640x480 Psychtoolbox window, draws a Gabor patch, and
@@ -12,11 +12,15 @@ function PsychImGuiDemo(nFrames)
 %   With ImPlot compiled in, a second panel shows a live trace of the contrast
 %   over the last 512 frames and a heat map of the patch envelope.
 %
+%   The demo is also the shortest example of the four helpers: PsychImGuiOpen,
+%   PsychImGuiFrame, PsychImGuiClose, and PsychImGuiGL. It writes no
+%   Screen('BeginOpenGL') and Screen('EndOpenGL') pair of its own.
+%
 %   Needs Psychtoolbox. The window preferences come from
 %   tests/gl/ptb_test_window, which skips the display sync tests, so the demo
 %   starts fast. An experiment that measures timing must not do that.
 %
-%   See also PsychImGui, PsychImGuiInput, PsychImGuiFrame, PsychImGuiKeymap.
+%   See also PsychImGuiOpen, PsychImGuiFrame, PsychImGuiClose, PsychImGuiGL.
 
     if nargin < 1
         nFrames = Inf;
@@ -33,17 +37,13 @@ function PsychImGuiDemo(nFrames)
     end
 
     win = [];
-    kq = [];
+    ig = [];
     try
         [win, rect] = ptb_test_window([0 0 640 480]); %#ok<ASGLU>
 
-        Screen('BeginOpenGL', win);
-        PsychImGui('Init', win, rect, PsychImGuiKeymap());
-        PsychImGui('StyleColorsDark');
-        PsychImGui('SetGlobalScale', 1.25);
-        Screen('EndOpenGL', win);
-
-        kq = PsychImGuiInput('Start', win);
+        ig = PsychImGuiOpen(win);
+        PsychImGuiGL(ig, 'StyleColorsDark');
+        PsychImGuiGL(ig, 'SetGlobalScale', 1.25);
 
         contrast = 0.6;
         freq = 0.03;
@@ -58,9 +58,7 @@ function PsychImGuiDemo(nFrames)
         [gx, gy] = meshgrid(linspace(-2, 2, 24), linspace(-2, 2, 24));
 
         gabor = CreateProceduralGabor(win, 256, 256, 0, [0.5 0.5 0.5 0.0]);
-        cx = rect(3) / 2;
-        cy = rect(4) / 2;
-        dst = CenterRectOnPoint([0 0 256 256], cx, cy);
+        dst = CenterRectOnPoint([0 0 256 256], ig.rect(3) / 2, ig.rect(4) / 2);
 
         while running && frame < nFrames
             frame = frame + 1;
@@ -69,7 +67,7 @@ function PsychImGuiDemo(nFrames)
                    [], [], kPsychDontDoRotation, ...
                    [180, freq, 50, contrast, 1, 0, 0, 0]);
 
-            in = PsychImGuiFrame('Begin', win, kq);
+            ig = PsychImGuiFrame('Begin', ig);
 
             PsychImGui('SetNextWindowPos', [10 10]);
             PsychImGui('SetNextWindowSize', [280 0]);
@@ -114,19 +112,19 @@ function PsychImGuiDemo(nFrames)
                 showDemo = PsychImGui('ShowDemoWindow', showDemo);
             end
 
-            PsychImGuiFrame('End', win);
+            PsychImGuiFrame('End', ig);
             Screen('Flip', win);
 
             % The GUI takes the keyboard while a text field is active, so the
             % experiment only reads keys when Dear ImGui does not want them.
             [~, wantKeyboard] = PsychImGui('WantCapture');
-            if ~wantKeyboard && ~isempty(in.keys)
+            if ~wantKeyboard && ~isempty(ig.in.keys)
                 escCode = KbName('ESCAPE');
-                if any(in.keys(:, 1) == escCode & in.keys(:, 2) == 1)
+                if any(ig.in.keys(:, 1) == escCode & ig.in.keys(:, 2) == 1)
                     running = false;
                 end
             end
-            if isinf(nFrames) && ~kq.active && KbCheck()
+            if isinf(nFrames) && ~ig.kq.active && KbCheck()
                 running = false;   % no keyboard queue: fall back to KbCheck
             end
         end
@@ -134,19 +132,8 @@ function PsychImGuiDemo(nFrames)
         fprintf(2, 'PsychImGuiDemo failed: %s: %s\n', e.identifier, e.message);
     end
 
-    try
-        if ~isempty(win)
-            Screen('BeginOpenGL', win);
-            PsychImGui('Shutdown');
-            Screen('EndOpenGL', win);
-        else
-            PsychImGui('Shutdown');
-        end
-    catch
-        PsychImGui('Shutdown');
+    PsychImGuiClose(ig);
+    if ~isempty(win)
+        sca;
     end
-    if ~isempty(kq)
-        PsychImGuiInput('Stop', kq);
-    end
-    sca;
 end

@@ -33,7 +33,7 @@ function run_tests()
     PsychImGui('Shutdown');
 
     tests = {@test_dispatch, @test_gen_marshal, @test_inputtext, ...
-             @test_keymap, @test_stats, @test_assert};
+             @test_keymap, @test_stats, @test_assert, @test_helpers};
     for i = 1:numel(tests)
         name = func2str(tests{i});
         fprintf('\n---- %s ----\n', name);

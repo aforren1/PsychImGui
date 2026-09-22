@@ -107,6 +107,7 @@ texture support.
 | `test_keymap.m` | Shape and content of the PTB keycode table |
 | `test_stats.m` | The counters count, and `reset` clears them |
 | `test_assert.m` | An `IM_ASSERT` becomes an error instead of an abort |
+| `test_helpers.m` | The four convenience helpers, against a recording `Screen` stub |
 
 ### Tests that need a GPU
 
@@ -162,6 +163,58 @@ to stop. `PsychImGuiDemo(120)` runs 120 frames and returns.
 
 ## Use it in an experiment
 
+Four helpers own the `Screen('BeginOpenGL')` and `Screen('EndOpenGL')` pairs,
+so your script writes none itself:
+
+    % Setup, once
+    InitializeMatlabOpenGL(1);          % before the window, or Open refuses
+    [win, rect] = PsychImaging('OpenWindow', screenid, 0);
+    ig = PsychImGuiOpen(win);
+
+    % Every frame
+    ig = PsychImGuiFrame('Begin', ig);
+    if PsychImGui('Begin', 'Controls')
+        [~, gain] = PsychImGui('SliderFloat', 'Gain', gain, 0, 1);
+    end
+    PsychImGui('End');
+    PsychImGuiFrame('End', ig);
+    Screen('Flip', win);
+
+    % Teardown, once
+    PsychImGuiClose(ig);
+    sca;
+
+| Helper | What it does |
+|---|---|
+| `ig = PsychImGuiOpen(win [, opts])` | Puts the MEX on the path, runs `Init` inside the OpenGL context, starts the keyboard queue, returns the handle |
+| `ig = PsychImGuiFrame('Begin', ig)` | Reads the devices, enters the context, starts the frame. `ig.in` holds this frame's input |
+| `PsychImGuiFrame('End', ig)` | Renders and leaves the context |
+| `PsychImGuiClose(ig)` | Shuts the MEX down and stops the queue. Safe to call twice, and after the window has closed |
+| `PsychImGuiGL(ig, 'Cmd', ...)` | One subcommand inside the context, for calls outside a frame |
+
+`opts` is the option struct of `PsychImGui('Init')`: `renderer`,
+`glslVersion`, `iniFile`, `logFile`, `implot`.
+
+Use `PsychImGuiGL` for a subcommand that needs the OpenGL context but does not
+belong to a frame:
+
+    idx = PsychImGuiGL(ig, 'AddFontFromFileTTF', fontPath, 18);
+
+Inside a frame the context is already active, and Psychtoolbox does not nest
+those regions, so `PsychImGuiGL` checks `Screen('GetOpenGLDrawMode')` and calls
+straight through. That makes it safe anywhere.
+
+`PsychImGuiClose` suits an `onCleanup`, so an error still releases the MEX:
+
+    ig = PsychImGuiOpen(win);
+    guard = onCleanup(@() PsychImGuiClose(ig));
+
+### The low-level form
+
+The helpers are M-files over the subcommands. This is the same sequence
+written out, which is what the MEX contract in `SPEC.md` section 4.2 is
+written against:
+
     % Setup, once
     InitializeMatlabOpenGL(1);
     [win, rect] = PsychImaging('OpenWindow', screenid, 0);
@@ -189,14 +242,16 @@ to stop. `PsychImGuiDemo(120)` runs 120 frames and returns.
     PsychImGuiInput('Stop', kq);
     sca;
 
-`PsychImGuiFrame('Begin', win, kq)` and `PsychImGuiFrame('End', win)` wrap the
-per-frame lines for scripts that prefer two calls.
+Write it this way only when your script already manages the OpenGL context for
+its own drawing. Every pair you write is a chance to leave Psychtoolbox in 3D
+mode after an error, which makes the next `Screen` call abort the script with a
+message about the wrong thing.
 
 Rules to follow:
 
 1. Call every `PsychImGui` subcommand between `Screen('BeginOpenGL')` and
    `Screen('EndOpenGL')`. The MEX raises `psychimgui:NoGLContext` when a GL
-   subcommand runs outside.
+   subcommand runs outside. The four helpers do this for you.
 2. Call `PsychImGui` only from the main thread.
 3. The script owns the widget values. Dear ImGui is immediate mode, and the MEX
    stores nothing between frames.

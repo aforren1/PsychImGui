@@ -123,9 +123,45 @@ These facts come from the PTB source tree, `PsychSourceGL/Source/Common/Screen/`
 
 ### 4.2 Required call order
 
+Four helper M-files own the `Screen('BeginOpenGL')` and `Screen('EndOpenGL')`
+pairs, so a script writes none itself. This is the form to write:
+
 ```matlab
 % Setup, once
 InitializeMatlabOpenGL(1);                      % required by Screen('BeginOpenGL')
+[win, rect] = PsychImaging('OpenWindow', screenid, 0);
+ig = PsychImGuiOpen(win);                       % Init plus the keyboard queue
+
+% Every frame
+ig = PsychImGuiFrame('Begin', ig);              % Poll, BeginOpenGL, NewFrame
+if PsychImGui('Begin', 'Controls')
+    [~, gain] = PsychImGui('SliderFloat', 'Gain', gain, 0, 1);
+end
+PsychImGui('End');
+PsychImGuiFrame('End', ig);                     % Render, EndOpenGL
+Screen('Flip', win);
+
+% A subcommand that needs the GL context outside a frame
+idx = PsychImGuiGL(ig, 'AddFontFromFileTTF', fontPath, 18);
+
+% Teardown, once
+PsychImGuiClose(ig);                            % Shutdown plus the queue
+sca;
+```
+
+Each helper leaves the userspace OpenGL context through an `onCleanup` or a
+`catch`, so an error inside the wrapped region still returns PTB to 2D mode.
+Without that, the next `Screen` call aborts the script with a message about
+the wrong thing. `PsychImGuiGL` asks `Screen('GetOpenGLDrawMode')` first and
+skips the wrapping when a frame already opened the region, because PTB does
+not nest those regions.
+
+The same sequence in raw subcommands, which is what the helpers do and what
+the MEX contract is written against:
+
+```matlab
+% Setup, once
+InitializeMatlabOpenGL(1);
 [win, rect] = PsychImaging('OpenWindow', screenid, 0);
 Screen('BeginOpenGL', win);
 PsychImGui('Init', win, rect, PsychImGuiKeymap());
@@ -151,9 +187,6 @@ Screen('EndOpenGL', win);
 PsychImGuiInput('Stop', kq);
 sca;
 ```
-
-`PsychImGuiFrame('Begin', win, kq)` and `PsychImGuiFrame('End', win)` wrap the
-per-frame boilerplate for scripts that prefer two calls.
 
 ### 4.3 Rules
 
@@ -240,11 +273,15 @@ PsychImGui('PlotLines', label, values [, overlay=''] [, scaleMin=FLT_MAX] [, sca
 | File | Purpose |
 |---|---|
 | `m/PsychImGui.m` | Help text only. The MEX shadows it once built. Generated. |
-| `m/PsychImGuiInput.m` | `Start`, `Poll`, `Stop`. Wraps `KbQueueCreate`, `KbQueueStart`, `KbEventGet`, `GetMouse`, `GetMouseWheel`, `GetSecs`. Returns the input struct of section 6.1. |
-| `m/PsychImGuiFrame.m` | `Begin` and `End` wrappers around the per-frame sequence. |
+| `m/PsychImGuiOpen.m` | `ig = PsychImGuiOpen(win [, opts])`. Checks that 3D graphics are on, runs `Init` inside one OpenGL region, starts the keyboard queue, and returns the handle struct the other three take. Fields: `win`, `rect`, `kq`, `opened`, `opts`, `in`. |
+| `m/PsychImGuiFrame.m` | `ig = PsychImGuiFrame('Begin', ig)` and `PsychImGuiFrame('End', ig)`. Poll, `BeginOpenGL`, `NewFrame`; then `Render`, `EndOpenGL`. The older `('Begin', win, kq)` form still works. |
+| `m/PsychImGuiClose.m` | `PsychImGuiClose(ig)`. `Shutdown` inside one OpenGL region, then stops the queue. Safe to call twice and safe after the window has closed, so it suits an `onCleanup`. |
+| `m/PsychImGuiGL.m` | `PsychImGuiGL(ig, 'Subcommand', ...)`. One subcommand inside the OpenGL region, for calls such as `AddFontFromFileTTF` outside a frame. Calls straight through when a frame already opened the region. |
+| `m/PsychImGuiSetup.m` | Puts `dist/<arch>` ahead of `m/` on the path. `('arch')`, `('distdir')`, and `('nocheck')` for the parts of that. |
+| `m/PsychImGuiInput.m` | `Start`, `Poll`, `Stop`, `Empty`. Wraps `KbQueueCreate`, `KbQueueStart`, `KbEventGet`, `GetMouse`, `GetMouseWheel`, `GetSecs`. Returns the input struct of section 6.1. |
 | `m/PsychImGuiKeymap.m` | Builds the 256-entry PTB keycode to `ImGuiKey` table. |
 | `m/PsychImGuiOp.m` | Generated struct of opcodes for the fast path. |
-| `m/PsychImGuiDemo.m` | Demo: PTB window with a Gabor patch, a control panel with sliders, and `ShowDemoWindow`. |
+| `m/PsychImGuiDemo.m` | Demo: PTB window with a Gabor patch, a control panel with sliders, an ImPlot panel, and `ShowDemoWindow`. |
 
 ### 5.4 Extensions and ImPlot subcommands
 
@@ -805,6 +842,8 @@ specification above, and why. Section 13 phases 1 and 1.5 are implemented.
 | `PushStyleColor` binds the `ImVec4` overload only. | Section 7.3 also lists a packed `ImU32` form. In Dear ImGui 1.92 `ColorButton` already takes an `ImVec4`, and the MATLAB type is a 1x4 double in 0 to 1 either way, so the `ImU32` overload adds no capability. |
 | `CalcTextSize` drops `text_end`; `PlotLines` and `PlotHistogram` drop `values_offset` and `stride`; `ImPlot.BeginSubplots` drops `row_ratios` and `col_ratios`. | The allowlist grew a `-<arg_name>` token for this, which passes the C default. `text_end` is a pointer into another argument, `stride` is meaningless for a MATLAB vector, and the two ratio arguments are float arrays, which phase 1.5 does not marshal. |
 | `PsychImGui('Enum')` returns all 978 public enum names from both namespaces. | Section 5.1 says "the whole table"; this is it, built on request only. |
+| Four helper M-files own the `Screen('BeginOpenGL')` and `Screen('EndOpenGL')` pairs: `PsychImGuiOpen`, `PsychImGuiFrame`, `PsychImGuiClose`, and `PsychImGuiGL`. | Section 5.3 listed only `PsychImGuiFrame`, so `Init`, `Shutdown`, and a one-off call such as `AddFontFromFileTTF` each left the script to write the pair itself. Every such pair is a chance to leave Psychtoolbox in 3D mode after an error, which makes the next `Screen` call abort with a message about the wrong thing. The helpers close the region through an `onCleanup` or a `catch`, and `PsychImGuiGL` reads `Screen('GetOpenGLDrawMode')` so it nests safely inside a frame. `PsychImGuiOpen` also fails early, with `psychimgui:No3DGraphics`, when `Screen('Preference', 'Enable3DGraphics')` is 0, which is what a missing `InitializeMatlabOpenGL` looks like. Section 4.2 now shows this form first and the raw subcommands second. The older `PsychImGuiFrame('Begin', win, kq)` still works. |
+| `tests/test_helpers.m` and `tests/tf_screen.m` test the helpers without Psychtoolbox. | The wrapping logic is what the helpers have to get right, and it needs no GPU. `tf_screen` writes a recording `Screen` stub, plus `GetMouse`, `GetMouseWheel`, and `GetSecs`, into a temporary folder at the front of the path, so `run_tests` can check the exact sequence of OpenGL region calls, including the ones after an error. The stubs live in a temporary folder rather than in the repository, so no stray path entry can shadow the real `Screen` outside the test. |
 | The opcode table contains the ImPlot names whether or not `PSYCHIMGUI_IMPLOT` is on. | An opcode that moved with a build option would make `m/PsychImGuiOp.m` wrong for one of the two builds. With ImPlot off, those entries raise `psychimgui:UnknownCommand`. |
 
 ### 14.4 renderer='none'
