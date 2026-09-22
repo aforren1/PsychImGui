@@ -1,10 +1,10 @@
-# psychimgui specification
+# PsychImGui specification
 
 Status: implemented through phase 1.5. Specification version 0.1,
 2026-09-22. Section 14 records where the code differs from sections 1
 to 13 and why.
 
-`psychimgui` is a MEX binding of Dear ImGui for MATLAB and GNU Octave. It draws
+`PsychImGui` is a MEX binding of Dear ImGui for MATLAB and GNU Octave. It draws
 immediate-mode GUI panels inside a Psychtoolbox (PTB) onscreen window. The MEX
 renders with the Dear ImGui OpenGL 3 backend inside PTB's userspace OpenGL
 context.
@@ -73,7 +73,7 @@ MATLAB / Octave script
   |  PsychImGui('NewFrame', in)   PsychImGui('SliderFloat', ...)   PsychImGui('Render')
   v
 +--------------------------------------------------------------+
-| psychimgui MEX (C++17)                                       |
+| PsychImGui MEX (C++17)                                       |
 |  dispatch: sorted name table + opcode fast path              |
 |  marshal:  mxArray <-> C types (generated per function)      |
 |  input:    PTB events -> ImGuiIO                             |
@@ -675,7 +675,7 @@ loader (`imgui_impl_opengl3_loader.h`), which is what PTB contexts need.
 
 Same shape as `mex-msgpack`: build on the oldest supported release, test the
 binary on the newest. Octave through the `gnuoctave/octave` Docker images, Octave
-on Windows through MSYS2 with `MEX_CMAKE_GENERATOR=Ninja`. CI runs the
+on Windows through the official GNU Octave Windows zip. CI runs the
 `renderer='none'` tests only. GL tests run on developer machines.
 
 ## 11. Testing

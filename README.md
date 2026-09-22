@@ -1,6 +1,6 @@
-# psychimgui
+# PsychImGui
 
-`psychimgui` is a MEX binding of [Dear ImGui](https://github.com/ocornut/imgui)
+`PsychImGui` is a MEX binding of [Dear ImGui](https://github.com/ocornut/imgui)
 for MATLAB and GNU Octave. It draws immediate mode GUI panels inside a
 Psychtoolbox (PTB) onscreen window. A script describes the GUI once per frame
 and reads widget values back from the return values of the same calls.
@@ -31,7 +31,7 @@ The generated files are committed, so you do not need Python to build.
 
 ## Get the sources
 
-    git clone --recurse-submodules <PsychImGui repository URL>
+    git clone --recurse-submodules https://github.com/aforren1/PsychImGui.git
 
 Dear ImGui and ImPlot come in through `third_party/cimgui` and
 `third_party/cimplot`. Where those are not yet submodules, one script fetches
@@ -212,7 +212,7 @@ pull request.
 | `matlab-test-forward` | Runs the floor-built binary, downloaded as an artifact, on the newest MATLAB. No rebuild |
 | `octave-linux` | Builds and tests in the `gnuoctave/octave` Docker images, one per binary compatible era: 6.4.0 covers Octave 6.4 to 9.4, 10.1.0 covers 10 and later |
 | `octave-linux-test-forward` | Runs the 6.4 build on Octave 9.4 and the 10.1 build on Octave 11.3. No rebuild |
-| `octave-windows` | Builds and tests under MSYS2 with `MEX_CMAKE_GENERATOR=Ninja` |
+| `octave-windows` | Builds and tests with the official GNU Octave Windows zip (10.1.0, cached), using the toolchain and `make` it ships, as on a developer machine |
 | `smoke-gl-linux` | Builds `smoke_gl` and runs it against Mesa's llvmpipe under Xvfb. The only automated OpenGL coverage |
 | `release` | On a `v*` tag, zips every package and publishes a GitHub Release |
 
