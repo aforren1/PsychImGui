@@ -1,0 +1,272 @@
+# psychimgui binding allowlist (SPEC.md sections 5.2, 5.4, 7.2).
+#
+# One entry per line:
+#
+#     <ov_cimguiname> [<MatlabName>] [-<arg_name> ...]
+#
+# The MATLAB name defaults to the "funcname" field of the cimgui definition.
+# A -<arg_name> token drops that argument from the MATLAB signature and passes
+# its C default instead. Use it only for arguments that carry no useful meaning
+# on the MATLAB side, such as a pointer into another argument.
+#
+# Arguments whose type has no marshaling rule are dropped automatically when
+# they have a default (callbacks, user_data, ImGuiStyle* dst). An argument with
+# no rule and no default makes the generator refuse the entry.
+#
+# Sections are namespaces. [ImGui] subcommands have no prefix. [ImPlot]
+# subcommands are called as PsychImGui('ImPlot.Name', ...).
+
+[ImGui]
+
+# --- Windows ---
+igBegin
+igEnd
+igBeginChild_Str            BeginChild
+igEndChild
+igSetNextWindowPos
+igSetNextWindowSize
+igSetNextWindowCollapsed
+igSetNextWindowFocus
+igSetNextWindowBgAlpha
+igGetWindowPos
+igGetWindowSize
+igGetContentRegionAvail
+igIsWindowHovered
+igIsWindowFocused
+
+# --- Layout ---
+igSeparator
+igSeparatorText
+igSameLine
+igNewLine
+igSpacing
+igDummy
+igIndent
+igUnindent
+igBeginGroup
+igEndGroup
+igGetCursorScreenPos
+igSetCursorPos
+igSetNextItemWidth
+igPushItemWidth
+igPopItemWidth
+igCalcTextSize              CalcTextSize        -text_end
+igGetItemRectMin
+igGetItemRectMax
+
+# --- ID stack ---
+# Two names because the string and the integer form take different classes and
+# phase 1 dispatches on the subcommand, not on the argument class.
+igPushID_Str                PushID
+igPushID_Int                PushIDInt
+igPopID
+
+# --- Text ---
+igText
+igTextColored
+igTextDisabled
+igTextWrapped
+igLabelText
+igBulletText
+
+# --- Buttons ---
+igButton
+igSmallButton
+igInvisibleButton
+igArrowButton
+igCheckbox
+igCheckboxFlags_IntPtr      CheckboxFlags
+igRadioButton_Bool          RadioButton
+igRadioButton_IntPtr        RadioButtonInt
+igProgressBar
+igBullet
+
+# --- Combo and list ---
+igBeginCombo
+igEndCombo
+igCombo_Str_arr             Combo
+igBeginListBox
+igEndListBox
+igListBox_Str_arr           ListBox
+igSelectable_Bool           Selectable
+
+# --- Drag and slider ---
+igDragFloat
+igDragFloat2
+igDragFloat3
+igDragInt
+igSliderFloat
+igSliderFloat2
+igSliderFloat3
+igSliderInt
+igSliderAngle
+igVSliderFloat
+igVSliderInt
+
+# --- Input ---
+igInputText
+igInputTextMultiline
+igInputTextWithHint
+igInputFloat
+igInputInt
+igInputDouble
+
+# --- Color ---
+igColorEdit3
+igColorEdit4
+igColorButton
+
+# --- Trees ---
+igTreeNode_Str              TreeNode
+igTreePop
+igCollapsingHeader_TreeNodeFlags    CollapsingHeader
+igSetNextItemOpen
+
+# --- Plots ---
+igPlotLines_FloatPtr        PlotLines       -values_offset -stride
+igPlotHistogram_FloatPtr    PlotHistogram   -values_offset -stride
+
+# --- Menus ---
+igBeginMenuBar
+igEndMenuBar
+igBeginMenu
+igEndMenu
+igMenuItem_Bool             MenuItem
+
+# --- Tooltips and popups ---
+igBeginTooltip
+igEndTooltip
+igSetTooltip
+igSetItemTooltip
+igBeginPopup
+igBeginPopupModal
+igEndPopup
+igOpenPopup_Str             OpenPopup
+igCloseCurrentPopup
+
+# --- Tabs ---
+igBeginTabBar
+igEndTabBar
+igBeginTabItem
+igEndTabItem
+
+# --- Item queries ---
+igIsItemHovered
+igIsItemActive
+igIsItemClicked
+igIsItemEdited
+igIsItemDeactivatedAfterEdit
+igIsAnyItemActive
+
+# --- Input queries ---
+igIsMouseClicked_Bool       IsMouseClicked
+igIsMouseDown_Nil           IsMouseDown
+igIsKeyPressed_Bool         IsKeyPressed
+igIsKeyDown_Nil             IsKeyDown
+igGetMousePos
+
+# --- Style ---
+igPushStyleColor_Vec4       PushStyleColor
+igPopStyleColor
+igPushStyleVar_Float        PushStyleVar
+igPushStyleVar_Vec2         PushStyleVarVec2
+igPopStyleVar
+igBeginDisabled
+igEndDisabled
+
+# --- Focus and scroll ---
+igSetKeyboardFocusHere
+igSetScrollHereY
+igSetItemDefaultFocus
+
+# --- Misc ---
+igGetFrameCount
+igGetTime
+
+[ImPlot]
+
+# --- Plot frame ---
+ImPlot_BeginPlot            BeginPlot
+ImPlot_EndPlot              EndPlot
+# row_ratios and col_ratios are float arrays, which phase 1.5 does not
+# marshal; they keep their NULL default, which means equal shares.
+ImPlot_BeginSubplots        BeginSubplots   -row_ratios -col_ratios
+ImPlot_EndSubplots          EndSubplots
+
+# --- Setup ---
+ImPlot_SetupAxis            SetupAxis
+ImPlot_SetupAxes            SetupAxes
+ImPlot_SetupAxisLimits      SetupAxisLimits
+ImPlot_SetupAxesLimits      SetupAxesLimits
+ImPlot_SetupAxisFormat_Str  SetupAxisFormat
+ImPlot_SetupAxisTicks_doublePtr     SetupAxisTicks
+ImPlot_SetupLegend          SetupLegend
+ImPlot_SetupMouseText       SetupMouseText
+ImPlot_SetupFinish          SetupFinish
+ImPlot_SetNextAxisLimits    SetNextAxisLimits
+ImPlot_SetNextAxesLimits    SetNextAxesLimits
+ImPlot_SetNextAxesToFit     SetNextAxesToFit
+
+# --- Items ---
+# The T* overloads are grouped under one name and dispatched on the class of
+# the data argument. See SPEC.md section 7.6.
+ImPlot_PlotLine             PlotLine
+ImPlot_PlotScatter          PlotScatter
+ImPlot_PlotStairs           PlotStairs
+ImPlot_PlotShaded           PlotShaded
+ImPlot_PlotBars             PlotBars
+ImPlot_PlotErrorBars        PlotErrorBars
+ImPlot_PlotStems            PlotStems
+ImPlot_PlotInfLines         PlotInfLines
+ImPlot_PlotHistogram        PlotHistogram
+ImPlot_PlotHistogram2D      PlotHistogram2D
+ImPlot_PlotHeatmap          PlotHeatmap
+ImPlot_PlotDigital          PlotDigital
+ImPlot_PlotText             PlotText
+ImPlot_PlotDummy            PlotDummy
+
+# --- Tools ---
+ImPlot_DragPoint            DragPoint
+ImPlot_DragLineX            DragLineX
+ImPlot_DragLineY            DragLineY
+ImPlot_DragRect             DragRect
+ImPlot_Annotation_Str       Annotation
+ImPlot_TagX_Str             TagX
+ImPlot_TagY_Str             TagY
+
+# --- Queries ---
+ImPlot_IsPlotHovered        IsPlotHovered
+ImPlot_IsAxisHovered        IsAxisHovered
+ImPlot_IsLegendEntryHovered IsLegendEntryHovered
+ImPlot_GetPlotMousePos      GetPlotMousePos
+ImPlot_GetPlotLimits        GetPlotLimits
+ImPlot_GetPlotSize          GetPlotSize
+ImPlot_GetPlotPos           GetPlotPos
+ImPlot_PlotToPixels_double  PlotToPixels
+ImPlot_PixelsToPlot_Float   PixelsToPlot
+
+# --- Colormaps ---
+ImPlot_PushColormap_Str     PushColormap
+ImPlot_PushColormap_PlotColormap    PushColormapIndex
+ImPlot_PopColormap          PopColormap
+ImPlot_AddColormap_Vec4Ptr  AddColormap
+ImPlot_ColormapScale        ColormapScale
+ImPlot_SampleColormap       SampleColormap
+ImPlot_GetColormapCount     GetColormapCount
+ImPlot_GetColormapName      GetColormapName
+
+# --- Style ---
+ImPlot_StyleColorsAuto      StyleColorsAuto
+ImPlot_StyleColorsDark      StyleColorsDark
+ImPlot_StyleColorsLight     StyleColorsLight
+ImPlot_StyleColorsClassic   StyleColorsClassic
+ImPlot_PushStyleColor_Vec4  PushStyleColor
+ImPlot_PopStyleColor        PopStyleColor
+ImPlot_PushStyleVar_Float   PushStyleVar
+ImPlot_PushStyleVar_Int     PushStyleVarInt
+ImPlot_PushStyleVar_Vec2    PushStyleVarVec2
+ImPlot_PopStyleVar          PopStyleVar
+
+# --- Diagnostics ---
+ImPlot_ShowDemoWindow       ShowDemoWindow
+ImPlot_ShowMetricsWindow    ShowMetricsWindow

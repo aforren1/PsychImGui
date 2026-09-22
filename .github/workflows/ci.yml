@@ -1,0 +1,307 @@
+name: CI
+
+# Strategy, the same shape as the reference mex-msgpack workflow: BUILD on the
+# oldest supported release, then TEST that exact binary on the newest release,
+# and RELEASE only the floor-built binaries.
+#
+#   * MATLAB mex is forward-compatible, so one floor build per OS covers every
+#     newer MATLAB.
+#   * Octave has two binary-compatible eras, so one MEX is built per era:
+#       - 6.4 build  -> loads on Octave 6.4 to 9.4, which is Psychtoolbox's range
+#       - 10.1 build -> links the new liboctmex, which covers 10 and later
+#   * The runners have no GPU. Every job runs the renderer='none' suite, which
+#     needs neither a GPU nor Psychtoolbox. The OpenGL 3 backend is compiled in
+#     regardless, because the MEX links it, and one job runs the native smoke
+#     test against Mesa's llvmpipe under Xvfb. That is the only automated GL
+#     coverage this project gets; the Psychtoolbox test in tests/gl needs a real
+#     window and runs on developer machines.
+#
+# third_party: cimgui and cimplot are submodules, and checkout asks for them
+# with submodules: recursive. The "Fetch pinned third_party" step is a no-op
+# when they are populated and clones the commits recorded in
+# third_party/PINS.md otherwise, so a checkout without submodules still builds.
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']          # pushing a v* tag also publishes a GitHub Release
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  # =============================================================== MATLAB =====
+  matlab-build:
+    name: build · ${{ matrix.os }} · MATLAB ${{ matrix.release }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-22.04, release: R2021b, arch: glnxa64, asset: psychimgui-matlab-linux }
+          - { os: windows-2022, release: R2022b, arch: win64,   asset: psychimgui-matlab-windows }
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - name: Fetch pinned third_party (no-op once they are submodules)
+        shell: bash
+        run: bash tools/fetch_third_party.sh
+
+      # gl_current.cpp and tools/smoke_gl.cpp include GL/glx.h and X11/Xlib.h.
+      - name: Install OpenGL and X11 headers
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libgl1-mesa-dev libx11-dev
+
+      - uses: matlab-actions/setup-matlab@v3
+        with:
+          release: ${{ matrix.release }}
+      - name: Build
+        uses: matlab-actions/run-command@v3
+        env:
+          MLM_LICENSE_TOKEN: ${{ secrets.MLM_LICENSE_TOKEN }}   # private repos only
+        with:
+          command: build
+      - name: Test (renderer='none')
+        uses: matlab-actions/run-command@v3
+        env:
+          MLM_LICENSE_TOKEN: ${{ secrets.MLM_LICENSE_TOKEN }}
+        with:
+          command: "cd('tests'); run_tests"
+
+      # No GPU on the Windows runner, so smoke_gl is compile coverage there.
+      # CMake builds it as part of the library build above.
+      - name: Check smoke_gl compiled (Windows, compile only)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: test -f build-matlab-windows/Release/smoke_gl.exe
+
+      - name: Upload package
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.asset }}
+          path: |
+            dist/${{ matrix.arch }}/PsychImGui.*
+            m/
+            README.md
+            SPEC.md
+          if-no-files-found: error
+
+  matlab-test-forward:
+    name: test · ${{ matrix.os }} · MATLAB ${{ matrix.release }}
+    needs: matlab-build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest,  release: latest, asset: psychimgui-matlab-linux }
+          - { os: windows-latest, release: latest, asset: psychimgui-matlab-windows }
+    steps:
+      - uses: actions/checkout@v7      # tests/ only; no rebuild, no third_party
+      - uses: matlab-actions/setup-matlab@v3
+        with:
+          release: ${{ matrix.release }}
+      - name: Fetch floor-built package
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ matrix.asset }}
+          path: .                 # restores dist/<arch>/ and m/ in place
+      - name: Test floor binary (no rebuild)
+        uses: matlab-actions/run-command@v3
+        env:
+          MLM_LICENSE_TOKEN: ${{ secrets.MLM_LICENSE_TOKEN }}
+        with:
+          command: "cd('tests'); run_tests"
+
+  # =============================================================== Octave =====
+  # One MEX per binary-compatible era. Both gnuoctave images already carry
+  # cmake, g++, and the GL and X11 headers; the guards below cover an image
+  # that does not.
+  octave-linux:
+    name: build · linux · Octave ${{ matrix.floor }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { floor: '6.4.0',  asset: psychimgui-octave-linux-6.4 }   # covers 6.4 to 9.4
+          - { floor: '10.1.0', asset: psychimgui-octave-linux-10 }    # covers 10 and later
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - name: Fetch pinned third_party (no-op once they are submodules)
+        run: bash tools/fetch_third_party.sh
+      - name: Build and test
+        run: |
+          docker run --rm -i -v "$PWD:/work" -w /work "gnuoctave/octave:${{ matrix.floor }}" bash -s <<'EOF'
+          status=0
+          {
+            set -e
+            command -v cmake >/dev/null 2>&1 || {
+              apt-get update
+              apt-get install -y --no-install-recommends cmake build-essential
+            }
+            [ -f /usr/include/GL/glx.h ] || {
+              apt-get update
+              apt-get install -y --no-install-recommends libgl1-mesa-dev libx11-dev
+            }
+            octave --no-gui --eval "build"
+            cd tests
+            octave --no-gui --eval "run_tests"
+          } || status=$?
+          # The container runs as root; let the runner user read the output.
+          chmod -R a+rX /work/dist /work/build-octave-linux 2>/dev/null || true
+          exit $status
+          EOF
+      - name: Upload package
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.asset }}
+          path: |
+            dist/glnxa64/PsychImGui.*
+            m/
+            README.md
+            SPEC.md
+          if-no-files-found: error
+
+  octave-linux-test-forward:
+    name: test · linux · Octave ${{ matrix.octave }} (from ${{ matrix.asset }})
+    needs: octave-linux
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { asset: psychimgui-octave-linux-6.4, octave: '9.4.0'  }   # top of the 6.x era
+          - { asset: psychimgui-octave-linux-10,  octave: '11.3.0' }   # liboctmex spans 10 to 11
+    steps:
+      - uses: actions/checkout@v7      # tests/ only; no rebuild, no third_party
+      - name: Fetch built package
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ matrix.asset }}
+          path: .
+      - name: Test on Octave ${{ matrix.octave }} (no rebuild)
+        run: |
+          docker run --rm -i -v "$PWD:/work" -w /work/tests "gnuoctave/octave:${{ matrix.octave }}" bash -s <<'EOF'
+          octave --no-gui --eval "run_tests"
+          EOF
+
+  # MSYS2 is rolling, so there is no old Octave to pin here: build, test, and
+  # ship the current one.
+  octave-windows:
+    name: build · windows · Octave (MSYS2)
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - name: Set up MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            git
+            mingw-w64-x86_64-octave
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-ninja
+      - name: Fetch pinned third_party (no-op once they are submodules)
+        run: bash tools/fetch_third_party.sh
+      - name: Build and test
+        env:
+          # cmake's "MinGW Makefiles" generator refuses to run while sh.exe is
+          # on PATH, and MSYS2 always has one. build.m honors this override and
+          # then leaves the build program to CMake.
+          MEX_CMAKE_GENERATOR: Ninja
+        run: |
+          octave --no-gui --eval "build"
+          cd tests && octave --no-gui --eval "run_tests"
+      - name: Check smoke_gl compiled (compile only, no GPU on the runner)
+        run: test -f build-octave-windows/smoke_gl.exe
+      - name: Upload package
+        uses: actions/upload-artifact@v7
+        with:
+          name: psychimgui-octave-windows
+          path: |
+            dist/win64/PsychImGui.mex
+            m/
+            README.md
+            SPEC.md
+          if-no-files-found: error
+
+  # ============================================================== smoke GL ====
+  # The only automated OpenGL coverage. smoke_gl links src/core without an
+  # engine, creates a hidden X window, and runs Init, three frames with widgets,
+  # and Shutdown against Mesa's software rasterizer.
+  smoke-gl-linux:
+    name: smoke_gl · ubuntu · Mesa llvmpipe
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - name: Fetch pinned third_party (no-op once they are submodules)
+        run: bash tools/fetch_third_party.sh
+      - name: Install the build and software OpenGL packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake g++ libgl1-mesa-dev libx11-dev xvfb libgl1-mesa-dri mesa-utils
+      - name: Configure and build
+        run: |
+          cmake -S . -B build-ci -DCMAKE_BUILD_TYPE=Release -DPSYCHIMGUI_SMOKE_GL=ON
+          cmake --build build-ci --parallel
+      - name: smoke_gl, headless path (renderer='none')
+        run: ./build-ci/smoke_gl none
+      - name: smoke_gl, OpenGL 3 backend on llvmpipe under Xvfb
+        env:
+          LIBGL_ALWAYS_SOFTWARE: '1'
+        run: xvfb-run -a ./build-ci/smoke_gl
+
+  # ============================================================== Release =====
+  # On a v* tag, publish the floor-built packages. Runs only after every build,
+  # forward test, and the GL smoke test passes, so a release implies the shipped
+  # binaries were confirmed forward-compatible.
+  release:
+    name: Publish release
+    needs:
+      - matlab-build
+      - matlab-test-forward
+      - octave-linux
+      - octave-linux-test-forward
+      - octave-windows
+      - smoke-gl-linux
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download packages
+        uses: actions/download-artifact@v8
+        with:
+          path: packages
+          pattern: psychimgui-*
+      - name: Zip each package
+        run: |
+          cd packages
+          for d in */; do
+            name="${d%/}"
+            (cd "$d" && zip -qr "../${name}.zip" .)
+          done
+          ls -la *.zip
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" packages/*.zip \
+            --repo "${{ github.repository }}" \
+            --title "PsychImGui ${{ github.ref_name }}" \
+            --generate-notes

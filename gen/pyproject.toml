@@ -1,0 +1,9 @@
+[project]
+name = "psychimgui-gen"
+version = "0.1.0"
+description = "Binding generator for psychimgui. Standard library only."
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.uv]
+package = false
