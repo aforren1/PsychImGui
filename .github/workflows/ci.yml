@@ -297,7 +297,7 @@ jobs:
   octave-macos:
     name: build · macos · Octave (Homebrew)
     runs-on: macos-latest
-    continue-on-error: true
+    # Blocking since its first passing run on 2026-09-22.
     steps:
       - uses: actions/checkout@v7
         with:

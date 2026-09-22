@@ -176,7 +176,15 @@ function build(varargin)
             % which means the export list MATLAB chose no longer matched a
             % classic mexFunction file. Appending to the library list leaves
             % MATLAB's own LDFLAGS, and with them its export list, untouched.
-            gllib = {'LINKLIBS=$LINKLIBS -framework OpenGL'};
+            % The mex -v log from the macOS runner showed the cause: MATLAB's
+            % clang++ configuration appends LINKEXPORTCPP for every C++ MEX
+            % file. That is -Wl,-U for the three C++ Data API entry points plus
+            % -exported_symbols_list cppMexFunction.map, on top of the classic
+            % mexFunction.map. The classic ld64 tolerated the undefined exports
+            % because of -U; the linker in Xcode 26 does not and reports them
+            % as <initial-undefines>. This is a classic mexFunction file, so the
+            % C++ export set is simply wrong for it and is cleared here.
+            gllib = {'LINKLIBS=$LINKLIBS -framework OpenGL', 'LINKEXPORTCPP='};
             if ~isempty(getenv('CI'))
                 % Nobody here has a Mac. The verbose link line in the CI log
                 % is the only way to see what mex did.
