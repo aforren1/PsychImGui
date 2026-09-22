@@ -13,14 +13,12 @@ function test_helpers()
 %   made. tests/gl/test_gl_render covers the same helpers against a real
 %   window.
 
-    % run_tests takes the stub folder off the path once, after every test. This
-    % file neither removes it nor calls rehash: both are path and function
-    % cache churn in the middle of a run with a MEX loaded, and they are the
-    % only calls in the suite that no other test makes. See SPEC.md 14.6.
-    tf_screen('install');
-
+    % run_tests puts the stub folder on the path before the MEX is loaded and
+    % takes it off after the last test. This file changes nothing on the path
+    % and never calls rehash: a path change while a locked MEX is loaded sends
+    % Octave 10.1 on Linux into endless recursion. See SPEC.md 14.6.
     if ~tf_screen('active')
-        t_ok('the Screen stub shadows the real Screen', false);
+        t_ok('the Screen stub is on the path (run this file through run_tests)', false);
         return;
     end
     t_ok('the Screen stub shadows the real Screen', true);

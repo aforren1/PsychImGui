@@ -61,9 +61,17 @@ function out = PsychImGuiSetup(mode)
     end
 
     % m/ first, then dist in front of it. addpath prepends, so the directory
-    % added last wins the name PsychImGui.
-    addpath(mdir);
-    addpath(distdir, '-begin');
+    % added last wins the name PsychImGui. Both calls are skipped when the
+    % path is already right: PsychImGuiOpen calls this on every open, and a
+    % load path change while the locked MEX is loaded sends Octave 10.1 on
+    % Linux into endless recursion (SPEC.md section 14.6). addpath of a
+    % directory that is already present still counts as a change there.
+    if ~local_on_path(mdir)
+        addpath(mdir);
+    end
+    if ~local_on_path(distdir)
+        addpath(distdir, '-begin');
+    end
 
     if nargout > 0
         out = distdir;
@@ -88,5 +96,29 @@ function a = local_arch()
         end
     else
         a = 'glnxa64';
+    end
+end
+
+function tf = local_on_path(dir)
+% Path entries are compared as normalized absolute directory names. Windows
+% file systems are case insensitive, so the comparison is too there.
+    entries = strsplit(path(), pathsep());
+    want = local_norm(dir);
+    tf = false;
+    for i = 1:numel(entries)
+        if strcmp(local_norm(entries{i}), want)
+            tf = true;
+            return;
+        end
+    end
+end
+
+function s = local_norm(dir)
+    s = strrep(dir, '/', filesep);
+    while numel(s) > 1 && s(end) == filesep
+        s = s(1:end-1);
+    end
+    if ispc
+        s = lower(s);
     end
 end

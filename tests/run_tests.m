@@ -18,6 +18,13 @@ function run_tests()
     addpath(fullfile(root, 'm'));
     PsychImGuiSetup();   % dist/<arch> ahead of m/, or a clear error
 
+    % The recording Screen stub that test_helpers needs goes on the path now,
+    % before the first call loads the MEX, and comes off once at the very end.
+    % Octave 10.1 on Linux recurses without end in out_of_date_check when the
+    % load path changes while a locked MEX is loaded, so every path change in
+    % this run happens while no MEX is loaded. See SPEC.md section 14.6.
+    tf_screen('install');
+
     % exist(...,'file') answers 2 when m/PsychImGui.m is also on the path, so
     % test the MEX by calling it instead of by its file type.
     try
@@ -49,9 +56,8 @@ function run_tests()
         fprintf('  %d passed, %d failed\n', TST_PASS - p0, TST_FAIL - f0);
     end
 
-    % test_helpers puts a recording Screen stub on the path. Take it off
-    % here, after the last test and the last Shutdown, rather than in the
-    % middle of the run. See SPEC.md section 14.6.
+    % The Screen stub comes off the path here, after the last test and the
+    % last Shutdown. Between install and cleanup nothing changes the path.
     try
         tf_screen('cleanup');
     catch
