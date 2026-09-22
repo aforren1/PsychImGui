@@ -73,9 +73,16 @@ function build(varargin)
         % build program, and naming make would break the Ninja generator.
         cfg = [cfg octave_toolchain_flags(isempty(gen))];
     elseif is_octave
+        % mkoctfile -p CXX may answer with flags attached, for example
+        % "clang++ -std=gnu++17" from Homebrew Octave on macOS. CMake wants
+        % the program alone in CMAKE_CXX_COMPILER; the rest goes to the flags.
         cxx = strtrim(oct_prog('CXX'));
         if ~isempty(cxx)
-            cfg = [cfg '-DCMAKE_CXX_COMPILER="' resolve_compiler(cxx) '" '];
+            parts = strsplit(cxx);
+            cfg = [cfg '-DCMAKE_CXX_COMPILER="' resolve_compiler(parts{1}) '" '];
+            if numel(parts) > 1
+                cfg = [cfg '-DCMAKE_CXX_FLAGS="' strjoin(parts(2:end), ' ') '" '];
+            end
         end
     end
     cfg = [cfg '..'];
@@ -162,7 +169,19 @@ function build(varargin)
         if is_octave
             gllib = {};
         else
-            gllib = {'LDFLAGS=$LDFLAGS -framework OpenGL'};
+            % The framework goes through LINKLIBS, not LDFLAGS. The first
+            % macOS CI run linked with `LDFLAGS=$LDFLAGS -framework OpenGL`
+            % and failed on undefined _mexFunctionAdapter, _mexCreateMexFunction
+            % and _mexDestroyMexFunction, the C++ MEX Data API entry points,
+            % which means the export list MATLAB chose no longer matched a
+            % classic mexFunction file. Appending to the library list leaves
+            % MATLAB's own LDFLAGS, and with them its export list, untouched.
+            gllib = {'LINKLIBS=$LINKLIBS -framework OpenGL'};
+            if ~isempty(getenv('CI'))
+                % Nobody here has a Mac. The verbose link line in the CI log
+                % is the only way to see what mex did.
+                args = [{'-v'}, args];
+            end
         end
     else
         % -ldl for the backend's dlopen based GL loader. Harmless on glibc 2.34

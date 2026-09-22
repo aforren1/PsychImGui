@@ -1,4 +1,13 @@
 cmake_minimum_required(VERSION 3.16)
+
+# MATLAB links the MEX with -mmacosx-version-min=11.0, so the static library
+# has to target the same version, or the linker warns for every object that
+# it was built for a newer macOS than it is linking for. Must precede project().
+if(APPLE AND NOT DEFINED CMAKE_OSX_DEPLOYMENT_TARGET)
+  set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING
+      "Oldest macOS the library runs on, matched to MATLAB's mex" FORCE)
+endif()
+
 project(psychimgui_deps CXX)
 
 # This file builds only the static libraries that the MEX links. build.m runs

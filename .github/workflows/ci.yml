@@ -331,7 +331,8 @@ jobs:
   smoke-gl-macos:
     name: smoke_gl · macos · CGL offscreen
     runs-on: macos-latest
-    continue-on-error: true
+    # Blocking since its first run passed on 2026-09-22 (Apple Software
+    # Renderer, GL 2.1, the fixed function backend).
     steps:
       - uses: actions/checkout@v7
         with:
