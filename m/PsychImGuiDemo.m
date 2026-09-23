@@ -38,8 +38,8 @@ function PsychImGuiDemo(nFrames, opts)
 %
 %   Needs Psychtoolbox. The demo opens with PsychDefaultSetup(2), so colors
 %   are in the normalized 0 to 1 range, as in every Psychtoolbox demo. The
-%   window preferences come from tests/gl/ptb_test_window, which skips the
-%   display sync tests, so the demo starts fast. An experiment that measures
+%   window preferences come from m/private/psychimgui_demo_window, which
+%   skips the display sync tests, so the demo starts fast. An experiment that measures
 %   timing must not do that.
 %
 %   See also PsychImGuiOpen, PsychImGuiFrame, PsychImGuiClose, PsychImGuiGL,
@@ -61,9 +61,10 @@ function PsychImGuiDemo(nFrames, opts)
     end
     animate = isfield(opts, 'animate') && ~isempty(opts.animate) && opts.animate;
 
-    here = fileparts(mfilename('fullpath'));
-    root = fileparts(here);
-    addpath(fullfile(root, 'tests', 'gl'));
+    % The window and pixel helpers are in m/private, so the demo changes no
+    % path. PsychImGuiSetup changes it only when it is not right yet. A path
+    % change while the locked MEX is loaded crashes Octave 10.1 on Linux, and
+    % a second run of the demo in one session would otherwise do that.
     PsychImGuiSetup();
 
     if exist('Screen', 'file') == 0
@@ -81,7 +82,7 @@ function PsychImGuiDemo(nFrames, opts)
         % come before the window opens.
         PsychDefaultSetup(2);
 
-        [win, rect] = ptb_test_window(winRect);
+        [win, rect] = psychimgui_demo_window(winRect);
         W = rect(3);
         H = rect(4);
         % Panel sizes follow the window, within limits that keep them usable
@@ -160,7 +161,7 @@ function PsychImGuiDemo(nFrames, opts)
                 % a flat gray square and raises nothing. Measure the first
                 % frame instead of trusting it. Read the back buffer before the
                 % flip, because after a flip its contents are undefined.
-                gaborStd = gabor_std(win, dst);
+                gaborStd = psychimgui_gabor_std(win, dst);
                 fprintf('PsychImGuiDemo: Gabor pixel std %.4f at contrast %.2f\n', ...
                         gaborStd, contrast);
                 % Measured on the development machine: 0.0734 with these

@@ -7,8 +7,8 @@ function file = CaptureReadmeScreenshot(file)
 %   Runs PsychImGuiDemo in a 1280x720 window for 520 frames, with the
 %   contrast moving along a slow sine so the ImPlot trace fills, and
 %   writes the last frame with Screen('GetImage') before its flip. The window
-%   comes from tests/gl/ptb_test_window, which skips the sync tests and the
-%   splash screen. Run it after a change to the demo or the look of the GUI:
+%   comes from m/private/psychimgui_demo_window, which skips the sync tests
+%   and the splash screen. Run it after a change to the demo or the look of the GUI:
 %
 %       cd tools; CaptureReadmeScreenshot
 %
@@ -24,7 +24,13 @@ function file = CaptureReadmeScreenshot(file)
         mkdir(outdir);
     end
 
-    addpath(fullfile(root, 'm'));
+    % This is a source-tree tool and never ships, so it may put m/ on the
+    % path. It does so only when the demo is not reachable yet: a second run
+    % in one session then changes nothing, which keeps the Octave 10.1 rule of
+    % SPEC.md section 14.6 (no path change while the locked MEX is loaded).
+    if exist('PsychImGuiDemo', 'file') == 0
+        addpath(fullfile(root, 'm'));
+    end
     PsychImGuiDemo(520, struct('rect', [0 0 1280 720], 'capture', file, ...
                                'animate', true));
 

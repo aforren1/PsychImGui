@@ -57,7 +57,10 @@ help lists them.
 - `SPEC.md`: the status line at the top names the phase that is implemented.
   Anything that changed against the specification gets a row in section 14.
 - `README.md`: new subcommands or helpers appear where their group is
-  described.
+  described. The asset table under "Install" matches the table below.
+- `DEV.md`: new build options, tests, or CI jobs.
+- `PsychImGuiSetup.m`: if you changed `m/PsychImGuiSetup.m`, copy it over the
+  root file. `tests/test_setup.m` fails when the two differ.
 - `third_party/PINS.md`: only if a submodule or a pinned clone moved. Then
   also confirm that ImPlot, ImPlot3D, and ImGuiFileDialog still compile
   against `third_party/cimgui/imgui`, and run `bash tools/fetch_third_party.sh`
@@ -96,13 +99,18 @@ gh release view v0.2.0
 gh release download v0.2.0 --pattern "psychimgui-matlab-windows.zip" --dir %TEMP%\rel
 ```
 
-Unzip into an empty folder and, in a fresh MATLAB:
+Unzip into an empty folder and follow the README install steps literally,
+in a fresh MATLAB:
 
 ```matlab
-addpath('m'); PsychImGuiSetup(); PsychImGui('Version')
+addpath('C:\path\to\the\unzipped\folder');
+PsychImGuiSetup;
+disp(PsychImGui('Version'))
+PsychImGuiDemo(90)
 ```
 
-The `psychimgui` field must show the new version. Do the same for one
+The `psychimgui` field must show the new version, and the demo must not
+print `PsychImGuiDemo failed`. Do the same for one
 Octave zip when you changed anything Octave specific.
 
 ## What a release contains
@@ -117,8 +125,13 @@ Octave zip when you changed anything Octave specific.
 | `psychimgui-matlab-macos.zip` | MATLAB R2023b, `macos-latest` | MATLAB R2023b and later on Apple silicon Macs |
 | `psychimgui-octave-macos.zip` | Homebrew Octave, `macos-latest` | That Octave and later, on Apple silicon Macs |
 
-Each zip holds `dist/<arch>/PsychImGui.<mexext>`, `m/`, `README.md`, and
-`SPEC.md`, and is a complete install for that engine and platform.
+Each zip holds `PsychImGuiSetup.m`, `dist/<arch>/PsychImGui.<mexext>`, `m/`
+(with `m/private/`, the demos' helpers), `docs/images/psychimgui-demo.png`
+(the README screenshot, so the README renders from the unzipped folder),
+`README.md`, `SPEC.md`, and `LICENSE`, with no top folder. It is a complete
+install for that engine and platform. The `path:` list of each `Upload
+package` step in `.github/workflows/ci.yml` sets these files; change the
+list there and this paragraph together.
 
 Intel Macs are not covered. The MATLAB floor on macOS is R2023b, the first
 release with a native Apple silicon build, and `macos-latest` is Apple silicon,

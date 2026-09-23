@@ -320,7 +320,7 @@ Section 14.10 says why the binding checks this itself.
 | `m/PsychImGuiFrame.m` | `ig = PsychImGuiFrame('Begin', ig)` and `PsychImGuiFrame('End', ig)`. Poll, `BeginOpenGL`, `SetContext`, `NewFrame`; then `Render`, `EndOpenGL`. With `ig.stereo`, `End` renders eye 0 and submits eye 1 with `RenderAgain`, each in its own region after `SelectStereoDrawBuffer`. The older `('Begin', win, kq)` form still works. |
 | `m/PsychImGuiClose.m` | `PsychImGuiClose(ig)`. `Shutdown` of the handle's context inside one OpenGL region of its window, then stops the queue. Other windows' contexts stay open. Safe to call twice and safe after the window has closed, so it suits an `onCleanup`. |
 | `m/PsychImGuiGL.m` | `PsychImGuiGL(ig, 'Subcommand', ...)`. One subcommand inside the OpenGL region, for calls such as `AddFontFromFileTTF` outside a frame, after `SetContext` for a handle from `PsychImGuiOpen`. Calls straight through when a frame already opened the region. |
-| `m/PsychImGuiSetup.m` | Puts `dist/<arch>` ahead of `m/` on the path. `('arch')`, `('distdir')`, and `('nocheck')` for the parts of that. |
+| `m/PsychImGuiSetup.m`, `PsychImGuiSetup.m` | Puts `dist/<arch>` ahead of `m/` on the path. `('arch')`, `('distdir')`, and `('nocheck')` for the parts of that. `'save'` runs `savepath` afterwards; `'remove'` shuts down every context, unloads the MEX, then takes `dist/<arch>`, `m/`, and the package root off the path, and `('remove', 'save')` saves that. Two identical copies, one in the package root for a fresh unzip. Section 14.12. |
 | `m/PsychImGuiInput.m` | `Start`, `Poll`, `Stop`, `Empty`. Wraps `KbQueueCreate`, `KbQueueStart`, `KbEventGet`, `GetMouse`, `GetMouseWheel`, `GetSecs`. Returns the input struct of section 6.1. |
 | `m/PsychImGuiKeymap.m` | Builds the 256-entry PTB keycode to `ImGuiKey` table. |
 | `m/PsychImGuiOp.m` | Generated struct of opcodes for the fast path. A namespace is a nested struct: `op.ImPlot.BeginPlot`, `op.DrawList.AddLine`. |
@@ -874,7 +874,10 @@ what differs.
 PsychImGui/
   CMakeLists.txt          builds imgui_static (imgui core + imgui_impl_opengl3 + optional Tracy)
   build.m                 MATLAB/Octave build driver, mirrors the user's mex-msgpack pattern
-  README.md               how to build and run the demo
+  PsychImGuiSetup.m       the same file as m/PsychImGuiSetup.m, for a fresh unzip (14.12)
+  README.md               install and use, for users (14.12)
+  DEV.md                  build, test, CI, and profiling, for contributors (14.12)
+  RELEASING.md            the release checklist
   SPEC.md                 this document
   src/
     psychimgui.cpp        mexFunction, dispatch, state, lifecycle, input, render
@@ -979,6 +982,9 @@ path runs in `run_tests.m` under both engines:
   display, and close cycle, and a path outside ASCII.
 - `test_helpers_p3.m` (phase 3): the helpers with two windows and with a
   stereo window, against the recording `Screen` stub.
+- `test_setup.m` (14.12): the root and `m/` copies of `PsychImGuiSetup.m`
+  are identical, and install, `remove` with the MEX locked, and a second
+  `remove` against a scratch package in `tempdir`.
 
 ### 11.2 With PTB and a GPU
 
@@ -1013,7 +1019,8 @@ Every script that opens a PTB window goes through one helper,
 `tests/gl/ptb_test_window.m`, which sets `Screen('Preference',
 'SkipSyncTests', 2)` and `Screen('Preference', 'VisualDebugLevel', 0)` before
 `PsychImaging('OpenWindow')`, so a test run pays for neither the display
-timing calibration nor the startup splash screen.
+timing calibration nor the startup splash screen. The shipped demos use a
+copy, `m/private/psychimgui_demo_window.m` (14.12).
 
 ### 11.3 Interactive
 
@@ -1320,7 +1327,7 @@ Other:
 | The opcode numbers of many subcommands changed. | The new names sort into the one table. `PsychImGuiOp` is generated from the same table, as section 9.1 says. |
 | `tests/gl/test_gl_render.m` and `test_gl_demo_gabor.m` skip when `Screen` does not load, as `test_gl_phase2` does. `tests/gl/ptb_test_window.m` takes a stereo mode, a screen, and `'full'`. | They counted a `Screen` that does not load under Octave on Windows as a failure. |
 | `tools/smoke_gl.cpp` opens a second context in the same GL context, interleaves frames, and submits each frame twice. | The Linux CI job runs `smoke_gl` against Mesa, which is the only GL coverage CI has for the context switch and `RenderAgain`. |
-| `PsychImGuiDemo(n, opts)` takes a window rectangle, a capture file, and an animated contrast, and `tools/CaptureReadmeScreenshot.m` makes `docs/images/psychimgui-demo.png` with them at 1280x720. | The README shows the demo, and the image has to be reproducible after the look of the GUI changes. The release zips do not carry it. |
+| `PsychImGuiDemo(n, opts)` takes a window rectangle, a capture file, and an animated contrast, and `tools/CaptureReadmeScreenshot.m` makes `docs/images/psychimgui-demo.png` with them at 1280x720. | The README shows the demo, and the image has to be reproducible after the look of the GUI changes. The release zips carry the image since 14.12, not the tool. |
 
 ImAnim stays out of phase 3. Section 5.4 put it in phase 3 on the condition
 that a libclang generator path exists, and none does: the generator reads
@@ -1351,5 +1358,16 @@ Two fixes after the first phase 3 CI run (35863090083):
 
 | Deviation | Reason |
 |---|---|
-| The Linux MATLAB MEX carries its own libstdc++: `build.m` adds `-Wl,-Bstatic -lstdc++ -Wl,-Bdynamic` to the library list for MATLAB on Linux only; Octave and the other platforms are unchanged. A first attempt with `LDFLAGS=$LDFLAGS -static-libstdc++` changed nothing (run 35867662455), because MATLAB's `LINKLIBS` template names `-lstdc++` explicitly after the caller's libraries, and an explicit dynamic `-lstdc++` overrides the driver flag; the static archive placed before it binds every std symbol first. | ImGuiFileDialog uses the standard containers, and with GCC 11's headers every `std::vector` refers to `std::__throw_bad_array_new_length`, a `GLIBCXX_3.4.29` symbol. MATLAB R2021b, the Linux floor, bundles an older libstdc++, so the MEX built fine and then failed to load; `run_tests` reported "not built or not callable". `objdump -T` on a WSL build with the same GCC showed that one symbol as the only `3.4.29` requirement. Carrying the runtime in the MEX is the usual answer for a MEX that must load on older MATLAB releases. |
+| The Linux MATLAB MEX carries its own libstdc++: `build.m` passes `LINKLIBS=-Wl,-Bstatic -lstdc++ -Wl,-Bdynamic $LINKLIBS` to mex for MATLAB on Linux only (mex rejects linker flags as bare arguments, so they ride inside the variable); Octave and the other platforms are unchanged. A first attempt with `LDFLAGS=$LDFLAGS -static-libstdc++` changed nothing (run 35867662455), because MATLAB's `LINKLIBS` template names `-lstdc++` explicitly after the caller's libraries, and an explicit dynamic `-lstdc++` overrides the driver flag; the static archive placed before it binds every std symbol first. | ImGuiFileDialog uses the standard containers, and with GCC 11's headers every `std::vector` refers to `std::__throw_bad_array_new_length`, a `GLIBCXX_3.4.29` symbol. MATLAB R2021b, the Linux floor, bundles an older libstdc++, so the MEX built fine and then failed to load; `run_tests` reported "not built or not callable". `objdump -T` on a WSL build with the same GCC showed that one symbol as the only `3.4.29` requirement. Carrying the runtime in the MEX is the usual answer for a MEX that must load on older MATLAB releases. |
 | `test_filedialog` strips a leading `/private` from the path the dialog reports before comparing it with the directory it created. | On macOS, `tempdir` is under `/var`, a symbolic link into `/private/var`, and the dialog reports the resolved path, which is 8 characters longer. The Homebrew Octave job failed only that check, with 73 characters against 65. The check is about the characters outside ASCII surviving, not about the link. |
+
+### 14.12 Install from a release zip, and the documents
+
+| Deviation | Reason |
+|---|---|
+| `PsychImGuiSetup.m` ships twice, byte for byte: at the package root and in `m/`. Each copy takes the package root from its own location: its own folder when that folder holds `m/PsychImGuiOpen.m`, else the parent. `tests/test_setup.m` fails when the copies differ. | A user who unzips a release has nothing on the path, and the only setup function lived in `m/`, so the first step was `addpath` of an inner folder. The root copy makes `addpath(folder); PsychImGuiSetup`, `run(fullfile(folder, 'PsychImGuiSetup.m'))`, and `cd(folder); PsychImGuiSetup` work. A thin root wrapper that calls the `m/` copy by name cannot work: a function that calls its own name recurses, and the current folder comes first in the lookup, so with the package root as the current folder every caller reaches the root file. The sibling projects PsychLVGL and PsychNanoVG ship the same two copies with the same test. |
+| `PsychImGuiSetup` takes `'save'`, alone or as a second argument, and `'remove'`. `remove` takes `dist/<arch>`, `m/`, and the package root off the path; before any `rmpath` it calls `Shutdown('all')` when `mislocked('PsychImGui')`, then clears the MEX (`clear -f` under Octave), and when the MEX is still locked it warns `psychimgui:StillLoaded` and leaves the path alone. A package that is not on the path is a no-op, and `remove` returns whether it changed the path. `'save'` runs `savepath` and warns `psychimgui:SavePath` when that fails. | Users need a way to take the package off the path and to keep it on without calling `savepath` by hand. The order inside `remove` follows 14.6: a path change under a locked MEX sends Octave 10.1 on Linux into endless recursion. Octave has no `inmem`, so `mislocked` is the test in both engines. The package root comes off too, because the README install step puts it on. Measured on Windows: MATLAB R2023a and Octave 10.1 both report `mislocked` 1 after `Init` and 0 after `remove`, and a second `remove` changes nothing. |
+| `psychimgui:NotBuilt` in a folder without `build.m` says to download the zip for this engine and platform, not to run `build`. | A release zip has no `build.m`. The usual cause there is the zip of another engine or operating system. |
+| The shipped demos call `m/private/psychimgui_demo_window.m` and `m/private/psychimgui_gabor_std.m`, copies of `tests/gl/ptb_test_window.m` and `tests/gl/gabor_std.m`, and no longer call `addpath(fullfile(root, 'tests', 'gl'))`. The test copies stay for the GL tests. `tools/CaptureReadmeScreenshot.m` keeps its `addpath` of `m/`, because it is a source-tree tool that never ships, and runs it only when `PsychImGuiDemo` is not reachable yet. | A zip of the old layout had no `tests/gl`, so `PsychImGuiDemo` ran into `Undefined function 'ptb_test_window'`, which the demo's own `catch` printed and then returned normally. Shipping `tests/gl` would have fixed that and kept the real fault: a shipped function that calls `addpath` while the locked MEX is loaded is the Octave 10.1 crash of 14.6, and a demo run a second time in one session does exactly that, because `addpath` of a directory already present still counts as a change. Private functions need no path entry, and their names cannot collide with the test copies. No shipped M-file changes the path at run time now, except `PsychImGuiSetup`, which changes it only when the order is wrong or on `remove`, after it has unloaded the MEX. Measured: two `PsychImGuiDemo(60)` runs in one MATLAB session leave `path` unchanged. |
+| Every release artifact also carries `PsychImGuiSetup.m` and `docs/images/psychimgui-demo.png`. | The first is the install entry point above. The second makes the README image render from an unzipped folder; it is 4 upload steps in `ci.yml`, one of them a matrix over three MATLAB platforms. |
+| `README.md` is for users: what the binding is, install from a release zip, a first example in 22 lines with the helpers, the demos, the how-to sections, requirements, and where to go next. Build, tests, CI, Tracy, the generator, and the layout moved to `DEV.md` unchanged. | The README opened with build and test material, and the use in an experiment started after 230 lines. Section 10.1 names `README.md` as "how to build and run the demo"; that role is `DEV.md` now. |

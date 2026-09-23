@@ -35,7 +35,7 @@ function PsychImGuiStereoDemo(stereoMode, nFrames, winRect)
 %   is the left eye, so the panel responds to the mouse there.
 %
 %   Needs Psychtoolbox. The window preferences come from
-%   tests/gl/ptb_test_window, which skips the display sync tests; an
+%   m/private/psychimgui_demo_window, which skips the display sync tests; an
 %   experiment that measures timing must not do that.
 %
 %   See also PsychImGuiDemo, PsychImGuiFrame, PsychImGuiOpen.
@@ -47,9 +47,7 @@ function PsychImGuiStereoDemo(stereoMode, nFrames, winRect)
         winRect = [];
     end
 
-    here = fileparts(mfilename('fullpath'));
-    root = fileparts(here);
-    addpath(fullfile(root, 'tests', 'gl'));
+    % No addpath: the window helper is in m/private. See PsychImGuiDemo.
     PsychImGuiSetup();
     if exist('Screen', 'file') == 0
         error('psychimgui:NoPTB', ...
@@ -85,7 +83,7 @@ function PsychImGuiStereoDemo(stereoMode, nFrames, winRect)
             % both displays and each eye gets one of them.
             screenid = 0;
         end
-        [win, rect] = ptb_test_window(winRect, stereoMode, screenid);
+        [win, rect] = psychimgui_demo_window(winRect, stereoMode, screenid);
         ig = PsychImGuiOpen(win);
         if ~ig.stereo
             error('psychimgui:Usage', 'Stereo mode %d gave a mono window.', stereoMode);

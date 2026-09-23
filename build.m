@@ -238,8 +238,11 @@ function build(varargin)
             % static archive named here comes first on the link line, so
             % every std symbol binds to the copy inside the MEX and the
             % later -lstdc++ adds no versioned reference. Octave links the
-            % system library its own binary uses and needs nothing.
-            gllib = [gllib, {'-Wl,-Bstatic', '-lstdc++', '-Wl,-Bdynamic'}];
+            % system library its own binary uses and needs nothing. mex
+            % accepts only -l, -L, -I, -D and -U as bare arguments, so the
+            % linker flags travel inside the LINKLIBS variable, ahead of
+            % MATLAB's own list.
+            args{end+1} = 'LINKLIBS=-Wl,-Bstatic -lstdc++ -Wl,-Bdynamic $LINKLIBS';
         end
         if ~is_octave && ~isempty(getenv('CI'))
             % The MATLAB floor on Linux is the one place where a MEX that

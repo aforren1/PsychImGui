@@ -91,7 +91,10 @@ jobs:
             dist/${{ matrix.arch }}/PsychImGui.*
             m/
             README.md
+            LICENSE
             SPEC.md
+            PsychImGuiSetup.m
+            docs/images/psychimgui-demo.png
           if-no-files-found: error
 
   matlab-test-forward:
@@ -116,7 +119,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: ${{ matrix.asset }}
-          path: .                 # restores dist/<arch>/ and m/ in place
+          path: .                 # restores dist/<arch>/, m/, and the root files in place
       - name: Test floor binary (no rebuild)
         uses: matlab-actions/run-command@v3
         env:
@@ -173,7 +176,10 @@ jobs:
             dist/glnxa64/PsychImGui.*
             m/
             README.md
+            LICENSE
             SPEC.md
+            PsychImGuiSetup.m
+            docs/images/psychimgui-demo.png
           if-no-files-found: error
 
   octave-linux-test-forward:
@@ -254,7 +260,10 @@ jobs:
             dist/win64/PsychImGui.mex
             m/
             README.md
+            LICENSE
             SPEC.md
+            PsychImGuiSetup.m
+            docs/images/psychimgui-demo.png
           if-no-files-found: error
 
   # ============================================================== smoke GL ====
@@ -321,7 +330,10 @@ jobs:
             dist/maca64/PsychImGui.*
             m/
             README.md
+            LICENSE
             SPEC.md
+            PsychImGuiSetup.m
+            docs/images/psychimgui-demo.png
           if-no-files-found: error
 
   # The macOS half of the OpenGL coverage. A CGL context with no profile
