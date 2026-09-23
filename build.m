@@ -184,6 +184,13 @@ function build(varargin)
         args{end+1} = 'COMPFLAGS=$COMPFLAGS /std:c++17 /EHsc';
     else
         args{end+1} = 'CXXFLAGS=$CXXFLAGS -std=c++17';
+        % ImGuiFileDialog uses the standard containers, and GCC 11's headers
+        % make every std::vector call std::__throw_bad_array_new_length,
+        % a GLIBCXX_3.4.29 symbol. MATLAB R2021b, the Linux floor, bundles
+        % an older libstdc++ and refuses to load the MEX (CI run 35863090083),
+        % so the MATLAB MEX carries its own copy of the runtime. Octave links
+        % against the system library its own binary uses, and needs nothing.
+        args{end+1} = 'LDFLAGS=$LDFLAGS -static-libstdc++';
     end
 
     sources = { fullfile('src', 'psychimgui.cpp'), ...

@@ -1346,3 +1346,10 @@ backend. Under Octave, where `Screen` does not load on this machine, all six
 skip. `smoke_gl` passes with the OpenGL 3 backend, the OpenGL 2 backend, and
 the headless path. `PsychImGuiDemo` and `PsychImGuiStereoDemo` in modes 4 and
 8 run clean.
+
+Two fixes after the first phase 3 CI run (35863090083):
+
+| Deviation | Reason |
+|---|---|
+| The Linux MATLAB MEX links with `-static-libstdc++`. `build.m` adds `LDFLAGS=$LDFLAGS -static-libstdc++` for MATLAB on Linux only; Octave and the other platforms are unchanged. | ImGuiFileDialog uses the standard containers, and with GCC 11's headers every `std::vector` refers to `std::__throw_bad_array_new_length`, a `GLIBCXX_3.4.29` symbol. MATLAB R2021b, the Linux floor, bundles an older libstdc++, so the MEX built fine and then failed to load; `run_tests` reported "not built or not callable". `objdump -T` on a WSL build with the same GCC showed that one symbol as the only `3.4.29` requirement. Carrying the runtime in the MEX is the usual answer for a MEX that must load on older MATLAB releases. |
+| `test_filedialog` strips a leading `/private` from the path the dialog reports before comparing it with the directory it created. | On macOS, `tempdir` is under `/var`, a symbolic link into `/private/var`, and the dialog reports the resolved path, which is 8 characters longer. The Homebrew Octave job failed only that check, with 73 characters against 65. The check is about the characters outside ASCII surviving, not about the link. |

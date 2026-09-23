@@ -130,6 +130,12 @@ end
 
 function p = local_norm(p)
     p = strrep(p, '\', '/');
+    % macOS keeps its temporary directories under /var and /tmp, which are
+    % symbolic links into /private, and the dialog reports the resolved
+    % path. The test is about the characters surviving, not the link.
+    if strncmp(p, '/private/', 9)
+        p = p(9:end);
+    end
     while numel(p) > 1 && p(end) == '/'
         p = p(1:end - 1);
     end
