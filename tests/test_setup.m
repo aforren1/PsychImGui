@@ -32,50 +32,67 @@ function test_setup()
     end
 
     %% a scratch package: both copies, the file that marks m/, no MEX
+    % The copies get names of their own. With two files of one name, the
+    % test would depend on which one the engine resolves, and Octave 6.4 and
+    % Homebrew Octave keep calling a function they have already loaded from
+    % the path even after cd into a folder with another file of that name.
+    % Measured in WSL, Octave 6.4: after whoami() from folder a on the path,
+    % cd into folder b still runs a's whoami. So the test called the real
+    % PsychImGuiSetup, which has a MEX (no NotBuilt) and removed the real
+    % package from the path. Unique names take the lookup out of the test;
+    % the drift check above keeps the logic identical.
+    rootName = 'pimgui_scratch_setup_root';
+    mName = 'pimgui_scratch_setup_m';
     arch = PsychImGuiSetup('arch');
     pkg = tempname();
     mkdir(fullfile(pkg, 'm'));
     mkdir(fullfile(pkg, 'dist', arch));
-    copyfile(rootCopy, fullfile(pkg, 'PsychImGuiSetup.m'));
-    copyfile(mCopy, fullfile(pkg, 'm', 'PsychImGuiSetup.m'));
+    local_copy_renamed(rootCopy, fullfile(pkg, [rootName '.m']), rootName);
+    local_copy_renamed(mCopy, fullfile(pkg, 'm', [mName '.m']), mName);
     copyfile(fullfile(root, 'm', 'PsychImGuiOpen.m'), fullfile(pkg, 'm'));
-    pkgDist = fullfile(pkg, 'dist', arch);
-    pkgM = fullfile(pkg, 'm');
 
     % The suite left a context behind, so the MEX is locked. Unload it before
     % the first path change.
     PsychImGui('Shutdown', 'all');
     local_clear_mex();
+    local_clear_fn(rootName, mName);     % stale copies from an earlier run
     t_ok('the MEX is unloaded before the scratch install', ~mislocked('PsychImGui'));
 
     old = pwd();
     p0 = path();
     try
-        %% install, from the package root as the current folder
         cd(pkg);
+        % The directories as the Setup itself names them, from its own
+        % mfilename. tempdir can sit behind a symbolic link, as /var ->
+        % /private/var on macOS, so a name built here from tempname could
+        % differ from the one the Setup puts on the path.
+        pkgDist = feval(rootName, 'distdir');
+        pkgRoot = fileparts(fileparts(pkgDist));
+        pkgM = fullfile(pkgRoot, 'm');
+
+        %% install, from the package root as the current folder
         threw = '';
         try
-            PsychImGuiSetup();
+            feval(rootName);
         catch e
             threw = e.identifier;
         end
         t_eq('a package with no MEX raises psychimgui:NotBuilt', threw, 'psychimgui:NotBuilt');
         t_eq('the failed check leaves the path alone', path(), p0);
 
-        PsychImGuiSetup('nocheck');
+        feval(rootName, 'nocheck');
         cd(old);
         t_ok('install puts dist/<arch> on the path', local_index(pkgDist) > 0);
         t_ok('install puts m/ on the path', local_index(pkgM) > 0);
         t_ok('install puts dist/<arch> ahead of m/', local_index(pkgDist) < local_index(pkgM));
-        t_ok('install leaves the package root off the path', local_index(pkg) == 0);
-        t_eq('the scratch m/ copy answers now', which('PsychImGuiSetup'), ...
-             fullfile(pkgM, 'PsychImGuiSetup.m'));
+        t_ok('install leaves the package root off the path', local_index(pkgRoot) == 0);
+        t_ok('the scratch m/ copy is reachable now', exist(mName, 'file') == 2);
 
         %% remove, through the m/ copy, with the MEX loaded and locked
         PsychImGui('Init', 0, [0 0 64 64], zeros(256, 1, 'int32'), ...
                    struct('renderer', 'none', 'iniFile', ''));
         t_ok('Init locks the MEX', mislocked('PsychImGui'));
-        removed = PsychImGuiSetup('remove');
+        removed = feval(mName, 'remove');
         t_ok('remove reports a change', removed);
         t_ok('remove unloads the MEX first', ~mislocked('PsychImGui'));
         t_ok('remove takes dist/<arch> off the path', local_index(pkgDist) == 0);
@@ -84,30 +101,48 @@ function test_setup()
 
         %% a second remove, through the root copy, does nothing
         cd(pkg);
-        removed = PsychImGuiSetup('remove');
+        removed = feval(rootName, 'remove');
         cd(old);
         t_ok('a second remove reports no change', ~removed);
         t_eq('a second remove leaves the path alone', path(), p0);
     catch e
-        cd(old);
         t_ok(sprintf('install and remove ran (%s: %s)', e.identifier, e.message), false);
     end
 
-    % A failure above can leave scratch entries behind. Take them off with the
-    % MEX unloaded, as everywhere else.
-    if local_index(pkgDist) > 0 || local_index(pkgM) > 0
+    % Whatever failed above, leave the folder and the path exactly as they
+    % were, so the rest of the suite still finds the real package. The MEX
+    % is unloaded first, as for every path change here.
+    cd(old);
+    if ~isequal(path(), p0)
+        fprintf(2, '        test_setup: restoring the path it found\n');
         PsychImGui('Shutdown', 'all');
         local_clear_mex();
         path(p0);
     end
+    local_clear_fn(rootName, mName);
     rmdir(pkg, 's');
 end
 
+function local_copy_renamed(src, dst, name)
+    txt = fileread(src);
+    head = 'function out = PsychImGuiSetup(';
+    assert(strncmp(txt, head, numel(head)), 'test_setup:copy', ...
+           'PsychImGuiSetup.m no longer starts with "%s"', head);
+    txt = ['function out = ' name '(' txt(numel(head) + 1:end)];
+    fid = fopen(dst, 'w');
+    fwrite(fid, txt);
+    fclose(fid);
+end
+
 function local_clear_mex()
+    local_clear_fn('PsychImGui');
+end
+
+function local_clear_fn(varargin)
     if exist('OCTAVE_VERSION', 'builtin') ~= 0
-        clear('-f', 'PsychImGui');
+        clear('-f', varargin{:});
     else
-        clear('PsychImGui');
+        clear(varargin{:});
     end
 end
 

@@ -84,6 +84,10 @@ cd('C:\toolboxes\PsychImGui');
 PsychImGuiSetup;
 ```
 
+In Octave, use the `cd` form only in a new session. Octave keeps using a
+`PsychImGuiSetup` it has already run, even after `cd` into another folder,
+so a second PsychImGui folder in the same session needs the `addpath` form.
+
 When the folder has no MEX file for this engine and platform,
 `PsychImGuiSetup` stops with `psychimgui:NotBuilt` and names the file it looked
 for. Download the zip that matches your engine and operating system.
