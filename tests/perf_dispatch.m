@@ -57,24 +57,53 @@ function r = perf_dispatch(n)
     PsychImGui('End');
     PsychImGui('Render');
 
+    % Draw list calls, the hot path of an overlay. One frame cannot hold n
+    % lines: with 16 bit indices and no renderer to split them, Dear ImGui
+    % asserts past 65536 vertices. So the calls run in frames of 5000, and
+    % only the calls are timed.
+    opAddLine = op.DrawList.AddLine;
+    chunk = 5000;
+    tNameL = 0;
+    tOpL = 0;
+    red = [1 0 0 1];
+    for k = 1:ceil(n / chunk)
+        m = min(chunk, n - (k - 1) * chunk);
+        PsychImGui('NewFrame', tf_input());
+        h = PsychImGui('GetForegroundDrawList');
+        t = tic; for i = 1:m; PsychImGui('DrawList.AddLine', h, [0 0], [9 9], red); end
+        tNameL = tNameL + toc(t);
+        PsychImGui('Render');
+        PsychImGui('NewFrame', tf_input());
+        h = PsychImGui('GetForegroundDrawList');
+        t = tic; for i = 1:m; PsychImGui(opAddLine, h, [0 0], [9 9], red); end
+        tOpL = tOpL + toc(t);
+        PsychImGui('Render');
+    end
+
     r = struct('n', n, ...
                'nullaryNameUs', 1e6 * tName0 / n, ...
                'nullaryOpcodeUs', 1e6 * tOp0 / n, ...
                'buttonNameUs', 1e6 * tNameW / n, ...
-               'buttonOpcodeUs', 1e6 * tOpW / n);
+               'buttonOpcodeUs', 1e6 * tOpW / n, ...
+               'addLineNameUs', 1e6 * tNameL / n, ...
+               'addLineOpcodeUs', 1e6 * tOpL / n);
 
     fprintf('perf_dispatch (%s, %d calls per case)\n', engineName(), n);
     fprintf('  GetFrameCount   name %7.3f us   opcode %7.3f us   delta %6.3f us\n', ...
             r.nullaryNameUs, r.nullaryOpcodeUs, r.nullaryNameUs - r.nullaryOpcodeUs);
     fprintf('  Button(label)   name %7.3f us   opcode %7.3f us   delta %6.3f us\n', ...
             r.buttonNameUs, r.buttonOpcodeUs, r.buttonNameUs - r.buttonOpcodeUs);
+    fprintf('  DrawList.AddLine name %6.3f us   opcode %7.3f us   delta %6.3f us\n', ...
+            r.addLineNameUs, r.addLineOpcodeUs, r.addLineNameUs - r.addLineOpcodeUs);
 
     s = PsychImGui('Stats');
-    idx = find(strcmp({s.perOp.name}, 'Button'), 1);
-    if ~isempty(idx)
-        fprintf('  MEX side Button mean %.3f us, max %.3f us (Stats counters)\n', ...
-                1e-3 * s.perOp(idx).totalNs / s.perOp(idx).calls, ...
-                1e-3 * s.perOp(idx).maxNs);
+    for name = {'Button', 'DrawList.AddLine'}
+        idx = find(strcmp({s.perOp.name}, name{1}), 1);
+        if ~isempty(idx)
+            fprintf('  MEX side %s mean %.3f us, max %.3f us (Stats counters)\n', ...
+                    name{1}, 1e-3 * s.perOp(idx).totalNs / s.perOp(idx).calls, ...
+                    1e-3 * s.perOp(idx).maxNs);
+        end
     end
 end
 

@@ -16,7 +16,7 @@ function out = tf_screen(cmd, arg)
 %   tf_screen('set3d', v)          The value Screen('Preference',
 %                                  'Enable3DGraphics') reports.
 %
-%   The stub answers only the subcommands the four PsychImGui helpers use. It
+%   The stub answers only the subcommands the PsychImGui helpers use. It
 %   is written to a temporary folder rather than committed as a file, so a
 %   stray path entry can never shadow the real Screen outside a test run.
 %
@@ -142,7 +142,22 @@ function src = local_screen_src()
     '                varargout{1} = 0;'
     '            end'
     '        case ''Rect'''
-    '            varargout{1} = [0 0 640 480];'
+    '            if ~isempty(varargin) && varargin{1} >= 20'
+    '                varargout{1} = [0 0 64 32];'
+    '            else'
+    '                varargout{1} = [0 0 640 480];'
+    '            end'
+    '        case ''GetOpenGLTexture'''
+    '            % Texture 21 is a transposed GL_TEXTURE_2D, as MakeTexture with'
+    '            % specialFlags 1 makes it; 22 is a GL_TEXTURE_RECTANGLE, the PTB'
+    '            % default; 23 is an upright GL_TEXTURE_2D, as an offscreen window.'
+    '            tex = varargin{2};'
+    '            targets = [3553 34037 3553];'
+    '            v0 = [-0.02 0 0.98];'
+    '            varargout{1} = 100 + tex;'
+    '            varargout{2} = targets(tex - 20);'
+    '            varargout{3} = 0;'
+    '            varargout{4} = v0(tex - 20);'
     '        case ''BeginOpenGL'''
     '            if varargin{1} == 999'
     '                error(''Screen:noWindow'', ''Invalid window handle 999.'');'

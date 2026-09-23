@@ -1,6 +1,6 @@
 # PsychImGui specification
 
-Status: implemented through phase 1.5. Specification version 0.1,
+Status: implemented through phase 2. Specification version 0.1,
 2026-09-22. Section 14 records where the code differs from sections 1
 to 13 and why.
 
@@ -34,6 +34,8 @@ readouts, calibration tools, and debugging overlays.
 - Extensions from the cimgui family, compiled into the same MEX and bound by
   the same generator. ImPlot is in phase 1.5. Section 5.4 lists the policy and
   the candidates.
+- Tables, draw lists through handles, and images from Psychtoolbox textures,
+  in phase 2. Sections 5.2, 5.6, and 5.7.
 - MATLAB R2023a and Octave 10.1 on Windows, verified. Linux verified in CI
   and in WSL. macOS on Apple silicon (`maca64`) is a CI target; see section
   14 for what is and is not verified there.
@@ -43,7 +45,8 @@ readouts, calibration tools, and debugging overlays.
 - Dear ImGui multi-viewport and docking branches.
 - Extensions without machine-readable metadata, unless hand-written and small.
 - Callbacks from Dear ImGui into MATLAB code.
-- Custom draw list access (`ImDrawList`) in phase 1. See section 13.
+- Raw `ImDrawList` pointers, and draw list methods other than those of
+  section 5.6.
 - Rendering into more than one PTB window at a time.
 - Any code shared with other bindings. This project is self-contained.
 
@@ -255,6 +258,8 @@ initial allowlist, grouped as in `imgui.h`:
 | Style | PushStyleColor, PopStyleColor, PushStyleVar (float and Vec2), PopStyleVar, BeginDisabled, EndDisabled |
 | Focus and scroll | SetKeyboardFocusHere, SetScrollHereY, SetItemDefaultFocus |
 | Misc | GetFrameCount, GetTime |
+| Tables (phase 2) | BeginTable, EndTable, TableNextRow, TableNextColumn, TableSetColumnIndex, TableSetupColumn, TableSetupScrollFreeze, TableHeadersRow, TableHeader, TableGetColumnCount, TableGetColumnIndex, TableSetBgColor |
+| Draw lists (phase 2) | GetWindowDrawList, GetBackgroundDrawList, GetForegroundDrawList. They return a handle; see section 5.6 |
 
 Every generated subcommand has the return convention of section 7.3. Example
 signatures as the generator prints them in `m/PsychImGui.m`:
@@ -267,7 +272,33 @@ open                 = PsychImGui('Begin', name [, open] [, flags=0])
 [changed, idx]       = PsychImGui('Combo', label, idx, items [, popupMaxHeight=-1])
 pressed              = PsychImGui('Button', label [, size=[0 0]])
 PsychImGui('PlotLines', label, values [, overlay=''] [, scaleMin=FLT_MAX] [, scaleMax=FLT_MAX] [, graphSize=[0 0]])
+open                 = PsychImGui('BeginTable', strId, columns [, flags=0] [, outerSize=[0 0]] [, innerWidth=0])
+PsychImGui('TableSetBgColor', target, color [, columnN=-1])
 ```
+
+A table call sequence, the same as in C++:
+
+```matlab
+if PsychImGui('BeginTable', 'log', 3, {'ImGuiTableFlags_Borders', 'ImGuiTableFlags_RowBg'})
+    PsychImGui('TableSetupColumn', 'trial');
+    PsychImGui('TableSetupColumn', 'response');
+    PsychImGui('TableSetupColumn', 'rt');
+    PsychImGui('TableHeadersRow');
+    for k = 1:numel(rt)
+        PsychImGui('TableNextRow');
+        PsychImGui('TableNextColumn'); PsychImGui('Text', sprintf('%d', k));
+        PsychImGui('TableNextColumn'); PsychImGui('Text', resp{k});
+        PsychImGui('TableNextColumn'); PsychImGui('Text', sprintf('%.3f', rt(k)));
+    end
+    PsychImGui('EndTable');
+end
+```
+
+Call `EndTable` only when `BeginTable` returned true. `TableNextRow`,
+`TableSetColumnIndex`, `TableHeader`, and `TableSetBgColor` raise
+`psychimgui:Usage` outside a table or before the row or cell they need, and
+`BeginTable` raises `psychimgui:Range` for a column count outside 1 to 511.
+Section 14.10 says why the binding checks this itself.
 
 ### 5.3 Helper M-files
 
@@ -281,8 +312,9 @@ PsychImGui('PlotLines', label, values [, overlay=''] [, scaleMin=FLT_MAX] [, sca
 | `m/PsychImGuiSetup.m` | Puts `dist/<arch>` ahead of `m/` on the path. `('arch')`, `('distdir')`, and `('nocheck')` for the parts of that. |
 | `m/PsychImGuiInput.m` | `Start`, `Poll`, `Stop`, `Empty`. Wraps `KbQueueCreate`, `KbQueueStart`, `KbEventGet`, `GetMouse`, `GetMouseWheel`, `GetSecs`. Returns the input struct of section 6.1. |
 | `m/PsychImGuiKeymap.m` | Builds the 256-entry PTB keycode to `ImGuiKey` table. |
-| `m/PsychImGuiOp.m` | Generated struct of opcodes for the fast path. |
-| `m/PsychImGuiDemo.m` | Demo: PTB window with a Gabor patch, a control panel with sliders, an ImPlot panel, and `ShowDemoWindow`. |
+| `m/PsychImGuiOp.m` | Generated struct of opcodes for the fast path. A namespace is a nested struct: `op.ImPlot.BeginPlot`, `op.DrawList.AddLine`. |
+| `m/PsychImGuiImage.m` | `tex = PsychImGuiImage(ig, ptbTexture [, filter])`. Describes a Psychtoolbox texture for `Image` and `ImageButton`. Section 5.7. |
+| `m/PsychImGuiDemo.m` | Demo: PTB window with a Gabor patch, a control panel with sliders, an ImPlot panel, a panel with a table and an `Image` of a PTB texture, a draw list overlay, and `ShowDemoWindow`. |
 
 ### 5.4 Extensions and ImPlot subcommands
 
@@ -364,6 +396,120 @@ Marshaling rules specific to ImPlot are in section 7.6.
 | `psychimgui:Type` | Argument has the wrong class, for example a `string` scalar where char is required. |
 | `psychimgui:Range` | Numeric argument out of range for its C type. |
 | `psychimgui:Font` | Font file not found or failed to load. |
+| `psychimgui:InvalidHandle` | A draw list handle is not live: it comes from an earlier frame, from before `Render` or `EndFrame`, or from before a `Shutdown`, or it was never issued. Section 5.6. |
+| `psychimgui:Texture` | A texture is not one the OpenGL backends can sample: not `GL_TEXTURE_2D`, or not a valid texture name. Section 5.7. |
+
+### 5.6 Draw lists
+
+`GetWindowDrawList`, `GetBackgroundDrawList`, and `GetForegroundDrawList`
+return a handle, a double. The `DrawList.` subcommands take it as their first
+argument:
+
+| Subcommand | Signature |
+|---|---|
+| DrawList.AddLine | `PsychImGui('DrawList.AddLine', h, p1, p2, col [, thickness=1])` |
+| DrawList.AddRect | `PsychImGui('DrawList.AddRect', h, pMin, pMax, col [, rounding=0] [, thickness=1] [, flags=0])` |
+| DrawList.AddRectFilled | `PsychImGui('DrawList.AddRectFilled', h, pMin, pMax, col [, rounding=0] [, flags=0])` |
+| DrawList.AddCircle | `PsychImGui('DrawList.AddCircle', h, center, radius, col [, numSegments=0] [, thickness=1])` |
+| DrawList.AddCircleFilled | `PsychImGui('DrawList.AddCircleFilled', h, center, radius, col [, numSegments=0])` |
+| DrawList.AddTriangle | `PsychImGui('DrawList.AddTriangle', h, p1, p2, p3, col [, thickness=1])` |
+| DrawList.AddTriangleFilled | `PsychImGui('DrawList.AddTriangleFilled', h, p1, p2, p3, col)` |
+| DrawList.AddText | `PsychImGui('DrawList.AddText', h, pos, col, text)` |
+| DrawList.AddPolyline | `PsychImGui('DrawList.AddPolyline', h, points, col, thickness [, flags=0])` |
+| DrawList.AddConvexPolyFilled | `PsychImGui('DrawList.AddConvexPolyFilled', h, points, col)` |
+| DrawList.PushClipRect | `PsychImGui('DrawList.PushClipRect', h, clipRectMin, clipRectMax [, intersectWithCurrentClipRect=false])` |
+| DrawList.PopClipRect | `PsychImGui('DrawList.PopClipRect', h)` |
+
+Points are 1x2 `[x y]` in window pixels, top left origin. A point list is an
+Nx2 double. Colors follow the rule of section 7.3: 1x4 `[r g b a]` in 0 to 1,
+or a packed scalar. `flags` takes `ImDrawFlags_` names.
+
+Handle rules:
+
+- A handle is valid only between `NewFrame` and `Render`, or `EndFrame`, of
+  the frame that returned it. Get it again every frame. Any other handle
+  raises `psychimgui:InvalidHandle`; the MEX never follows a stale pointer.
+- The handle encodes a generation and a slot in a per-frame table of draw
+  list pointers: `generation * 256 + slot`. The generation moves on at every
+  `NewFrame`, `Render`, `EndFrame`, `Init`, and `Shutdown` and is never
+  reset, so a handle from an earlier frame or an earlier context cannot match
+  again, even when Dear ImGui reuses the pointer. The same draw list gives the
+  same handle within a frame.
+- One frame holds 256 distinct draw lists. A 257th raises `psychimgui:Range`.
+- The getters raise `psychimgui:Usage` outside a frame, because Dear ImGui
+  would dereference a null window there.
+- `DrawList.PopClipRect` pops only what `DrawList.PushClipRect` pushed on the
+  same draw list in the same frame, and raises `psychimgui:Usage` otherwise.
+  A push left open at the end of the frame is harmless; Dear ImGui resets the
+  stack.
+
+```matlab
+fg = PsychImGui('GetForegroundDrawList');
+PsychImGui('DrawList.AddRect', fg, [100 100], [356 356], [1 0.85 0.2 1], 6, 2);
+PsychImGui('DrawList.AddPolyline', fg, [x(:) y(:)], [0 1 0 1], 2);
+```
+
+### 5.7 Images
+
+| Subcommand | Signature | Notes |
+|---|---|---|
+| Image | `PsychImGui('Image', tex, size [, uv0=[0 0]] [, uv1=[1 1]] [, bgCol=[0 0 0 0]] [, tintCol=[1 1 1 1]])` | Dear ImGui's `ImageWithBg`. `Image` with no colors is Dear ImGui's `Image`. |
+| ImageButton | `pressed = PsychImGui('ImageButton', strId, tex, size [, uv0=[0 0]] [, uv1=[1 1]] [, bgCol=[0 0 0 0]] [, tintCol=[1 1 1 1]])` | |
+| SetTextureFilter | `PsychImGui('SetTextureFilter', glId [, mode='linear'])` | Needs the GL context. Sets the texture's own minification and magnification filter. A no-op with the `none` renderer. |
+
+`tex` is the struct from `PsychImGuiImage`, or an OpenGL texture name for a
+`GL_TEXTURE_2D` texture stored top row first. `uv0` and `uv1` select a part of
+the image, in image coordinates from 0 to 1, top left origin, whatever the
+texture's storage order. Call `Image` and `ImageButton` between `NewFrame` and
+`Render`; outside a frame they raise `psychimgui:Usage`.
+
+The texture must be `GL_TEXTURE_2D`. `imgui_impl_opengl3` and
+`imgui_impl_opengl2` bind every texture to `GL_TEXTURE_2D`, and the OpenGL 3
+shader samples a `sampler2D`. Psychtoolbox makes `GL_TEXTURE_RECTANGLE`
+textures by default; binding one of those names to `GL_TEXTURE_2D` fails with
+`GL_INVALID_OPERATION`, which `Render` would report as `psychimgui:GLError`.
+So the binding refuses such a texture up front with `psychimgui:Texture`, and
+the script creates the texture with `specialFlags` 1:
+
+```matlab
+ptbTex = Screen('MakeTexture', win, img, [], 1);   % GL_TEXTURE_2D
+tex = PsychImGuiImage(ig, ptbTex);                  % once, after MakeTexture
+...
+PsychImGui('Image', tex, tex.size);                 % every frame
+```
+
+`Screen('OpenOffscreenWindow', win, color, rect, [], 1)` gives a
+`GL_TEXTURE_2D` offscreen window, which works the same way.
+
+`PsychImGuiImage` reads the texture name and target with
+`Screen('GetOpenGLTexture', win, ptbTexture)` and returns a struct with the
+fields `glId`, `glTarget`, `size`, `uvMap`, `orientation`, `filter`, and
+`ptbTexture`. The MEX does not call `Screen` (rule R6), so it takes this
+struct instead of the PTB texture handle.
+
+Psychtoolbox stores a texture made from a MATLAB matrix transposed: texture
+`u` runs down the image and `v` across it. It stores an offscreen window
+bottom row first. `PsychImGuiImage` finds out which, by asking
+`Screen('GetOpenGLTexture')` to map the top left image position, and records
+the answer as `uvMap = [u0 v0 dudx dvdx dudy dvdy]`, an affine map from image
+coordinates to texture coordinates. `Image` maps the four corners of
+`[uv0, uv1]` through it. When the map keeps `u` on `x`, as for an offscreen
+window, the corners go to Dear ImGui's own `ImageWithBg` or `ImageButton`.
+When it swaps the axes, which a `uv0`, `uv1` pair cannot express, Dear ImGui
+still lays out and draws the item, with a transparent tint so it skips its own
+image quad, and the binding adds the image as a quad with one texture
+coordinate per corner (`ImDrawList::AddImageQuad`). Layout, hover, click, and
+the button frame stay Dear ImGui's.
+
+`filter` is `'linear'` or `'nearest'`. `Image` applies it per draw through
+Dear ImGui's sampler callbacks (`ImGuiPlatformIO::DrawCallback_SetSamplerNearest`
+and `DrawCallback_SetSamplerLinear`), because the OpenGL 3 backend binds its
+own linear sampler object on GL 3.3 and later, which overrides the texture's
+filter. `PsychImGuiImage` also sets the filter on the texture once, through
+`SetTextureFilter`: Psychtoolbox leaves a new texture at the OpenGL default
+minification filter, `GL_NEAREST_MIPMAP_LINEAR`, with one mipmap level, which
+makes the texture incomplete, and a conforming driver samples an incomplete
+texture as black.
 
 ## 6. Input handling
 
@@ -484,12 +630,15 @@ get distinct MATLAB names.
 | `const float* values` with `int values_count` | double vector; the count argument is removed from the MATLAB signature | none |
 | `ImVec2`, `const ImVec2&` | 1x2 double | 1x2 double |
 | `ImVec4`, `const ImVec4&` | 1x4 double | 1x4 double |
-| `ImU32 col` in color positions (`PushStyleColor`, `ColorButton`) | 1x4 double in 0 to 1, or a double scalar packed ABGR | 1x4 double |
+| `ImU32` named `col`, `color`, or `col_*` (`TableSetBgColor`, the `DrawList.` subcommands) | 1x4 double in 0 to 1, or a double scalar packed ABGR | 1x4 double |
+| `const ImVec2* points` with `int num_points` | Nx2 double `[x y]`; the count argument is removed. Up to 128 points convert on the stack. | none |
+| `ImDrawList* self` (the object of an `ImDrawList` method) | draw list handle, section 5.6 | |
+| `ImDrawList*` return value | | draw list handle, section 5.6 |
 | `const char* fmt, ...` | one char argument. The handler calls the function with `"%s", str`. | none |
 | `const char* const items[]` with `int items_count` | cellstr; the count argument is removed | none |
 | `char* buf, size_t buf_size` (InputText) | see section 7.5 | see section 7.5 |
 | `bool* p_open` | optional double or logical | extra output when supplied |
-| `ImGuiInputTextCallback`, `void* user_data`, `ImDrawList*`, `ImFont*`, `ImGuiViewport*`, `ImGuiStorage*`, `ImGuiPayload*`, `ImGuiListClipper*` | not supported in phase 1. The generator refuses the entry. | |
+| `ImGuiInputTextCallback`, `void* user_data`, `ImDrawList*` other than the two rows above, `ImFont*`, `ImGuiViewport*`, `ImGuiStorage*`, `ImGuiPayload*`, `ImGuiListClipper*` | not supported. The generator refuses the entry, or passes the default when the argument has one. | |
 
 ### 7.4 Defaults and return convention
 
@@ -735,6 +884,13 @@ path runs in `run_tests.m` under both engines:
 - `test_stats.m`: counters increase, `reset` clears.
 - Assert path: a deliberate `End` without `Begin` raises `psychimgui:ImGuiAssert`
   and the next frame works.
+- `test_tables.m`: a table call sequence over several frames, and the
+  checks that refuse a table call outside a table, row, or cell.
+- `test_drawlist.m`: handles, every `DrawList.` subcommand, point lists and
+  colors, the clip stack count, and stale handles after `Render`, `EndFrame`,
+  the next `NewFrame`, and `Shutdown`.
+- `test_image.m`: `Image`, `ImageButton`, and `SetTextureFilter` argument
+  rules, and `PsychImGuiImage` against the recording `Screen` stub.
 
 ### 11.2 With PTB and a GPU
 
@@ -743,6 +899,14 @@ with a known background color, calls `Screen('GetImage')` after `Flip`, and
 checks the mean color inside the window rectangle within a tolerance. It also
 checks that `Render` raises `psychimgui:GLError` when a GL error is injected
 through a debug subcommand compiled only in test builds.
+
+`tests/gl/test_gl_phase2.m` draws three images, a table with colored cells,
+and draw list primitives at known positions in one frame and checks the pixel
+colors: each quadrant of a test pattern in a transposed texture and in an
+upright offscreen window, a sharp quadrant edge with `'nearest'` and a blended
+one with `'linear'`, both cell backgrounds, a clip rectangle, and the
+foreground and background draw lists. `test_gl_phase2('opengl2')` runs it on
+the fixed function backend.
 
 Every script that opens a PTB window goes through one helper,
 `tests/gl/ptb_test_window.m`, which sets `Screen('Preference',
@@ -753,7 +917,9 @@ timing calibration nor the startup splash screen.
 ### 11.3 Interactive
 
 `PsychImGuiDemo.m`: a Gabor patch whose contrast, spatial frequency, and
-orientation come from sliders; a text field; `ShowDemoWindow`. `perf_frame.m`:
+orientation come from sliders; a text field; `ShowDemoWindow`; a table of the
+slider values; an `Image` of a PTB texture; a draw list overlay that marks the
+patch outline, center, and rotation angle. `perf_frame.m`:
 200 sliders per frame for 600 frames, prints `Stats` and a frame time
 histogram.
 
@@ -803,13 +969,13 @@ histogram.
 |---|---|
 | 1 | Lifecycle, input, generator, allowlist of section 5.2, `Stats`, `renderer='none'` tests, demo. |
 | 1.5 | ImPlot: context lifecycle, section 7.6 rules, allowlist of section 5.4, generated tests, a demo panel with a live trace and a heat map. |
-| 2 | Tables (`BeginTable`, `TableNextRow`, `TableNextColumn`, `TableSetupColumn`, `TableHeadersRow`), `ImDrawList` through an opaque handle for the window and background draw lists (`AddLine`, `AddRect`, `AddCircle`, `AddText`), `PsychImGui('Image', ptbTexture, size)` by reading the GL texture id with `Screen('GetOpenGLTexture')`. |
+| 2 | Tables (`BeginTable`, `TableNextRow`, `TableNextColumn`, `TableSetupColumn`, `TableHeadersRow`), `ImDrawList` through an opaque handle for the window and background draw lists (`AddLine`, `AddRect`, `AddCircle`, `AddText`), `PsychImGui('Image', ptbTexture, size)` by reading the GL texture id with `Screen('GetOpenGLTexture')`. Implemented; section 14.10 lists what differs. |
 | 3 | Tracy GPU zones, per-eye rendering for stereo modes, multiple contexts for multiple PTB windows, ImPlot3D through `cimplot3d`, ImGuiFileDialog hand-written. |
 
 ## 14. Deviations from version 0.1
 
 This section records every place where the implementation differs from the
-specification above, and why. Section 13 phases 1 and 1.5 are implemented.
+specification above, and why. Section 13 phases 1, 1.5, and 2 are implemented.
 
 ### 14.1 Dependencies
 
@@ -950,3 +1116,31 @@ tests still work. The mouse position, the window rectangle, and the clock come
 from `Screen` and `GetSecs` and are unaffected. The marshaling half of the key
 path, `PsychImGuiKeymap` and the `in.keys` decoding, is covered by
 `test_keymap.m` and by the synthetic input of the headless suite.
+
+### 14.10 Phase 2
+
+| Deviation | Reason |
+|---|---|
+| The `ImDrawList` methods are subcommands with a `DrawList.` prefix, such as `PsychImGui('DrawList.AddLine', h, ...)`. | Section 13 names them `AddLine`, `AddRect`, and so on. `ImGui::PushClipRect` and `ImDrawList::PushClipRect` are different functions with the same name, so without a prefix one of them could never be bound. The prefix follows the namespace rule of section 5.4, and `PsychImGuiOp` returns the opcodes as `op.DrawList.AddLine`. `PsychImGuiOp` now nests every dotted namespace the same way instead of special casing `ImPlot`. |
+| The draw list methods and the three getters are generated, from a `[DrawList]` allowlist section, not hand-written. | Their `definitions.json` signatures fit once the generator knows four more types, which section 7.3 now lists: `ImDrawList* self` and an `ImDrawList*` return value as a handle, `ImU32` named `col`, `color`, or `col_*` as a color, and `const ImVec2*` with a `num_*` count as an Nx2 array. `text_end` of `AddText` keeps its `NULL` default through the allowlist's `-text_end`, and `text_begin` is called `text` on the MATLAB side. |
+| The handlers of `[DrawList]` carry the prefix in their C++ symbols (`h_DrawList_AddLine`). | They live in `gen_dispatch.cpp` next to the `[ImGui]` handlers, and a later `ImGui::PushClipRect` binding would otherwise collide with `h_PushClipRect`. |
+| Twelve table subcommands, not five, all generated. `TableSetupColumn` drops `user_data`. | The task list for phase 2 added `TableSetColumnIndex`, `TableHeader`, `TableGetColumnCount`, `TableGetColumnIndex`, `TableSetupScrollFreeze`, `TableSetBgColor`, and `EndTable`. Every signature fits section 7.3 as it is; none is hand-written. `user_data` is only read back through `TableGetSortSpecs`, which is not bound, so it keeps its default of 0. |
+| The generator grew `CALL_HOOKS`: C++ statements that run just before or after the call of one generated handler. | Some invariants depend on Dear ImGui state, not on argument types, so no marshaling rule can express them. The hooks hold the checks in the next three rows, next to the rule they protect, and the generated handler stays one function. |
+| `BeginTable` refuses a column count outside 1 to 511 with `psychimgui:Range`. `TableNextRow`, `TableHeader`, `TableSetBgColor`, and `TableSetColumnIndex` refuse to run outside a table, before the row or cell they need, with `columnN` out of range, or with target `ImGuiTableBgTarget_None`, with `psychimgui:Usage` or `psychimgui:Range`. | Dear ImGui guards these with an `IM_ASSERT` or with nothing, and then dereferences or indexes: `TableNextRow` reads `g.CurrentTable->IsLayoutLocked` with no null check, `TableHeader` indexes `Columns[-1]` before a cell, and `BeginTable` allocates with the bad count after its assert. Section 14.4 describes why a deferred assert turns such a guard into a crash. The generated test found one more that has no assert at all: `TableSetColumnIndex` before the first `TableNextRow` begins a cell in no row, and it crashed MATLAB with an access violation. The checks use public API only (`TableGetColumnCount` is 0 outside a table, `TableGetRowIndex` is -1 before the first row). One behavior changes against Dear ImGui: `TableSetColumnIndex` outside a table raises instead of returning false. `TableNextColumn` still returns false there, because Dear ImGui handles that case safely. |
+| The draw list getters raise `psychimgui:Usage` outside a frame. | `ImGui::GetWindowDrawList` dereferences `g.CurrentWindow`, which is null between `Render` and `NewFrame`. |
+| `DrawList.PopClipRect` raises `psychimgui:Usage` unless the same draw list has an open `DrawList.PushClipRect` from this frame. | `ImDrawList::PopClipRect` pops without a bounds check once `IM_ASSERT` returns, and a pop of Dear ImGui's own clip rectangle leaves the `End` that owns it to pop past the bottom of the stack. The binding counts its own pushes per draw list slot. |
+| A draw list handle is a double, `generation * 256 + slot`, validated against a per-frame table in `src/core`, with the generation kept outside the state that `Init` and `Shutdown` clear. A frame holds 256 distinct draw lists. | The task asks that a stale handle raise `psychimgui:InvalidHandle` and never dereference a dead pointer. A pointer cast to a double cannot be checked; a slot plus a generation can, with one compare, and a double holds the value exactly for 2^45 frames. Keeping the generation across `Shutdown` stops a handle from before a restart from matching a new context that reuses the same pointers. The linear scan over the table beats hashing at a few dozen windows. |
+| `Image` and `ImageButton` are hand-written, and take the struct from `m/PsychImGuiImage.m` or a GL texture name, not the PTB texture handle of section 13. | The MEX cannot call `Screen` (rule R6), so the PTB side, `PsychImGuiImage`, reads the name with `Screen('GetOpenGLTexture')`. The generator cannot bind `igImage` because `ImTextureRef` has no MATLAB rule, and one would not be enough: a PTB texture made from a matrix is stored transposed, and Dear ImGui's `uv0`, `uv1` pair cannot express a transpose. Section 5.7 describes the texture coordinate map and the quad that draws it. `Image` merges Dear ImGui's `Image` and `ImageWithBg`, because the two differ only in the two color arguments. |
+| Only `GL_TEXTURE_2D` textures are accepted, and the script creates them with `Screen('MakeTexture', win, img, [], 1)`. Anything else raises `psychimgui:Texture`, from `PsychImGuiImage`, from `Image` and `ImageButton` for a struct whose `glTarget` is not 3553, and from `SetTextureFilter` when the name will not bind to `GL_TEXTURE_2D`. | Verified in the PTB source: `PsychGetTextureTarget` (`PsychTextureSupport.c`) picks `GL_TEXTURE_RECTANGLE_EXT` whenever the extension exists, and `SCREENMakeTexture.c` switches to `GL_TEXTURE_2D` only for `specialFlags` 1. Both Dear ImGui backends bind `GL_TEXTURE_2D` only. The alternatives were a per-frame copy of a rectangle texture into a 2D one through a framebuffer object, or a draw callback that swaps in a `sampler2DRect` shader. Both put GL code outside the unmodified backends, the second would work only with the OpenGL 3 backend, and both cost more than the one flag they save. `PsychImGuiImage` checks the target it reads from `Screen`; the MEX check catches a struct built by hand. |
+| `PsychImGuiImage` detects the storage order by mapping image position (0, 0) with `Screen('GetOpenGLTexture', win, tex, 0, 0)`. | `PsychMapTexCoord` (`PsychTextureSupport.c`) returns `v` near 0 for a transposed texture (`textureOrientation` 0 or 1) and near 1 for one stored bottom row first (`textureOrientation` 2, offscreen windows and textures made with `textureOrientation` 1 or 2). PTB reports the orientation nowhere else. Orientations 3 and 4 come from the movie and video capture engines, which make rectangle textures, so they never reach this test. |
+| `SetTextureFilter` is a new hand-written subcommand, and `PsychImGuiImage` calls it once per texture. The struct also carries a `filter` that `Image` applies to every draw through Dear ImGui's sampler callbacks. | Measured with `glGetTexParameteriv` after `Screen('MakeTexture', win, img, [], 1)`: `GL_TEXTURE_MIN_FILTER` is `0x2702` (`GL_NEAREST_MIPMAP_LINEAR`), `GL_GENERATE_MIPMAP` is 0, and mipmap level 1 has width 0, the same with `specialFlags` 9. PTB sets a filter only while it draws. By the OpenGL specification that texture is incomplete and samples as black. On the development machine (Intel Iris Xe, driver 32.0.101.7088) it sampled correctly anyway, with both backends and with minification, so the black image was not reproduced; the call is there for conforming drivers, macOS among them. It does not decide the filter the user sees on GL 3.3 and later: `imgui_impl_opengl3` binds its own linear sampler object there, which overrides the texture's filter. So `Image` wraps the draw in `DrawCallback_SetSamplerNearest` and `DrawCallback_SetSamplerLinear` when the struct asks for `'nearest'`. Measured in `test_gl_phase2` with a 4x magnification, one pixel left of a red to green quadrant edge: `'nearest'` gives [1.00 0.00 0.00] and `'linear'` gives [0.62 0.38 0.00], with both backends. |
+| A transposed image ignores `style.ImageRounding` and the rounding `ImageButton` derives from `FrameRounding`. | `ImDrawList` has no rounded variant of `AddImageQuad`. Upright images go through Dear ImGui's own drawing and keep the rounding. |
+| `src/imgui_marshal.h` is new. `Image`, `ImageButton`, and the draw list getters raise `psychimgui:Usage` outside a frame, which the core now tracks with `pig::frameOpen()`. | The color, point list, and handle rules need `imgui.h`; `marshal.h` stays free of it, as `implot_marshal.h` does for the ImPlot rules. |
+| `tests/test_tables.m`, `tests/test_drawlist.m`, `tests/test_image.m`, and `tests/gl/test_gl_phase2.m` are new, and the `Screen` stub of `tests/tf_screen.m` answers `GetOpenGLTexture` and `Rect` for three stub textures. | The headless suite covers the argument rules, the handle lifetime, and `PsychImGuiImage`'s decisions; only the GL test can see a transposed or black image. `test_image` resets the stub's call record when it ends, because `test_helpers` reads that record from an empty start. |
+| `tests/perf_dispatch.m` measures `DrawList.AddLine` too. | The draw list calls are the hot path of an overlay. Measured on the development machine, 200000 calls: MATLAB R2023a 2.17 us per call by name, 2.04 us by opcode, 0.42 us inside the MEX (`Stats`); Octave 10.1 8.86 us by name, 8.90 us by opcode, 0.65 us inside the MEX. The MEX side includes `ImDrawList::AddLine` itself and allocates nothing: the handle check is a table lookup, the points convert on the stack, and the color packs in place. `Button` measured 0.25 us inside the MEX in the same run, against 0.14 us in section 14.5, so this machine ran slower that day. |
+
+Phase 2 results on the development machine (Windows 11, MATLAB R2023a,
+Octave 10.1, Psychtoolbox 3.0.22): the headless suite passes 754 of 754
+under MATLAB and under Octave; `test_gl_phase2` passes 29 of 29 with the
+OpenGL 3 backend and with the OpenGL 2 backend; `test_gl_render` and
+`test_gl_demo_gabor` still pass; `PsychImGuiDemo(120)` runs clean.

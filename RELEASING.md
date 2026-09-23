@@ -39,11 +39,12 @@ Expect `==== N passed, 0 failed ====` from both, with the same N.
 With Psychtoolbox installed, run the GL tests and the demo in MATLAB:
 
 ```matlab
-cd tests/gl; test_gl_render; test_gl_demo_gabor
+cd tests/gl; test_gl_render; test_gl_demo_gabor; test_gl_phase2; test_gl_phase2('opengl2')
 PsychImGuiDemo(90)
 ```
 
-Expect `0 failed` from both tests and `DEMO OK` from the demo. If the version
+Expect `0 failed` from each test, and the demo to print its Gabor pixel
+standard deviation and no `PsychImGuiDemo failed` line. If the version
 bump came with new subcommands, confirm `PsychImGui('Version')` shows the
 new number and that `m/PsychImGui.m` was regenerated (`build gen`) so the
 help lists them.

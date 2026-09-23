@@ -5,7 +5,8 @@ Reads third_party/cimgui/generator/output/{definitions,structs_and_enums}.json
 and the matching cimplot files, filters them through gen/allowlist.txt, and
 writes:
 
-    src/gen_dispatch.cpp         handlers, sorted name table, enum value table
+    src/gen_dispatch.cpp         handlers, sorted name table, enum value table,
+                                 including the [DrawList] section
     src/gen_dispatch_implot.cpp  the same for the ImPlot namespace
     m/PsychImGui.m               help text with every signature
     m/PsychImGuiOp.m             opcode constants for the fast path
@@ -35,6 +36,14 @@ BUILTINS = [
     ("AddFontFromFileTTF", "bi_AddFontFromFileTTF", True, True,
      "idx = PsychImGui('AddFontFromFileTTF', path, sizePx [, glyphRanges])"),
     ("EndFrame", "bi_EndFrame", True, False, "PsychImGui('EndFrame')"),
+    # Image and ImageButton are hand-written: a Psychtoolbox texture is stored
+    # transposed, which a uv0/uv1 pair cannot express. See SPEC.md 5.7.
+    ("Image", "bi_Image", True, False,
+     "PsychImGui('Image', tex, size [, uv0=[0 0]] [, uv1=[1 1]] [, bgCol=[0 0 0 0]] "
+     "[, tintCol=[1 1 1 1]])"),
+    ("ImageButton", "bi_ImageButton", True, False,
+     "pressed = PsychImGui('ImageButton', strId, tex, size [, uv0=[0 0]] [, uv1=[1 1]] "
+     "[, bgCol=[0 0 0 0]] [, tintCol=[1 1 1 1]])"),
     ("Enum", "bi_Enum", False, False,
      "v = PsychImGui('Enum' [, 'ImGuiWindowFlags_NoTitleBar'])"),
     ("Init", "bi_Init", False, False, "PsychImGui('Init', win, rect, keymap [, opts])"),
@@ -44,6 +53,8 @@ BUILTINS = [
     ("PushFont", "bi_PushFont", True, False, "PsychImGui('PushFont', idx [, sizePx])"),
     ("Render", "bi_Render", True, True, "PsychImGui('Render')"),
     ("SetGlobalScale", "bi_SetGlobalScale", True, False, "PsychImGui('SetGlobalScale', s)"),
+    ("SetTextureFilter", "bi_SetTextureFilter", True, True,
+     "PsychImGui('SetTextureFilter', glId [, mode='linear'])"),
     ("ShowDemoWindow", "bi_ShowDemoWindow", True, False,
      "[open] = PsychImGui('ShowDemoWindow' [, open])"),
     ("ShowMetricsWindow", "bi_ShowMetricsWindow", True, False,
@@ -68,6 +79,10 @@ RET_NAMES = {
     "BeginMenu": "open", "BeginMenuBar": "open", "BeginPopup": "open",
     "BeginPopupModal": "open", "BeginTabBar": "open", "BeginTabItem": "open",
     "BeginTooltip": "open", "BeginPlot": "open", "BeginSubplots": "open",
+    "BeginTable": "open", "TableNextColumn": "visible", "TableSetColumnIndex": "visible",
+    "GetWindowDrawList": "drawList", "GetBackgroundDrawList": "drawList",
+    "GetForegroundDrawList": "drawList", "TableGetColumnCount": "count",
+    "TableGetColumnIndex": "index",
 }
 
 # Test values that differ from the generic one for a kind, because the function
@@ -113,6 +128,8 @@ TEST_ARG_OVERRIDE = {
     ("ImPlot.BeginSubplots", "rows"): "1",
     ("ImPlot.BeginSubplots", "cols"): "1",
     ("ImPlot.ColormapScale", "size"): "[60 200]",
+    ("BeginTable", "columns"): "3",
+    ("TableSetBgColor", "target"): "'ImGuiTableBgTarget_CellBg'",
 }
 
 # Scope pairing used by the generated test. A True flag means the closer runs
@@ -138,6 +155,9 @@ PAIRS = {
     "BeginTabBar": ("EndTabBar", False),
     "BeginTabItem": ("EndTabItem", False),
     "TreeNode": ("TreePop", False),
+    "BeginTable": ("EndTable", False),
+    # The closer takes the same draw list, so it carries its argument along.
+    "DrawList.PushClipRect": ("DrawList.PopClipRect', PsychImGui('GetWindowDrawList')", True),
     "ImPlot.BeginPlot": ("ImPlot.EndPlot", False),
     "ImPlot.BeginSubplots": ("ImPlot.EndSubplots", False),
     "ImPlot.PushColormap": ("ImPlot.PopColormap", True),
@@ -158,8 +178,77 @@ TEST_SKIP = {"ImPlot.PushStyleVarInt"}
 TEST_ONCE = {"ImPlot.AddColormap"}
 
 # Statements the generated test needs around one subcommand.
+_IN_TABLE = (["tt = PsychImGui('BeginTable', 'genT', 3);"],
+             ["if tt, PsychImGui('EndTable'); end"])
+_IN_TABLE_ROW = (["tt = PsychImGui('BeginTable', 'genT', 3);",
+                  "if tt, PsychImGui('TableNextRow'); PsychImGui('TableNextColumn'); end"],
+                 ["if tt, PsychImGui('EndTable'); end"])
 TEST_CONTEXT = {
     "BeginTabItem": (["PsychImGui('BeginTabBar', 'genTB');"], ["PsychImGui('EndTabBar');"]),
+    # Table calls are legal only between BeginTable and EndTable, and the setup
+    # calls only before the first row.
+    "TableNextRow": _IN_TABLE,
+    "TableNextColumn": _IN_TABLE,
+    "TableSetColumnIndex": _IN_TABLE_ROW,
+    "TableSetupColumn": _IN_TABLE,
+    "TableSetupScrollFreeze": _IN_TABLE,
+    "TableHeadersRow": _IN_TABLE,
+    "TableGetColumnCount": _IN_TABLE,
+    "TableGetColumnIndex": _IN_TABLE,
+    "TableHeader": _IN_TABLE_ROW,
+    "TableSetBgColor": _IN_TABLE_ROW,
+}
+
+# C++ statements around the call of one generated handler, for invariants the
+# marshaling rules cannot see. Keyed by the full MATLAB name. Each entry is
+# (before the call, after the call).
+CALL_HOOKS = {
+    # Dear ImGui guards these with an IM_ASSERT and then dereferences or
+    # indexes anyway. The deferred IM_ASSERT of section 8.3 returns instead of
+    # aborting, so the dereference would follow; see SPEC.md section 14.4.
+    # The checks use only public API: TableGetColumnCount is 0 outside a table.
+    "BeginTable": ([
+         "if (v_columns < 1 || v_columns > 511) { mrs::fail(\"psychimgui:Range\", \"BeginTable: columns must be 1 to 511, got %d.\", v_columns); return; }"], []),
+    "TableNextRow": ([
+         "if (ImGui::TableGetColumnCount() == 0) { mrs::fail(\"psychimgui:Usage\", \"TableNextRow needs an open table: call it between BeginTable and EndTable.\"); return; }"], []),
+    # TableSetColumnIndex before the first TableNextRow begins a cell in no row
+    # at all, and Dear ImGui has no check for that.
+    "TableSetColumnIndex": ([
+         "if (ImGui::TableGetColumnCount() == 0) { mrs::fail(\"psychimgui:Usage\", "
+         "\"TableSetColumnIndex needs an open table: call it between BeginTable and "
+         "EndTable.\"); return; }",
+         "if (ImGui::TableGetRowIndex() < 0) { mrs::fail(\"psychimgui:Usage\", "
+         "\"TableSetColumnIndex needs a row: call TableNextRow first.\"); return; }",
+         "if (v_column_n < 0 || v_column_n >= ImGui::TableGetColumnCount()) { "
+         "mrs::fail(\"psychimgui:Range\", \"TableSetColumnIndex: columnN %d is not a "
+         "column of this table.\", v_column_n); return; }"], []),
+    "TableHeader": ([
+         "if (ImGui::TableGetColumnCount() == 0) { mrs::fail(\"psychimgui:Usage\", \"TableHeader needs an open table: call it between BeginTable and EndTable.\"); return; }",
+         "if (ImGui::TableGetColumnIndex() < 0) { mrs::fail(\"psychimgui:Usage\", \"TableHeader needs a current cell: call TableNextRow and TableNextColumn first.\"); return; }"], []),
+    "TableSetBgColor": ([
+         "if (ImGui::TableGetColumnCount() == 0) { mrs::fail(\"psychimgui:Usage\", \"TableSetBgColor needs an open table: call it between BeginTable and EndTable.\"); return; }",
+         "if (v_target == ImGuiTableBgTarget_None) { mrs::fail(\"psychimgui:Usage\", \"TableSetBgColor: target must not be ImGuiTableBgTarget_None.\"); return; }",
+         "if (v_column_n < -1 || v_column_n >= ImGui::TableGetColumnCount()) { mrs::fail(\"psychimgui:Range\", \"TableSetBgColor: columnN %d is not -1 or a column of this table.\", v_column_n); return; }",
+         "if (v_target == ImGuiTableBgTarget_CellBg && v_column_n == -1 && ImGui::TableGetColumnIndex() < 0) { mrs::fail(\"psychimgui:Usage\", \"TableSetBgColor: a cell color with columnN -1 needs a current cell: call TableNextColumn first.\"); return; }"], []),
+    # Dear ImGui dereferences the current window without a check here, so a
+    # call outside a frame would crash instead of asserting.
+    "GetWindowDrawList": (["if (!pig::frameOpen()) { mrs::fail(\"psychimgui:Usage\", "
+                           "\"GetWindowDrawList needs an open frame: call it between "
+                           "NewFrame and Render.\"); return; }"], []),
+    "GetBackgroundDrawList": (["if (!pig::frameOpen()) { mrs::fail(\"psychimgui:Usage\", "
+                               "\"GetBackgroundDrawList needs an open frame: call it "
+                               "between NewFrame and Render.\"); return; }"], []),
+    "GetForegroundDrawList": (["if (!pig::frameOpen()) { mrs::fail(\"psychimgui:Usage\", "
+                               "\"GetForegroundDrawList needs an open frame: call it "
+                               "between NewFrame and Render.\"); return; }"], []),
+    # ImDrawList::PopClipRect pops without a bounds check once IM_ASSERT
+    # returns, and a pop of Dear ImGui's own clip rectangle corrupts the stack
+    # for the End that owns it. Count the pushes made through the binding.
+    "DrawList.PushClipRect": ([], ["pig::drawListPushClip(slot_self);"]),
+    "DrawList.PopClipRect": (["if (!pig::drawListPopClip(slot_self)) { "
+                              "mrs::fail(\"psychimgui:Usage\", \"DrawList.PopClipRect has "
+                              "no matching DrawList.PushClipRect on this draw list in this "
+                              "frame.\"); return; }"], []),
 }
 
 # Subcommands the generated test must call inside an open ImPlot plot.
@@ -289,6 +378,21 @@ def classify(fn_name, argsT, defaults, suppress, enum_types):
             i += 2
             continue
 
+        if t == "ImVec2*" and nxt is not None and norm_type(nxt.ctype) == "int" and \
+                (_is_count(nxt.name) or nxt.name.startswith("num_")):
+            a.kind, a.exposed = "vec2array", True
+            nxt.kind, nxt.cexpr = "count_of", f"pv_{a.name}.n"
+            out += [a, nxt]
+            i += 2
+            continue
+
+        if t == "ImDrawList*" and a.name == "self":
+            # The object of an ImDrawList method, passed as a handle.
+            a.kind, a.exposed, a.mname = "drawlist", True, "drawList"
+            out.append(a)
+            i += 1
+            continue
+
         if t == "ImVec4*" and nxt is not None and \
                 norm_type(nxt.ctype) == "int" and _is_count(nxt.name):
             a.kind, a.exposed = "vec4array", True
@@ -326,6 +430,8 @@ def classify(fn_name, argsT, defaults, suppress, enum_types):
                 a.kind, a.exposed, a.mname = "fmt", True, "text"
             else:
                 a.kind, a.exposed = "str", True
+                if a.name == "text_begin":
+                    a.mname = "text"
         elif t == "bool":
             a.kind, a.exposed = "bool", True
         elif t == "bool*":
@@ -355,6 +461,8 @@ def classify(fn_name, argsT, defaults, suppress, enum_types):
             a.kind, a.exposed = "point2", True
         elif t == "ImPlotRect":
             a.kind, a.exposed = "rect4", True
+        elif t == "ImU32" and (a.name in ("col", "color") or a.name.startswith("col_")):
+            a.kind, a.exposed = "col32", True
         elif t in INT_TYPES:
             a.kind, a.exposed = "int", True
         elif t in UINT_TYPES:
@@ -415,7 +523,8 @@ def mat_default(a: Arg) -> str:
         return "[]"
     m = re.match(r"^(ImVec2|ImVec4|ImPlotPoint|ImPlotRange|ImPlotRect)\((.*)\)$", d)
     if m:
-        return "[" + m.group(2).replace(",", " ") + "]"
+        parts = [re.sub(r"^(-?[\d.]+)f$", r"", x.strip()) for x in m.group(2).split(",")]
+        return "[" + " ".join(parts) + "]"
     if d.startswith('"'):
         return "'" + d[1:-1] + "'"
     if re.match(r"^-?[\d.]+f$", d):
@@ -426,6 +535,9 @@ def mat_default(a: Arg) -> str:
 def emit_handler(mat_name, d, args, exposed, sig_const, linkage="static"):
     fn = "h_" + mat_name.replace(".", "_")
     call = f"{d.get('namespace', 'ImGui')}::{d['funcname']}"
+    if any(a.kind == "drawlist" for a in args):
+        call = f"v_self->{d['funcname']}"
+    hook_pre, hook_post = CALL_HOOKS.get(mat_name, ([], []))
     req = sum(1 for a in exposed if a.default is None)
     tot = len(exposed)
 
@@ -459,6 +571,21 @@ def emit_handler(mat_name, d, args, exposed, sig_const, linkage="static"):
             guard = f"    if (nargin > {a.idx}) "
         if k == "count_of":
             callargs.append(a.cexpr)
+        elif k == "drawlist":
+            L.append("    int slot_self = -1;")
+            L.append(f'    ImDrawList* v_self = mrs::getDrawList(args[{a.idx}], "{a.mname}", '
+                     "&slot_self);")
+            L.append("    (void)slot_self;")
+        elif k == "col32":
+            dflt = cpp_default(a) if a.default is not None else "0"
+            L.append(f"    ImU32 {v} = (ImU32)({dflt});")
+            L.append(f'{guard}{v} = mrs::getColorU32(args[{a.idx}], "{a.mname}");')
+            callargs.append(v)
+        elif k == "vec2array":
+            L.append(f"    mrs::Vec2Vec pv_{a.name};")
+            L.append(f'    const ImVec2* {v} = mrs::getVec2Array(args[{a.idx}], '
+                     f'"{a.mname}", pv_{a.name});')
+            callargs.append(v)
         elif k == "suppressed":
             callargs.append(cpp_default(a))
         elif k == "bufsize":
@@ -588,12 +715,17 @@ def emit_handler(mat_name, d, args, exposed, sig_const, linkage="static"):
 
     L += deferred
     L.append("    if (mrs::failed()) return;")
+    L += [f"    {h}" for h in hook_pre]
 
     ret = norm_type(d.get("ret", "void"))
     argstr = ", ".join(callargs)
     if ret == "void":
         L.append(f"    {call}({argstr});")
         rets = outputs
+    elif ret == "ImDrawList*":
+        L.append(f"    double ret = mrs::drawListOut({call}({argstr}));")
+        L.append("    if (mrs::failed()) return;")
+        rets = [("double", "ret")] + outputs
     else:
         decl = "const char*" if ret == "char*" else ret
         L.append(f"    {decl} ret = {call}({argstr});")
@@ -601,6 +733,7 @@ def emit_handler(mat_name, d, args, exposed, sig_const, linkage="static"):
               "ImPlotRange": "range2", "ImPlotRect": "rect4x",
               "char*": "text"}.get(ret, "double")
         rets = [(rk, "ret")] + outputs
+    L += [f"    {h}" for h in hook_post]
 
     for oi, (kind, expr) in enumerate(rets):
         if kind == "bool":
@@ -925,6 +1058,8 @@ def test_value(mat_name, a: Arg) -> str:
         "rect4": "[0 1 0 1]", "floatarray": "[0 1 2 3]", "cellstr": "{'a', 'b'}",
         "textbuf": "'txt'", "doublearray": "[0 1 2 3]", "cellstr_nocount": "{'a', 'b', 'c', 'd'}",
         "vec4array": "[1 0 0 1; 0 1 0 1]",
+        "col32": "[1 0 0 1]", "vec2array": "[0 0; 10 10; 20 0]",
+        "drawlist": "PsychImGui('GetWindowDrawList')",
     }.get(k, f"zeros(1, {a.n})" if k in ("arrf", "arri") else "0")
 
 
@@ -970,7 +1105,7 @@ def collect_enums(se):
 
 
 def build_section(entries_in, by_ov, enum_types, prefix, linkage="static", cpp_ns="",
-                  groups=None):
+                  groups=None, prefixed_symbols=False):
     entries, helps, tests, refused, body = [], [], [], [], []
     groups = groups or {}
     for ov, name, suppress in entries_in:
@@ -999,11 +1134,15 @@ def build_section(entries_in, by_ov, enum_types, prefix, linkage="static", cpp_n
             refused.append((ov, "not found in definitions.json"))
             continue
         mat = name or d["funcname"]
+        # A prefixed section compiled into the same file as [ImGui] carries the
+        # prefix into its symbols, so DrawList.PushClipRect cannot collide with
+        # a later ImGui PushClipRect.
+        hmat = (prefix + mat) if prefixed_symbols else mat
         try:
             args, exposed = classify(mat, d["argsT"], d.get("defaults", {}) or {},
                                      set(suppress), enum_types)
-            sig_const = "kSig_" + mat.replace(".", "_")
-            src, nouts, ret = emit_handler(mat, d, args, exposed, sig_const, linkage)
+            sig_const = "kSig_" + hmat.replace(".", "_")
+            src, nouts, ret = emit_handler(hmat, d, args, exposed, sig_const, linkage)
         except Refused as e:
             refused.append((ov, str(e)))
             continue
@@ -1014,7 +1153,7 @@ def build_section(entries_in, by_ov, enum_types, prefix, linkage="static", cpp_n
         body.append(src)
         body.append("")
         qual = (cpp_ns + "::") if cpp_ns else ""
-        entries.append((prefix + mat, qual + "h_" + mat.replace(".", "_"),
+        entries.append((prefix + mat, qual + "h_" + hmat.replace(".", "_"),
                         qual + sig_const))
         helps.append((prefix + mat, sig))
         tests.append((prefix + mat, mat, exposed, nouts, ret))
@@ -1032,6 +1171,7 @@ def write_gen_dispatch(root, ig, implot_entries, enums, imgui_ver, implot_ver):
     out.append('#include "imgui_psych.h"')
     out.append("")
     out.append('#include "marshal.h"')
+    out.append('#include "imgui_marshal.h"')
     out.append('#include "dispatch.h"')
     out.append("")
     out.append("namespace mrs { Error g_err; }")
@@ -1180,6 +1320,22 @@ def write_help(root, rows, helps, imgui_ver, implot_ver):
     for name, sig in helps:
         L.append(f"%     {sig}")
     L.append("%")
+    L.append("%   Draw lists")
+    L.append("%   ----------")
+    L.append("%   GetWindowDrawList, GetBackgroundDrawList, and GetForegroundDrawList")
+    L.append("%   return a handle for the DrawList subcommands. A handle is valid only")
+    L.append("%   between NewFrame and Render of the frame that returned it; a stale")
+    L.append("%   handle raises psychimgui:InvalidHandle. Colors are 1x4 [r g b a] in")
+    L.append("%   0 to 1, points are 1x2 [x y] in window pixels, and point lists are")
+    L.append("%   Nx2.")
+    L.append("%")
+    L.append("%   Images")
+    L.append("%   ------")
+    L.append("%   Image and ImageButton take the struct from PsychImGuiImage, or an")
+    L.append("%   OpenGL GL_TEXTURE_2D texture name. Make the Psychtoolbox texture")
+    L.append("%   with Screen('MakeTexture', win, img, [], 1); the default")
+    L.append("%   GL_TEXTURE_RECTANGLE texture raises psychimgui:Texture.")
+    L.append("%")
     L.append("%   The four helpers own the Screen('BeginOpenGL') and")
     L.append("%   Screen('EndOpenGL') pairs, so a script writes none itself:")
     L.append("%")
@@ -1190,8 +1346,8 @@ def write_help(root, rows, helps, imgui_ver, implot_ver):
     L.append("%     PsychImGuiGL(ig, 'Subcommand', ...)")
     L.append("%")
     L.append("%   See also PsychImGuiOpen, PsychImGuiFrame, PsychImGuiClose,")
-    L.append("%   PsychImGuiGL, PsychImGuiSetup, PsychImGuiInput, PsychImGuiKeymap,")
-    L.append("%   PsychImGuiOp, PsychImGuiDemo.")
+    L.append("%   PsychImGuiGL, PsychImGuiImage, PsychImGuiSetup, PsychImGuiInput,")
+    L.append("%   PsychImGuiKeymap, PsychImGuiOp, PsychImGuiDemo.")
     L.append("")
     L.append("    error('psychimgui:NotBuilt', ...")
     L.append("        ['The PsychImGui MEX is not on the path. Run PsychImGuiSetup, ' ...")
@@ -1218,17 +1374,20 @@ def write_opcodes(root, rows):
          "        return;",
          "    end",
          "    op = struct();"]
-    implot_names = []
+    # A dotted name belongs to a namespace, which becomes a nested struct:
+    # op.ImPlot.BeginPlot, op.DrawList.AddLine.
+    spaces = {}
     for i, (name, sym, sig_const, flags) in enumerate(rows):
         if "." in name:
-            implot_names.append((name.split(".", 1)[1], i))
+            ns, short = name.split(".", 1)
+            spaces.setdefault(ns, []).append((short, i))
         else:
             L.append(f"    op.{name} = {i};")
-    if implot_names:
-        L.append("    ip = struct();")
-        for short, i in implot_names:
-            L.append(f"    ip.{short} = {i};")
-        L.append("    op.ImPlot = ip;")
+    for ns in sorted(spaces):
+        L.append("    ns = struct();")
+        for short, i in spaces[ns]:
+            L.append(f"    ns.{short} = {i};")
+        L.append(f"    op.{ns} = ns;")
     L.append("    cached = op;")
     L.append("end")
     (root / "m" / "PsychImGuiOp.m").write_text("\n".join(L) + "\n", encoding="utf-8")
@@ -1237,7 +1396,7 @@ def write_opcodes(root, rows):
 def _implot_lines(tests):
     """MATLAB statements for the ImPlot half of the generated test."""
     L = []
-    closers = {c for c, _ in PAIRS.values()}
+    closers = {c.split("'")[0] for c, _ in PAIRS.values()}
     for entry in tests:
         full, mat = entry[0], entry[1]
         if full in closers:
@@ -1330,7 +1489,7 @@ def write_tests(root, tests, prefix_label, implot_tests):
          "%   GENERATED by gen/generate.py. Do not edit by hand.",
          "",
          ""]
-    closers = {c for c, _ in PAIRS.values()}
+    closers = {c.split("'")[0] for c, _ in PAIRS.values()}
     for full, mat, exposed, nouts, ret in tests:
         if full in closers:
             L.append(f"    % {full} is exercised by its opener.")
@@ -1469,6 +1628,9 @@ def main():
     sections = parse_allowlist(root / "gen" / "allowlist.txt")
 
     ig = build_section(sections.get("ImGui", []), by_ov, enum_types, "")
+    dl = build_section(sections.get("DrawList", []), by_ov, enum_types, "DrawList.",
+                       prefixed_symbols=True)
+    ig = tuple(a + b for a, b in zip(ig, dl))
     ip = build_section(sections.get("ImPlot", []), by_ov_p, enum_types, "ImPlot.",
                        linkage="extern", cpp_ns="pig_implot", groups=pdefs)
 
@@ -1478,7 +1640,8 @@ def main():
     write_opcodes(root, rows)
     write_tests(root, ig[2], "", ip[2])
 
-    print(f"generated {len(ig[0])} ImGui and {len(ip[0])} ImPlot subcommands, "
+    print(f"generated {len(ig[0]) - len(dl[0])} ImGui, {len(dl[0])} DrawList, and "
+          f"{len(ip[0])} ImPlot subcommands, "
           f"{len(BUILTINS)} built in, {len(enums)} enum names")
     for ov, why in ig[3] + ip[3]:
         print(f"  refused {ov}: {why}")

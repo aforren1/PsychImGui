@@ -14,7 +14,9 @@
 # no rule and no default makes the generator refuse the entry.
 #
 # Sections are namespaces. [ImGui] subcommands have no prefix. [ImPlot]
-# subcommands are called as PsychImGui('ImPlot.Name', ...).
+# subcommands are called as PsychImGui('ImPlot.Name', ...), and [DrawList]
+# subcommands, the ImDrawList methods, as PsychImGui('DrawList.Name', h, ...),
+# where h is a handle from GetWindowDrawList and friends.
 
 [ImGui]
 
@@ -182,6 +184,49 @@ igSetItemDefaultFocus
 # --- Misc ---
 igGetFrameCount
 igGetTime
+
+# --- Tables (phase 2) ---
+# All thirteen signatures fit the section 7.3 rules as they are. The ImU32 of
+# TableSetBgColor is a color, so it takes the 1x4 color rule. user_data of
+# TableSetupColumn is only read back through the sort specs, which the binding
+# does not expose, so it keeps its default.
+igBeginTable
+igEndTable
+igTableNextRow
+igTableNextColumn
+igTableSetColumnIndex
+igTableSetupColumn          TableSetupColumn    -user_data
+igTableSetupScrollFreeze
+igTableHeadersRow
+igTableHeader
+igTableGetColumnCount
+igTableGetColumnIndex
+igTableSetBgColor
+
+# --- Draw lists (phase 2) ---
+# These return a draw list handle, not a pointer. See SPEC.md section 5.6.
+# The viewport argument keeps its NULL default: one viewport per context.
+igGetWindowDrawList
+igGetBackgroundDrawList
+igGetForegroundDrawList_ViewportPtr     GetForegroundDrawList
+
+[DrawList]
+
+# ImDrawList methods. The first argument is the handle; colors are 1x4
+# [r g b a] in 0 to 1; point lists are Nx2 double.
+ImDrawList_AddLine          AddLine
+ImDrawList_AddRect          AddRect
+ImDrawList_AddRectFilled    AddRectFilled
+ImDrawList_AddCircle        AddCircle
+ImDrawList_AddCircleFilled  AddCircleFilled
+ImDrawList_AddTriangle      AddTriangle
+ImDrawList_AddTriangleFilled    AddTriangleFilled
+# text_end points into text_begin, so it keeps its NULL default.
+ImDrawList_AddText_Vec2     AddText             -text_end
+ImDrawList_AddPolyline      AddPolyline
+ImDrawList_AddConvexPolyFilled  AddConvexPolyFilled
+ImDrawList_PushClipRect     PushClipRect
+ImDrawList_PopClipRect      PopClipRect
 
 [ImPlot]
 

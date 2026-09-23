@@ -4,6 +4,7 @@
 #include "imgui_psych.h"
 
 #include "marshal.h"
+#include "imgui_marshal.h"
 #include "dispatch.h"
 
 namespace mrs { Error g_err; }
@@ -13,6 +14,8 @@ namespace pig {
 // Hand-written subcommands, defined in psychimgui.cpp.
 void bi_AddFontFromFileTTF(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_EndFrame(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+void bi_Image(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+void bi_ImageButton(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_Enum(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_Init(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_NewFrame(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
@@ -21,6 +24,7 @@ void bi_PopFont(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_PushFont(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_Render(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_SetGlobalScale(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+void bi_SetTextureFilter(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_ShowDemoWindow(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_ShowMetricsWindow(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_Shutdown(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
@@ -1815,6 +1819,440 @@ static void h_GetTime(int nlhs, mxArray** plhs, int nargin, const mxArray** args
     if (nlhs > 0) plhs[0] = mrs::outDouble((double)(ret));
 }
 
+static const char kSig_BeginTable[] =
+    "open = PsychImGui('BeginTable', strId, columns [, flags=0] [, outerSize=[ ]] [, innerWidth=0.0])";
+static void h_BeginTable(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2 || nargin > 5) { mrs::usage("BeginTable", kSig_BeginTable); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_str_id;
+    const char* v_str_id = "";
+    v_str_id = mrs::toUtf8(args[0], "strId", b_str_id);
+    int v_columns = (int)(0);
+    v_columns = (int)mrs::getInt(args[1], "columns");
+    ImGuiTableFlags v_flags = (ImGuiTableFlags)(0);
+    if (nargin > 2) v_flags = (ImGuiTableFlags)mrs::getFlags(args[2], "flags");
+    ImVec2 v_outer_size = ImVec2(0.0f,0.0f);
+    if (nargin > 3) { double t[2] = {0, 0}; mrs::getVec(args[3], "outerSize", t, 2); v_outer_size = ImVec2((float)t[0], (float)t[1]); }
+    float v_inner_width = (float)(0.0f);
+    if (nargin > 4) v_inner_width = (float)mrs::getScalar(args[4], "innerWidth");
+    if (mrs::failed()) return;
+    if (v_columns < 1 || v_columns > 511) { mrs::fail("psychimgui:Range", "BeginTable: columns must be 1 to 511, got %d.", v_columns); return; }
+    bool ret = ImGui::BeginTable(v_str_id, v_columns, v_flags, v_outer_size, v_inner_width);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
+static const char kSig_EndTable[] =
+    "PsychImGui('EndTable')";
+static void h_EndTable(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("EndTable", kSig_EndTable); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    ImGui::EndTable();
+}
+
+static const char kSig_TableNextRow[] =
+    "PsychImGui('TableNextRow' [, rowFlags=0] [, minRowHeight=0.0])";
+static void h_TableNextRow(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 0 || nargin > 2) { mrs::usage("TableNextRow", kSig_TableNextRow); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    ImGuiTableRowFlags v_row_flags = (ImGuiTableRowFlags)(0);
+    if (nargin > 0) v_row_flags = (ImGuiTableRowFlags)mrs::getFlags(args[0], "rowFlags");
+    float v_min_row_height = (float)(0.0f);
+    if (nargin > 1) v_min_row_height = (float)mrs::getScalar(args[1], "minRowHeight");
+    if (mrs::failed()) return;
+    if (ImGui::TableGetColumnCount() == 0) { mrs::fail("psychimgui:Usage", "TableNextRow needs an open table: call it between BeginTable and EndTable."); return; }
+    ImGui::TableNextRow(v_row_flags, v_min_row_height);
+}
+
+static const char kSig_TableNextColumn[] =
+    "visible = PsychImGui('TableNextColumn')";
+static void h_TableNextColumn(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("TableNextColumn", kSig_TableNextColumn); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    bool ret = ImGui::TableNextColumn();
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
+static const char kSig_TableSetColumnIndex[] =
+    "visible = PsychImGui('TableSetColumnIndex', columnN)";
+static void h_TableSetColumnIndex(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 1) { mrs::usage("TableSetColumnIndex", kSig_TableSetColumnIndex); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int v_column_n = (int)(0);
+    v_column_n = (int)mrs::getInt(args[0], "columnN");
+    if (mrs::failed()) return;
+    if (ImGui::TableGetColumnCount() == 0) { mrs::fail("psychimgui:Usage", "TableSetColumnIndex needs an open table: call it between BeginTable and EndTable."); return; }
+    if (ImGui::TableGetRowIndex() < 0) { mrs::fail("psychimgui:Usage", "TableSetColumnIndex needs a row: call TableNextRow first."); return; }
+    if (v_column_n < 0 || v_column_n >= ImGui::TableGetColumnCount()) { mrs::fail("psychimgui:Range", "TableSetColumnIndex: columnN %d is not a column of this table.", v_column_n); return; }
+    bool ret = ImGui::TableSetColumnIndex(v_column_n);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
+static const char kSig_TableSetupColumn[] =
+    "PsychImGui('TableSetupColumn', label [, flags=0] [, initWidthOrWeight=0.0])";
+static void h_TableSetupColumn(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 3) { mrs::usage("TableSetupColumn", kSig_TableSetupColumn); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_label;
+    const char* v_label = "";
+    v_label = mrs::toUtf8(args[0], "label", b_label);
+    ImGuiTableColumnFlags v_flags = (ImGuiTableColumnFlags)(0);
+    if (nargin > 1) v_flags = (ImGuiTableColumnFlags)mrs::getFlags(args[1], "flags");
+    float v_init_width_or_weight = (float)(0.0f);
+    if (nargin > 2) v_init_width_or_weight = (float)mrs::getScalar(args[2], "initWidthOrWeight");
+    if (mrs::failed()) return;
+    ImGui::TableSetupColumn(v_label, v_flags, v_init_width_or_weight, 0);
+}
+
+static const char kSig_TableSetupScrollFreeze[] =
+    "PsychImGui('TableSetupScrollFreeze', cols, rows)";
+static void h_TableSetupScrollFreeze(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2 || nargin > 2) { mrs::usage("TableSetupScrollFreeze", kSig_TableSetupScrollFreeze); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int v_cols = (int)(0);
+    v_cols = (int)mrs::getInt(args[0], "cols");
+    int v_rows = (int)(0);
+    v_rows = (int)mrs::getInt(args[1], "rows");
+    if (mrs::failed()) return;
+    ImGui::TableSetupScrollFreeze(v_cols, v_rows);
+}
+
+static const char kSig_TableHeadersRow[] =
+    "PsychImGui('TableHeadersRow')";
+static void h_TableHeadersRow(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("TableHeadersRow", kSig_TableHeadersRow); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    ImGui::TableHeadersRow();
+}
+
+static const char kSig_TableHeader[] =
+    "PsychImGui('TableHeader', label)";
+static void h_TableHeader(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 1) { mrs::usage("TableHeader", kSig_TableHeader); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_label;
+    const char* v_label = "";
+    v_label = mrs::toUtf8(args[0], "label", b_label);
+    if (mrs::failed()) return;
+    if (ImGui::TableGetColumnCount() == 0) { mrs::fail("psychimgui:Usage", "TableHeader needs an open table: call it between BeginTable and EndTable."); return; }
+    if (ImGui::TableGetColumnIndex() < 0) { mrs::fail("psychimgui:Usage", "TableHeader needs a current cell: call TableNextRow and TableNextColumn first."); return; }
+    ImGui::TableHeader(v_label);
+}
+
+static const char kSig_TableGetColumnCount[] =
+    "count = PsychImGui('TableGetColumnCount')";
+static void h_TableGetColumnCount(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("TableGetColumnCount", kSig_TableGetColumnCount); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    int ret = ImGui::TableGetColumnCount();
+    if (nlhs > 0) plhs[0] = mrs::outDouble((double)(ret));
+}
+
+static const char kSig_TableGetColumnIndex[] =
+    "index = PsychImGui('TableGetColumnIndex')";
+static void h_TableGetColumnIndex(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("TableGetColumnIndex", kSig_TableGetColumnIndex); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    int ret = ImGui::TableGetColumnIndex();
+    if (nlhs > 0) plhs[0] = mrs::outDouble((double)(ret));
+}
+
+static const char kSig_TableSetBgColor[] =
+    "PsychImGui('TableSetBgColor', target, color [, columnN=-1])";
+static void h_TableSetBgColor(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2 || nargin > 3) { mrs::usage("TableSetBgColor", kSig_TableSetBgColor); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    ImGuiTableBgTarget v_target = (ImGuiTableBgTarget)(0);
+    v_target = (ImGuiTableBgTarget)mrs::getFlags(args[0], "target");
+    ImU32 v_color = (ImU32)(0);
+    v_color = mrs::getColorU32(args[1], "color");
+    int v_column_n = (int)(-1);
+    if (nargin > 2) v_column_n = (int)mrs::getInt(args[2], "columnN");
+    if (mrs::failed()) return;
+    if (ImGui::TableGetColumnCount() == 0) { mrs::fail("psychimgui:Usage", "TableSetBgColor needs an open table: call it between BeginTable and EndTable."); return; }
+    if (v_target == ImGuiTableBgTarget_None) { mrs::fail("psychimgui:Usage", "TableSetBgColor: target must not be ImGuiTableBgTarget_None."); return; }
+    if (v_column_n < -1 || v_column_n >= ImGui::TableGetColumnCount()) { mrs::fail("psychimgui:Range", "TableSetBgColor: columnN %d is not -1 or a column of this table.", v_column_n); return; }
+    if (v_target == ImGuiTableBgTarget_CellBg && v_column_n == -1 && ImGui::TableGetColumnIndex() < 0) { mrs::fail("psychimgui:Usage", "TableSetBgColor: a cell color with columnN -1 needs a current cell: call TableNextColumn first."); return; }
+    ImGui::TableSetBgColor(v_target, v_color, v_column_n);
+}
+
+static const char kSig_GetWindowDrawList[] =
+    "drawList = PsychImGui('GetWindowDrawList')";
+static void h_GetWindowDrawList(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("GetWindowDrawList", kSig_GetWindowDrawList); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    if (!pig::frameOpen()) { mrs::fail("psychimgui:Usage", "GetWindowDrawList needs an open frame: call it between NewFrame and Render."); return; }
+    double ret = mrs::drawListOut(ImGui::GetWindowDrawList());
+    if (mrs::failed()) return;
+    if (nlhs > 0) plhs[0] = mrs::outDouble((double)(ret));
+}
+
+static const char kSig_GetBackgroundDrawList[] =
+    "drawList = PsychImGui('GetBackgroundDrawList')";
+static void h_GetBackgroundDrawList(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("GetBackgroundDrawList", kSig_GetBackgroundDrawList); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    if (!pig::frameOpen()) { mrs::fail("psychimgui:Usage", "GetBackgroundDrawList needs an open frame: call it between NewFrame and Render."); return; }
+    double ret = mrs::drawListOut(ImGui::GetBackgroundDrawList(NULL));
+    if (mrs::failed()) return;
+    if (nlhs > 0) plhs[0] = mrs::outDouble((double)(ret));
+}
+
+static const char kSig_GetForegroundDrawList[] =
+    "drawList = PsychImGui('GetForegroundDrawList')";
+static void h_GetForegroundDrawList(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("GetForegroundDrawList", kSig_GetForegroundDrawList); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    if (!pig::frameOpen()) { mrs::fail("psychimgui:Usage", "GetForegroundDrawList needs an open frame: call it between NewFrame and Render."); return; }
+    double ret = mrs::drawListOut(ImGui::GetForegroundDrawList(NULL));
+    if (mrs::failed()) return;
+    if (nlhs > 0) plhs[0] = mrs::outDouble((double)(ret));
+}
+
+static const char kSig_DrawList_AddLine[] =
+    "PsychImGui('DrawList.AddLine', drawList, p1, p2, col [, thickness=1.0])";
+static void h_DrawList_AddLine(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 4 || nargin > 5) { mrs::usage("DrawList.AddLine", kSig_DrawList_AddLine); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    ImVec2 v_p1 = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[1], "p1", t, 2); v_p1 = ImVec2((float)t[0], (float)t[1]); }
+    ImVec2 v_p2 = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[2], "p2", t, 2); v_p2 = ImVec2((float)t[0], (float)t[1]); }
+    ImU32 v_col = (ImU32)(0);
+    v_col = mrs::getColorU32(args[3], "col");
+    float v_thickness = (float)(1.0f);
+    if (nargin > 4) v_thickness = (float)mrs::getScalar(args[4], "thickness");
+    if (mrs::failed()) return;
+    v_self->AddLine(v_p1, v_p2, v_col, v_thickness);
+}
+
+static const char kSig_DrawList_AddRect[] =
+    "PsychImGui('DrawList.AddRect', drawList, pMin, pMax, col [, rounding=0.0] [, thickness=1.0] [, flags=0])";
+static void h_DrawList_AddRect(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 4 || nargin > 7) { mrs::usage("DrawList.AddRect", kSig_DrawList_AddRect); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    ImVec2 v_p_min = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[1], "pMin", t, 2); v_p_min = ImVec2((float)t[0], (float)t[1]); }
+    ImVec2 v_p_max = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[2], "pMax", t, 2); v_p_max = ImVec2((float)t[0], (float)t[1]); }
+    ImU32 v_col = (ImU32)(0);
+    v_col = mrs::getColorU32(args[3], "col");
+    float v_rounding = (float)(0.0f);
+    if (nargin > 4) v_rounding = (float)mrs::getScalar(args[4], "rounding");
+    float v_thickness = (float)(1.0f);
+    if (nargin > 5) v_thickness = (float)mrs::getScalar(args[5], "thickness");
+    ImDrawFlags v_flags = (ImDrawFlags)(0);
+    if (nargin > 6) v_flags = (ImDrawFlags)mrs::getFlags(args[6], "flags");
+    if (mrs::failed()) return;
+    v_self->AddRect(v_p_min, v_p_max, v_col, v_rounding, v_thickness, v_flags);
+}
+
+static const char kSig_DrawList_AddRectFilled[] =
+    "PsychImGui('DrawList.AddRectFilled', drawList, pMin, pMax, col [, rounding=0.0] [, flags=0])";
+static void h_DrawList_AddRectFilled(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 4 || nargin > 6) { mrs::usage("DrawList.AddRectFilled", kSig_DrawList_AddRectFilled); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    ImVec2 v_p_min = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[1], "pMin", t, 2); v_p_min = ImVec2((float)t[0], (float)t[1]); }
+    ImVec2 v_p_max = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[2], "pMax", t, 2); v_p_max = ImVec2((float)t[0], (float)t[1]); }
+    ImU32 v_col = (ImU32)(0);
+    v_col = mrs::getColorU32(args[3], "col");
+    float v_rounding = (float)(0.0f);
+    if (nargin > 4) v_rounding = (float)mrs::getScalar(args[4], "rounding");
+    ImDrawFlags v_flags = (ImDrawFlags)(0);
+    if (nargin > 5) v_flags = (ImDrawFlags)mrs::getFlags(args[5], "flags");
+    if (mrs::failed()) return;
+    v_self->AddRectFilled(v_p_min, v_p_max, v_col, v_rounding, v_flags);
+}
+
+static const char kSig_DrawList_AddCircle[] =
+    "PsychImGui('DrawList.AddCircle', drawList, center, radius, col [, numSegments=0] [, thickness=1.0])";
+static void h_DrawList_AddCircle(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 4 || nargin > 6) { mrs::usage("DrawList.AddCircle", kSig_DrawList_AddCircle); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    ImVec2 v_center = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[1], "center", t, 2); v_center = ImVec2((float)t[0], (float)t[1]); }
+    float v_radius = (float)(0);
+    v_radius = (float)mrs::getScalar(args[2], "radius");
+    ImU32 v_col = (ImU32)(0);
+    v_col = mrs::getColorU32(args[3], "col");
+    int v_num_segments = (int)(0);
+    if (nargin > 4) v_num_segments = (int)mrs::getInt(args[4], "numSegments");
+    float v_thickness = (float)(1.0f);
+    if (nargin > 5) v_thickness = (float)mrs::getScalar(args[5], "thickness");
+    if (mrs::failed()) return;
+    v_self->AddCircle(v_center, v_radius, v_col, v_num_segments, v_thickness);
+}
+
+static const char kSig_DrawList_AddCircleFilled[] =
+    "PsychImGui('DrawList.AddCircleFilled', drawList, center, radius, col [, numSegments=0])";
+static void h_DrawList_AddCircleFilled(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 4 || nargin > 5) { mrs::usage("DrawList.AddCircleFilled", kSig_DrawList_AddCircleFilled); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    ImVec2 v_center = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[1], "center", t, 2); v_center = ImVec2((float)t[0], (float)t[1]); }
+    float v_radius = (float)(0);
+    v_radius = (float)mrs::getScalar(args[2], "radius");
+    ImU32 v_col = (ImU32)(0);
+    v_col = mrs::getColorU32(args[3], "col");
+    int v_num_segments = (int)(0);
+    if (nargin > 4) v_num_segments = (int)mrs::getInt(args[4], "numSegments");
+    if (mrs::failed()) return;
+    v_self->AddCircleFilled(v_center, v_radius, v_col, v_num_segments);
+}
+
+static const char kSig_DrawList_AddTriangle[] =
+    "PsychImGui('DrawList.AddTriangle', drawList, p1, p2, p3, col [, thickness=1.0])";
+static void h_DrawList_AddTriangle(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 5 || nargin > 6) { mrs::usage("DrawList.AddTriangle", kSig_DrawList_AddTriangle); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    ImVec2 v_p1 = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[1], "p1", t, 2); v_p1 = ImVec2((float)t[0], (float)t[1]); }
+    ImVec2 v_p2 = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[2], "p2", t, 2); v_p2 = ImVec2((float)t[0], (float)t[1]); }
+    ImVec2 v_p3 = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[3], "p3", t, 2); v_p3 = ImVec2((float)t[0], (float)t[1]); }
+    ImU32 v_col = (ImU32)(0);
+    v_col = mrs::getColorU32(args[4], "col");
+    float v_thickness = (float)(1.0f);
+    if (nargin > 5) v_thickness = (float)mrs::getScalar(args[5], "thickness");
+    if (mrs::failed()) return;
+    v_self->AddTriangle(v_p1, v_p2, v_p3, v_col, v_thickness);
+}
+
+static const char kSig_DrawList_AddTriangleFilled[] =
+    "PsychImGui('DrawList.AddTriangleFilled', drawList, p1, p2, p3, col)";
+static void h_DrawList_AddTriangleFilled(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 5 || nargin > 5) { mrs::usage("DrawList.AddTriangleFilled", kSig_DrawList_AddTriangleFilled); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    ImVec2 v_p1 = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[1], "p1", t, 2); v_p1 = ImVec2((float)t[0], (float)t[1]); }
+    ImVec2 v_p2 = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[2], "p2", t, 2); v_p2 = ImVec2((float)t[0], (float)t[1]); }
+    ImVec2 v_p3 = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[3], "p3", t, 2); v_p3 = ImVec2((float)t[0], (float)t[1]); }
+    ImU32 v_col = (ImU32)(0);
+    v_col = mrs::getColorU32(args[4], "col");
+    if (mrs::failed()) return;
+    v_self->AddTriangleFilled(v_p1, v_p2, v_p3, v_col);
+}
+
+static const char kSig_DrawList_AddText[] =
+    "PsychImGui('DrawList.AddText', drawList, pos, col, text)";
+static void h_DrawList_AddText(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 4 || nargin > 4) { mrs::usage("DrawList.AddText", kSig_DrawList_AddText); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    ImVec2 v_pos = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[1], "pos", t, 2); v_pos = ImVec2((float)t[0], (float)t[1]); }
+    ImU32 v_col = (ImU32)(0);
+    v_col = mrs::getColorU32(args[2], "col");
+    mrs::StrBuf<256> b_text_begin;
+    const char* v_text_begin = "";
+    v_text_begin = mrs::toUtf8(args[3], "text", b_text_begin);
+    if (mrs::failed()) return;
+    v_self->AddText(v_pos, v_col, v_text_begin, NULL);
+}
+
+static const char kSig_DrawList_AddPolyline[] =
+    "PsychImGui('DrawList.AddPolyline', drawList, points, col, thickness [, flags=0])";
+static void h_DrawList_AddPolyline(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 4 || nargin > 5) { mrs::usage("DrawList.AddPolyline", kSig_DrawList_AddPolyline); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    mrs::Vec2Vec pv_points;
+    const ImVec2* v_points = mrs::getVec2Array(args[1], "points", pv_points);
+    ImU32 v_col = (ImU32)(0);
+    v_col = mrs::getColorU32(args[2], "col");
+    float v_thickness = (float)(0);
+    v_thickness = (float)mrs::getScalar(args[3], "thickness");
+    ImDrawFlags v_flags = (ImDrawFlags)(0);
+    if (nargin > 4) v_flags = (ImDrawFlags)mrs::getFlags(args[4], "flags");
+    if (mrs::failed()) return;
+    v_self->AddPolyline(v_points, pv_points.n, v_col, v_thickness, v_flags);
+}
+
+static const char kSig_DrawList_AddConvexPolyFilled[] =
+    "PsychImGui('DrawList.AddConvexPolyFilled', drawList, points, col)";
+static void h_DrawList_AddConvexPolyFilled(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 3 || nargin > 3) { mrs::usage("DrawList.AddConvexPolyFilled", kSig_DrawList_AddConvexPolyFilled); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    mrs::Vec2Vec pv_points;
+    const ImVec2* v_points = mrs::getVec2Array(args[1], "points", pv_points);
+    ImU32 v_col = (ImU32)(0);
+    v_col = mrs::getColorU32(args[2], "col");
+    if (mrs::failed()) return;
+    v_self->AddConvexPolyFilled(v_points, pv_points.n, v_col);
+}
+
+static const char kSig_DrawList_PushClipRect[] =
+    "PsychImGui('DrawList.PushClipRect', drawList, clipRectMin, clipRectMax [, intersectWithCurrentClipRect=false])";
+static void h_DrawList_PushClipRect(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 3 || nargin > 4) { mrs::usage("DrawList.PushClipRect", kSig_DrawList_PushClipRect); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    ImVec2 v_clip_rect_min = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[1], "clipRectMin", t, 2); v_clip_rect_min = ImVec2((float)t[0], (float)t[1]); }
+    ImVec2 v_clip_rect_max = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[2], "clipRectMax", t, 2); v_clip_rect_max = ImVec2((float)t[0], (float)t[1]); }
+    bool v_intersect_with_current_clip_rect = false;
+    if (nargin > 3) v_intersect_with_current_clip_rect = mrs::getBool(args[3], "intersectWithCurrentClipRect");
+    if (mrs::failed()) return;
+    v_self->PushClipRect(v_clip_rect_min, v_clip_rect_max, v_intersect_with_current_clip_rect);
+    pig::drawListPushClip(slot_self);
+}
+
+static const char kSig_DrawList_PopClipRect[] =
+    "PsychImGui('DrawList.PopClipRect', drawList)";
+static void h_DrawList_PopClipRect(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 1) { mrs::usage("DrawList.PopClipRect", kSig_DrawList_PopClipRect); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    if (mrs::failed()) return;
+    if (!pig::drawListPopClip(slot_self)) { mrs::fail("psychimgui:Usage", "DrawList.PopClipRect has no matching DrawList.PushClipRect on this draw list in this frame."); return; }
+    v_self->PopClipRect();
+}
+
 #ifdef PSYCHIMGUI_IMPLOT
 namespace pig_implot {
 void h_BeginPlot(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
@@ -3028,6 +3466,8 @@ double enum_value(int i) { return kEnumTable[i].value; }
 
 static const char kSigBi_AddFontFromFileTTF[] = "idx = PsychImGui('AddFontFromFileTTF', path, sizePx [, glyphRanges])";
 static const char kSigBi_EndFrame[] = "PsychImGui('EndFrame')";
+static const char kSigBi_Image[] = "PsychImGui('Image', tex, size [, uv0=[0 0]] [, uv1=[1 1]] [, bgCol=[0 0 0 0]] [, tintCol=[1 1 1 1]])";
+static const char kSigBi_ImageButton[] = "pressed = PsychImGui('ImageButton', strId, tex, size [, uv0=[0 0]] [, uv1=[1 1]] [, bgCol=[0 0 0 0]] [, tintCol=[1 1 1 1]])";
 static const char kSigBi_Enum[] = "v = PsychImGui('Enum' [, 'ImGuiWindowFlags_NoTitleBar'])";
 static const char kSigBi_Init[] = "PsychImGui('Init', win, rect, keymap [, opts])";
 static const char kSigBi_NewFrame[] = "PsychImGui('NewFrame', in)";
@@ -3036,6 +3476,7 @@ static const char kSigBi_PopFont[] = "PsychImGui('PopFont')";
 static const char kSigBi_PushFont[] = "PsychImGui('PushFont', idx [, sizePx])";
 static const char kSigBi_Render[] = "PsychImGui('Render')";
 static const char kSigBi_SetGlobalScale[] = "PsychImGui('SetGlobalScale', s)";
+static const char kSigBi_SetTextureFilter[] = "PsychImGui('SetTextureFilter', glId [, mode='linear'])";
 static const char kSigBi_ShowDemoWindow[] = "[open] = PsychImGui('ShowDemoWindow' [, open])";
 static const char kSigBi_ShowMetricsWindow[] = "[open] = PsychImGui('ShowMetricsWindow' [, open])";
 static const char kSigBi_Shutdown[] = "PsychImGui('Shutdown')";
@@ -3068,6 +3509,7 @@ const Entry kTable[] = {
     {"BeginPopupModal", h_BeginPopupModal, kSig_BeginPopupModal, kEntryNeedsInit},
     {"BeginTabBar", h_BeginTabBar, kSig_BeginTabBar, kEntryNeedsInit},
     {"BeginTabItem", h_BeginTabItem, kSig_BeginTabItem, kEntryNeedsInit},
+    {"BeginTable", h_BeginTable, kSig_BeginTable, kEntryNeedsInit},
     {"BeginTooltip", h_BeginTooltip, kSig_BeginTooltip, kEntryNeedsInit},
     {"Bullet", h_Bullet, kSig_Bullet, kEntryNeedsInit},
     {"BulletText", h_BulletText, kSig_BulletText, kEntryNeedsInit},
@@ -3085,6 +3527,18 @@ const Entry kTable[] = {
     {"DragFloat2", h_DragFloat2, kSig_DragFloat2, kEntryNeedsInit},
     {"DragFloat3", h_DragFloat3, kSig_DragFloat3, kEntryNeedsInit},
     {"DragInt", h_DragInt, kSig_DragInt, kEntryNeedsInit},
+    {"DrawList.AddCircle", h_DrawList_AddCircle, kSig_DrawList_AddCircle, kEntryNeedsInit},
+    {"DrawList.AddCircleFilled", h_DrawList_AddCircleFilled, kSig_DrawList_AddCircleFilled, kEntryNeedsInit},
+    {"DrawList.AddConvexPolyFilled", h_DrawList_AddConvexPolyFilled, kSig_DrawList_AddConvexPolyFilled, kEntryNeedsInit},
+    {"DrawList.AddLine", h_DrawList_AddLine, kSig_DrawList_AddLine, kEntryNeedsInit},
+    {"DrawList.AddPolyline", h_DrawList_AddPolyline, kSig_DrawList_AddPolyline, kEntryNeedsInit},
+    {"DrawList.AddRect", h_DrawList_AddRect, kSig_DrawList_AddRect, kEntryNeedsInit},
+    {"DrawList.AddRectFilled", h_DrawList_AddRectFilled, kSig_DrawList_AddRectFilled, kEntryNeedsInit},
+    {"DrawList.AddText", h_DrawList_AddText, kSig_DrawList_AddText, kEntryNeedsInit},
+    {"DrawList.AddTriangle", h_DrawList_AddTriangle, kSig_DrawList_AddTriangle, kEntryNeedsInit},
+    {"DrawList.AddTriangleFilled", h_DrawList_AddTriangleFilled, kSig_DrawList_AddTriangleFilled, kEntryNeedsInit},
+    {"DrawList.PopClipRect", h_DrawList_PopClipRect, kSig_DrawList_PopClipRect, kEntryNeedsInit},
+    {"DrawList.PushClipRect", h_DrawList_PushClipRect, kSig_DrawList_PushClipRect, kEntryNeedsInit},
     {"Dummy", h_Dummy, kSig_Dummy, kEntryNeedsInit},
     {"End", h_End, kSig_End, kEntryNeedsInit},
     {"EndChild", h_EndChild, kSig_EndChild, kEntryNeedsInit},
@@ -3098,15 +3552,19 @@ const Entry kTable[] = {
     {"EndPopup", h_EndPopup, kSig_EndPopup, kEntryNeedsInit},
     {"EndTabBar", h_EndTabBar, kSig_EndTabBar, kEntryNeedsInit},
     {"EndTabItem", h_EndTabItem, kSig_EndTabItem, kEntryNeedsInit},
+    {"EndTable", h_EndTable, kSig_EndTable, kEntryNeedsInit},
     {"EndTooltip", h_EndTooltip, kSig_EndTooltip, kEntryNeedsInit},
     {"Enum", bi_Enum, kSigBi_Enum, 0},
+    {"GetBackgroundDrawList", h_GetBackgroundDrawList, kSig_GetBackgroundDrawList, kEntryNeedsInit},
     {"GetContentRegionAvail", h_GetContentRegionAvail, kSig_GetContentRegionAvail, kEntryNeedsInit},
     {"GetCursorScreenPos", h_GetCursorScreenPos, kSig_GetCursorScreenPos, kEntryNeedsInit},
+    {"GetForegroundDrawList", h_GetForegroundDrawList, kSig_GetForegroundDrawList, kEntryNeedsInit},
     {"GetFrameCount", h_GetFrameCount, kSig_GetFrameCount, kEntryNeedsInit},
     {"GetItemRectMax", h_GetItemRectMax, kSig_GetItemRectMax, kEntryNeedsInit},
     {"GetItemRectMin", h_GetItemRectMin, kSig_GetItemRectMin, kEntryNeedsInit},
     {"GetMousePos", h_GetMousePos, kSig_GetMousePos, kEntryNeedsInit},
     {"GetTime", h_GetTime, kSig_GetTime, kEntryNeedsInit},
+    {"GetWindowDrawList", h_GetWindowDrawList, kSig_GetWindowDrawList, kEntryNeedsInit},
     {"GetWindowPos", h_GetWindowPos, kSig_GetWindowPos, kEntryNeedsInit},
     {"GetWindowSize", h_GetWindowSize, kSig_GetWindowSize, kEntryNeedsInit},
     {"ImPlot.AddColormap", PIG_IMPLOT_FN(pig_implot::h_AddColormap), pig_implot::kSig_AddColormap, kEntryNeedsInit},
@@ -3175,6 +3633,8 @@ const Entry kTable[] = {
     {"ImPlot.StyleColorsLight", PIG_IMPLOT_FN(pig_implot::h_StyleColorsLight), pig_implot::kSig_StyleColorsLight, kEntryNeedsInit},
     {"ImPlot.TagX", PIG_IMPLOT_FN(pig_implot::h_TagX), pig_implot::kSig_TagX, kEntryNeedsInit},
     {"ImPlot.TagY", PIG_IMPLOT_FN(pig_implot::h_TagY), pig_implot::kSig_TagY, kEntryNeedsInit},
+    {"Image", bi_Image, kSigBi_Image, kEntryNeedsInit},
+    {"ImageButton", bi_ImageButton, kSigBi_ImageButton, kEntryNeedsInit},
     {"Indent", h_Indent, kSig_Indent, kEntryNeedsInit},
     {"Init", bi_Init, kSigBi_Init, 0},
     {"InputDouble", h_InputDouble, kSig_InputDouble, kEntryNeedsInit},
@@ -3238,6 +3698,7 @@ const Entry kTable[] = {
     {"SetNextWindowPos", h_SetNextWindowPos, kSig_SetNextWindowPos, kEntryNeedsInit},
     {"SetNextWindowSize", h_SetNextWindowSize, kSig_SetNextWindowSize, kEntryNeedsInit},
     {"SetScrollHereY", h_SetScrollHereY, kSig_SetScrollHereY, kEntryNeedsInit},
+    {"SetTextureFilter", bi_SetTextureFilter, kSigBi_SetTextureFilter, kEntryNeedsInit | kEntryNeedsGL},
     {"SetTooltip", h_SetTooltip, kSig_SetTooltip, kEntryNeedsInit},
     {"ShowDemoWindow", bi_ShowDemoWindow, kSigBi_ShowDemoWindow, kEntryNeedsInit},
     {"ShowMetricsWindow", bi_ShowMetricsWindow, kSigBi_ShowMetricsWindow, kEntryNeedsInit},
@@ -3253,6 +3714,16 @@ const Entry kTable[] = {
     {"StyleColorsClassic", bi_StyleColorsClassic, kSigBi_StyleColorsClassic, kEntryNeedsInit},
     {"StyleColorsDark", bi_StyleColorsDark, kSigBi_StyleColorsDark, kEntryNeedsInit},
     {"StyleColorsLight", bi_StyleColorsLight, kSigBi_StyleColorsLight, kEntryNeedsInit},
+    {"TableGetColumnCount", h_TableGetColumnCount, kSig_TableGetColumnCount, kEntryNeedsInit},
+    {"TableGetColumnIndex", h_TableGetColumnIndex, kSig_TableGetColumnIndex, kEntryNeedsInit},
+    {"TableHeader", h_TableHeader, kSig_TableHeader, kEntryNeedsInit},
+    {"TableHeadersRow", h_TableHeadersRow, kSig_TableHeadersRow, kEntryNeedsInit},
+    {"TableNextColumn", h_TableNextColumn, kSig_TableNextColumn, kEntryNeedsInit},
+    {"TableNextRow", h_TableNextRow, kSig_TableNextRow, kEntryNeedsInit},
+    {"TableSetBgColor", h_TableSetBgColor, kSig_TableSetBgColor, kEntryNeedsInit},
+    {"TableSetColumnIndex", h_TableSetColumnIndex, kSig_TableSetColumnIndex, kEntryNeedsInit},
+    {"TableSetupColumn", h_TableSetupColumn, kSig_TableSetupColumn, kEntryNeedsInit},
+    {"TableSetupScrollFreeze", h_TableSetupScrollFreeze, kSig_TableSetupScrollFreeze, kEntryNeedsInit},
     {"Text", h_Text, kSig_Text, kEntryNeedsInit},
     {"TextColored", h_TextColored, kSig_TextColored, kEntryNeedsInit},
     {"TextDisabled", h_TextDisabled, kSig_TextDisabled, kEntryNeedsInit},
@@ -3265,6 +3736,6 @@ const Entry kTable[] = {
     {"Version", bi_Version, kSigBi_Version, 0},
     {"WantCapture", bi_WantCapture, kSigBi_WantCapture, kEntryNeedsInit},
 };
-const int kTableCount = 210;
+const int kTableCount = 240;
 }  // namespace pig
 

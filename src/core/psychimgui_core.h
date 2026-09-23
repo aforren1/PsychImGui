@@ -8,6 +8,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+struct ImDrawList;
 struct ImFont;
 struct ImGuiContext;
 
@@ -88,6 +89,33 @@ bool implotEnabled();
 void newFrame(const InputFrame& in);
 bool render(Error& err);
 void endFrame();
+
+// True between newFrame and render or endFrame. Dear ImGui dereferences the
+// current window without a check in GetWindowDrawList, so the binding has to
+// refuse such calls outside a frame itself.
+bool frameOpen();
+
+// Draw list handles (SPEC.md section 5.6). A handle is a double that encodes a
+// frame generation and a slot in a per-frame pointer table. The generation
+// moves on at every newFrame, render, endFrame, init, and shutdown, and is
+// never reset, so a handle from an earlier frame or an earlier context can
+// never match again and no stale pointer is ever dereferenced.
+//
+// drawListHandle returns 0 when the per-frame table is full.
+// drawListFromHandle returns nullptr for a stale or malformed handle, and the
+// slot of a live one in *slot.
+double drawListHandle(ImDrawList* dl);
+ImDrawList* drawListFromHandle(double h, int* slot);
+// The user side of the clip rectangle stack of one draw list. Dear ImGui pops
+// without a bounds check once IM_ASSERT returns instead of aborting, so the
+// binding counts the pushes it made and refuses a pop it did not push.
+void drawListPushClip(int slot);
+bool drawListPopClip(int slot);
+
+// Sets the filter of one GL_TEXTURE_2D texture so Dear ImGui's backends can
+// sample it (SPEC.md section 5.7). A no-op with the none renderer. Returns
+// false with err filled when the name is not a GL_TEXTURE_2D texture.
+bool setTextureFilter(unsigned glId, bool linear, Error& err);
 
 void wantCapture(bool* mouse, bool* keyboard, bool* text);
 

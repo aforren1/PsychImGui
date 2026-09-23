@@ -2893,6 +2893,660 @@ function test_gen_marshal()
     end
     tf_end();
 
+    %% BeginTable (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('BeginTable', 'x', 3);
+        t_ok('BeginTable defaults', numel(o) == 1);
+        t_ok('BeginTable defaults class', islogical(o{1}));
+    catch e
+        t_ok('BeginTable defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    if exist('o', 'var') && ~isempty(o) && islogical(o{1}) && o{1}
+        PsychImGui('EndTable');
+    end
+    tf_end();
+
+    %% BeginTable (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('BeginTable', 'x', 3, 0, [0 0], 0);
+        t_ok('BeginTable full', numel(o) == 1);
+        t_ok('BeginTable full class', islogical(o{1}));
+    catch e
+        t_ok('BeginTable full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    if exist('o', 'var') && ~isempty(o) && islogical(o{1}) && o{1}
+        PsychImGui('EndTable');
+    end
+    tf_end();
+
+    % EndTable is exercised by its opener.
+    %% TableNextRow (defaults)
+    tf_begin();
+    tt = PsychImGui('BeginTable', 'genT', 3);
+    try
+        PsychImGui('TableNextRow');
+        t_ok('TableNextRow defaults', true);
+    catch e
+        t_ok('TableNextRow defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    if tt, PsychImGui('EndTable'); end
+    tf_end();
+
+    %% TableNextRow (full)
+    tf_begin();
+    tt = PsychImGui('BeginTable', 'genT', 3);
+    try
+        PsychImGui('TableNextRow', 0, 0);
+        t_ok('TableNextRow full', true);
+    catch e
+        t_ok('TableNextRow full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    if tt, PsychImGui('EndTable'); end
+    tf_end();
+
+    %% TableNextColumn (defaults)
+    tf_begin();
+    tt = PsychImGui('BeginTable', 'genT', 3);
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('TableNextColumn');
+        t_ok('TableNextColumn defaults', numel(o) == 1);
+        t_ok('TableNextColumn defaults class', islogical(o{1}));
+    catch e
+        t_ok('TableNextColumn defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    if tt, PsychImGui('EndTable'); end
+    tf_end();
+
+    %% TableNextColumn (full)
+    tf_begin();
+    tt = PsychImGui('BeginTable', 'genT', 3);
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('TableNextColumn');
+        t_ok('TableNextColumn full', numel(o) == 1);
+        t_ok('TableNextColumn full class', islogical(o{1}));
+    catch e
+        t_ok('TableNextColumn full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    if tt, PsychImGui('EndTable'); end
+    tf_end();
+
+    %% TableSetColumnIndex (defaults)
+    tf_begin();
+    tt = PsychImGui('BeginTable', 'genT', 3);
+    if tt, PsychImGui('TableNextRow'); PsychImGui('TableNextColumn'); end
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('TableSetColumnIndex', 0);
+        t_ok('TableSetColumnIndex defaults', numel(o) == 1);
+        t_ok('TableSetColumnIndex defaults class', islogical(o{1}));
+    catch e
+        t_ok('TableSetColumnIndex defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    if tt, PsychImGui('EndTable'); end
+    tf_end();
+
+    %% TableSetColumnIndex (full)
+    tf_begin();
+    tt = PsychImGui('BeginTable', 'genT', 3);
+    if tt, PsychImGui('TableNextRow'); PsychImGui('TableNextColumn'); end
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('TableSetColumnIndex', 0);
+        t_ok('TableSetColumnIndex full', numel(o) == 1);
+        t_ok('TableSetColumnIndex full class', islogical(o{1}));
+    catch e
+        t_ok('TableSetColumnIndex full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    if tt, PsychImGui('EndTable'); end
+    tf_end();
+
+    %% TableSetupColumn (defaults)
+    tf_begin();
+    tt = PsychImGui('BeginTable', 'genT', 3);
+    try
+        PsychImGui('TableSetupColumn', 'x');
+        t_ok('TableSetupColumn defaults', true);
+    catch e
+        t_ok('TableSetupColumn defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    if tt, PsychImGui('EndTable'); end
+    tf_end();
+
+    %% TableSetupColumn (full)
+    tf_begin();
+    tt = PsychImGui('BeginTable', 'genT', 3);
+    try
+        PsychImGui('TableSetupColumn', 'x', 0, 0);
+        t_ok('TableSetupColumn full', true);
+    catch e
+        t_ok('TableSetupColumn full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    if tt, PsychImGui('EndTable'); end
+    tf_end();
+
+    %% TableSetupScrollFreeze (defaults)
+    tf_begin();
+    tt = PsychImGui('BeginTable', 'genT', 3);
+    try
+        PsychImGui('TableSetupScrollFreeze', 0, 0);
+        t_ok('TableSetupScrollFreeze defaults', true);
+    catch e
+        t_ok('TableSetupScrollFreeze defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    if tt, PsychImGui('EndTable'); end
+    tf_end();
+
+    %% TableSetupScrollFreeze (full)
+    tf_begin();
+    tt = PsychImGui('BeginTable', 'genT', 3);
+    try
+        PsychImGui('TableSetupScrollFreeze', 0, 0);
+        t_ok('TableSetupScrollFreeze full', true);
+    catch e
+        t_ok('TableSetupScrollFreeze full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    if tt, PsychImGui('EndTable'); end
+    tf_end();
+
+    %% TableHeadersRow (defaults)
+    tf_begin();
+    tt = PsychImGui('BeginTable', 'genT', 3);
+    try
+        PsychImGui('TableHeadersRow');
+        t_ok('TableHeadersRow defaults', true);
+    catch e
+        t_ok('TableHeadersRow defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    if tt, PsychImGui('EndTable'); end
+    tf_end();
+
+    %% TableHeadersRow (full)
+    tf_begin();
+    tt = PsychImGui('BeginTable', 'genT', 3);
+    try
+        PsychImGui('TableHeadersRow');
+        t_ok('TableHeadersRow full', true);
+    catch e
+        t_ok('TableHeadersRow full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    if tt, PsychImGui('EndTable'); end
+    tf_end();
+
+    %% TableHeader (defaults)
+    tf_begin();
+    tt = PsychImGui('BeginTable', 'genT', 3);
+    if tt, PsychImGui('TableNextRow'); PsychImGui('TableNextColumn'); end
+    try
+        PsychImGui('TableHeader', 'x');
+        t_ok('TableHeader defaults', true);
+    catch e
+        t_ok('TableHeader defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    if tt, PsychImGui('EndTable'); end
+    tf_end();
+
+    %% TableHeader (full)
+    tf_begin();
+    tt = PsychImGui('BeginTable', 'genT', 3);
+    if tt, PsychImGui('TableNextRow'); PsychImGui('TableNextColumn'); end
+    try
+        PsychImGui('TableHeader', 'x');
+        t_ok('TableHeader full', true);
+    catch e
+        t_ok('TableHeader full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    if tt, PsychImGui('EndTable'); end
+    tf_end();
+
+    %% TableGetColumnCount (defaults)
+    tf_begin();
+    tt = PsychImGui('BeginTable', 'genT', 3);
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('TableGetColumnCount');
+        t_ok('TableGetColumnCount defaults', numel(o) == 1);
+        t_ok('TableGetColumnCount defaults class', isnumeric(o{1}));
+    catch e
+        t_ok('TableGetColumnCount defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    if tt, PsychImGui('EndTable'); end
+    tf_end();
+
+    %% TableGetColumnCount (full)
+    tf_begin();
+    tt = PsychImGui('BeginTable', 'genT', 3);
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('TableGetColumnCount');
+        t_ok('TableGetColumnCount full', numel(o) == 1);
+        t_ok('TableGetColumnCount full class', isnumeric(o{1}));
+    catch e
+        t_ok('TableGetColumnCount full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    if tt, PsychImGui('EndTable'); end
+    tf_end();
+
+    %% TableGetColumnIndex (defaults)
+    tf_begin();
+    tt = PsychImGui('BeginTable', 'genT', 3);
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('TableGetColumnIndex');
+        t_ok('TableGetColumnIndex defaults', numel(o) == 1);
+        t_ok('TableGetColumnIndex defaults class', isnumeric(o{1}));
+    catch e
+        t_ok('TableGetColumnIndex defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    if tt, PsychImGui('EndTable'); end
+    tf_end();
+
+    %% TableGetColumnIndex (full)
+    tf_begin();
+    tt = PsychImGui('BeginTable', 'genT', 3);
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('TableGetColumnIndex');
+        t_ok('TableGetColumnIndex full', numel(o) == 1);
+        t_ok('TableGetColumnIndex full class', isnumeric(o{1}));
+    catch e
+        t_ok('TableGetColumnIndex full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    if tt, PsychImGui('EndTable'); end
+    tf_end();
+
+    %% TableSetBgColor (defaults)
+    tf_begin();
+    tt = PsychImGui('BeginTable', 'genT', 3);
+    if tt, PsychImGui('TableNextRow'); PsychImGui('TableNextColumn'); end
+    try
+        PsychImGui('TableSetBgColor', 'ImGuiTableBgTarget_CellBg', [1 0 0 1]);
+        t_ok('TableSetBgColor defaults', true);
+    catch e
+        t_ok('TableSetBgColor defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    if tt, PsychImGui('EndTable'); end
+    tf_end();
+
+    %% TableSetBgColor (full)
+    tf_begin();
+    tt = PsychImGui('BeginTable', 'genT', 3);
+    if tt, PsychImGui('TableNextRow'); PsychImGui('TableNextColumn'); end
+    try
+        PsychImGui('TableSetBgColor', 'ImGuiTableBgTarget_CellBg', [1 0 0 1], 0);
+        t_ok('TableSetBgColor full', true);
+    catch e
+        t_ok('TableSetBgColor full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    if tt, PsychImGui('EndTable'); end
+    tf_end();
+
+    %% GetWindowDrawList (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetWindowDrawList');
+        t_ok('GetWindowDrawList defaults', numel(o) == 1);
+        t_ok('GetWindowDrawList defaults class', isnumeric(o{1}));
+    catch e
+        t_ok('GetWindowDrawList defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% GetWindowDrawList (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetWindowDrawList');
+        t_ok('GetWindowDrawList full', numel(o) == 1);
+        t_ok('GetWindowDrawList full class', isnumeric(o{1}));
+    catch e
+        t_ok('GetWindowDrawList full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% GetBackgroundDrawList (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetBackgroundDrawList');
+        t_ok('GetBackgroundDrawList defaults', numel(o) == 1);
+        t_ok('GetBackgroundDrawList defaults class', isnumeric(o{1}));
+    catch e
+        t_ok('GetBackgroundDrawList defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% GetBackgroundDrawList (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetBackgroundDrawList');
+        t_ok('GetBackgroundDrawList full', numel(o) == 1);
+        t_ok('GetBackgroundDrawList full class', isnumeric(o{1}));
+    catch e
+        t_ok('GetBackgroundDrawList full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% GetForegroundDrawList (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetForegroundDrawList');
+        t_ok('GetForegroundDrawList defaults', numel(o) == 1);
+        t_ok('GetForegroundDrawList defaults class', isnumeric(o{1}));
+    catch e
+        t_ok('GetForegroundDrawList defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% GetForegroundDrawList (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetForegroundDrawList');
+        t_ok('GetForegroundDrawList full', numel(o) == 1);
+        t_ok('GetForegroundDrawList full class', isnumeric(o{1}));
+    catch e
+        t_ok('GetForegroundDrawList full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% DrawList.AddLine (defaults)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddLine', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [1 0 0 1]);
+        t_ok('DrawList.AddLine defaults', true);
+    catch e
+        t_ok('DrawList.AddLine defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddLine (full)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddLine', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [1 0 0 1], 0);
+        t_ok('DrawList.AddLine full', true);
+    catch e
+        t_ok('DrawList.AddLine full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddRect (defaults)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddRect', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [1 0 0 1]);
+        t_ok('DrawList.AddRect defaults', true);
+    catch e
+        t_ok('DrawList.AddRect defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddRect (full)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddRect', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [1 0 0 1], 0, 0, 0);
+        t_ok('DrawList.AddRect full', true);
+    catch e
+        t_ok('DrawList.AddRect full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddRectFilled (defaults)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddRectFilled', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [1 0 0 1]);
+        t_ok('DrawList.AddRectFilled defaults', true);
+    catch e
+        t_ok('DrawList.AddRectFilled defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddRectFilled (full)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddRectFilled', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [1 0 0 1], 0, 0);
+        t_ok('DrawList.AddRectFilled full', true);
+    catch e
+        t_ok('DrawList.AddRectFilled full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddCircle (defaults)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddCircle', PsychImGui('GetWindowDrawList'), [0 0], 0, [1 0 0 1]);
+        t_ok('DrawList.AddCircle defaults', true);
+    catch e
+        t_ok('DrawList.AddCircle defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddCircle (full)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddCircle', PsychImGui('GetWindowDrawList'), [0 0], 0, [1 0 0 1], 0, 0);
+        t_ok('DrawList.AddCircle full', true);
+    catch e
+        t_ok('DrawList.AddCircle full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddCircleFilled (defaults)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddCircleFilled', PsychImGui('GetWindowDrawList'), [0 0], 0, [1 0 0 1]);
+        t_ok('DrawList.AddCircleFilled defaults', true);
+    catch e
+        t_ok('DrawList.AddCircleFilled defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddCircleFilled (full)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddCircleFilled', PsychImGui('GetWindowDrawList'), [0 0], 0, [1 0 0 1], 0);
+        t_ok('DrawList.AddCircleFilled full', true);
+    catch e
+        t_ok('DrawList.AddCircleFilled full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddTriangle (defaults)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddTriangle', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [0 0], [1 0 0 1]);
+        t_ok('DrawList.AddTriangle defaults', true);
+    catch e
+        t_ok('DrawList.AddTriangle defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddTriangle (full)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddTriangle', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [0 0], [1 0 0 1], 0);
+        t_ok('DrawList.AddTriangle full', true);
+    catch e
+        t_ok('DrawList.AddTriangle full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddTriangleFilled (defaults)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddTriangleFilled', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [0 0], [1 0 0 1]);
+        t_ok('DrawList.AddTriangleFilled defaults', true);
+    catch e
+        t_ok('DrawList.AddTriangleFilled defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddTriangleFilled (full)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddTriangleFilled', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [0 0], [1 0 0 1]);
+        t_ok('DrawList.AddTriangleFilled full', true);
+    catch e
+        t_ok('DrawList.AddTriangleFilled full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddText (defaults)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddText', PsychImGui('GetWindowDrawList'), [0 0], [1 0 0 1], 'x');
+        t_ok('DrawList.AddText defaults', true);
+    catch e
+        t_ok('DrawList.AddText defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddText (full)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddText', PsychImGui('GetWindowDrawList'), [0 0], [1 0 0 1], 'x');
+        t_ok('DrawList.AddText full', true);
+    catch e
+        t_ok('DrawList.AddText full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddPolyline (defaults)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddPolyline', PsychImGui('GetWindowDrawList'), [0 0; 10 10; 20 0], [1 0 0 1], 0);
+        t_ok('DrawList.AddPolyline defaults', true);
+    catch e
+        t_ok('DrawList.AddPolyline defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddPolyline (full)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddPolyline', PsychImGui('GetWindowDrawList'), [0 0; 10 10; 20 0], [1 0 0 1], 0, 0);
+        t_ok('DrawList.AddPolyline full', true);
+    catch e
+        t_ok('DrawList.AddPolyline full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddConvexPolyFilled (defaults)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddConvexPolyFilled', PsychImGui('GetWindowDrawList'), [0 0; 10 10; 20 0], [1 0 0 1]);
+        t_ok('DrawList.AddConvexPolyFilled defaults', true);
+    catch e
+        t_ok('DrawList.AddConvexPolyFilled defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddConvexPolyFilled (full)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddConvexPolyFilled', PsychImGui('GetWindowDrawList'), [0 0; 10 10; 20 0], [1 0 0 1]);
+        t_ok('DrawList.AddConvexPolyFilled full', true);
+    catch e
+        t_ok('DrawList.AddConvexPolyFilled full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.PushClipRect (defaults)
+    tf_begin();
+    try
+        PsychImGui('DrawList.PushClipRect', PsychImGui('GetWindowDrawList'), [0 0], [0 0]);
+        t_ok('DrawList.PushClipRect defaults', true);
+    catch e
+        t_ok('DrawList.PushClipRect defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    PsychImGui('DrawList.PopClipRect', PsychImGui('GetWindowDrawList')');
+    tf_end();
+
+    %% DrawList.PushClipRect (full)
+    tf_begin();
+    try
+        PsychImGui('DrawList.PushClipRect', PsychImGui('GetWindowDrawList'), [0 0], [0 0], false);
+        t_ok('DrawList.PushClipRect full', true);
+    catch e
+        t_ok('DrawList.PushClipRect full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    PsychImGui('DrawList.PopClipRect', PsychImGui('GetWindowDrawList')');
+    tf_end();
+
+    % DrawList.PopClipRect is exercised by its opener.
     %% ---- ImPlot ----
     v = PsychImGui('Version');
     if ~v.implot

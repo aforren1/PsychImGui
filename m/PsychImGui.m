@@ -13,6 +13,8 @@ function varargout = PsychImGui(varargin)
 %   ---------------------
 %     idx = PsychImGui('AddFontFromFileTTF', path, sizePx [, glyphRanges])
 %     PsychImGui('EndFrame')
+%     PsychImGui('Image', tex, size [, uv0=[0 0]] [, uv1=[1 1]] [, bgCol=[0 0 0 0]] [, tintCol=[1 1 1 1]])
+%     pressed = PsychImGui('ImageButton', strId, tex, size [, uv0=[0 0]] [, uv1=[1 1]] [, bgCol=[0 0 0 0]] [, tintCol=[1 1 1 1]])
 %     v = PsychImGui('Enum' [, 'ImGuiWindowFlags_NoTitleBar'])
 %     PsychImGui('Init', win, rect, keymap [, opts])
 %     PsychImGui('NewFrame', in)
@@ -21,6 +23,7 @@ function varargout = PsychImGui(varargin)
 %     PsychImGui('PushFont', idx [, sizePx])
 %     PsychImGui('Render')
 %     PsychImGui('SetGlobalScale', s)
+%     PsychImGui('SetTextureFilter', glId [, mode='linear'])
 %     [open] = PsychImGui('ShowDemoWindow' [, open])
 %     [open] = PsychImGui('ShowMetricsWindow' [, open])
 %     PsychImGui('Shutdown')
@@ -158,6 +161,33 @@ function varargout = PsychImGui(varargin)
 %     PsychImGui('SetItemDefaultFocus')
 %     ret = PsychImGui('GetFrameCount')
 %     ret = PsychImGui('GetTime')
+%     open = PsychImGui('BeginTable', strId, columns [, flags=0] [, outerSize=[ ]] [, innerWidth=0.0])
+%     PsychImGui('EndTable')
+%     PsychImGui('TableNextRow' [, rowFlags=0] [, minRowHeight=0.0])
+%     visible = PsychImGui('TableNextColumn')
+%     visible = PsychImGui('TableSetColumnIndex', columnN)
+%     PsychImGui('TableSetupColumn', label [, flags=0] [, initWidthOrWeight=0.0])
+%     PsychImGui('TableSetupScrollFreeze', cols, rows)
+%     PsychImGui('TableHeadersRow')
+%     PsychImGui('TableHeader', label)
+%     count = PsychImGui('TableGetColumnCount')
+%     index = PsychImGui('TableGetColumnIndex')
+%     PsychImGui('TableSetBgColor', target, color [, columnN=-1])
+%     drawList = PsychImGui('GetWindowDrawList')
+%     drawList = PsychImGui('GetBackgroundDrawList')
+%     drawList = PsychImGui('GetForegroundDrawList')
+%     PsychImGui('DrawList.AddLine', drawList, p1, p2, col [, thickness=1.0])
+%     PsychImGui('DrawList.AddRect', drawList, pMin, pMax, col [, rounding=0.0] [, thickness=1.0] [, flags=0])
+%     PsychImGui('DrawList.AddRectFilled', drawList, pMin, pMax, col [, rounding=0.0] [, flags=0])
+%     PsychImGui('DrawList.AddCircle', drawList, center, radius, col [, numSegments=0] [, thickness=1.0])
+%     PsychImGui('DrawList.AddCircleFilled', drawList, center, radius, col [, numSegments=0])
+%     PsychImGui('DrawList.AddTriangle', drawList, p1, p2, p3, col [, thickness=1.0])
+%     PsychImGui('DrawList.AddTriangleFilled', drawList, p1, p2, p3, col)
+%     PsychImGui('DrawList.AddText', drawList, pos, col, text)
+%     PsychImGui('DrawList.AddPolyline', drawList, points, col, thickness [, flags=0])
+%     PsychImGui('DrawList.AddConvexPolyFilled', drawList, points, col)
+%     PsychImGui('DrawList.PushClipRect', drawList, clipRectMin, clipRectMax [, intersectWithCurrentClipRect=false])
+%     PsychImGui('DrawList.PopClipRect', drawList)
 %     open = PsychImGui('ImPlot.BeginPlot', titleId [, size=[-1 0]] [, flags=0])
 %     PsychImGui('ImPlot.EndPlot')
 %     open = PsychImGui('ImPlot.BeginSubplots', titleId, rows, cols, size [, flags=0])
@@ -233,6 +263,22 @@ function varargout = PsychImGui(varargin)
 %     open = PsychImGui('ImPlot.ShowDemoWindow' [, open=[]])
 %     popen = PsychImGui('ImPlot.ShowMetricsWindow' [, popen=[]])
 %
+%   Draw lists
+%   ----------
+%   GetWindowDrawList, GetBackgroundDrawList, and GetForegroundDrawList
+%   return a handle for the DrawList subcommands. A handle is valid only
+%   between NewFrame and Render of the frame that returned it; a stale
+%   handle raises psychimgui:InvalidHandle. Colors are 1x4 [r g b a] in
+%   0 to 1, points are 1x2 [x y] in window pixels, and point lists are
+%   Nx2.
+%
+%   Images
+%   ------
+%   Image and ImageButton take the struct from PsychImGuiImage, or an
+%   OpenGL GL_TEXTURE_2D texture name. Make the Psychtoolbox texture
+%   with Screen('MakeTexture', win, img, [], 1); the default
+%   GL_TEXTURE_RECTANGLE texture raises psychimgui:Texture.
+%
 %   The four helpers own the Screen('BeginOpenGL') and
 %   Screen('EndOpenGL') pairs, so a script writes none itself:
 %
@@ -243,8 +289,8 @@ function varargout = PsychImGui(varargin)
 %     PsychImGuiGL(ig, 'Subcommand', ...)
 %
 %   See also PsychImGuiOpen, PsychImGuiFrame, PsychImGuiClose,
-%   PsychImGuiGL, PsychImGuiSetup, PsychImGuiInput, PsychImGuiKeymap,
-%   PsychImGuiOp, PsychImGuiDemo.
+%   PsychImGuiGL, PsychImGuiImage, PsychImGuiSetup, PsychImGuiInput,
+%   PsychImGuiKeymap, PsychImGuiOp, PsychImGuiDemo.
 
     error('psychimgui:NotBuilt', ...
         ['The PsychImGui MEX is not on the path. Run PsychImGuiSetup, ' ...

@@ -11,9 +11,10 @@ calibration tools, and debugging overlays.
 `SPEC.md` is the design reference. This file tells you how to build the
 binding, how to run the tests, and how to run the demo.
 
-Status: phases 1 and 1.5 complete. 125 Dear ImGui subcommands, 66 ImPlot
-subcommands, and 19 lifecycle subcommands, against Dear ImGui 1.92.9b and
-ImPlot 1.1. `SPEC.md` section 13 has the phase plan and section 14 lists every
+Status: phases 1, 1.5, and 2 complete. 140 Dear ImGui subcommands, 12 draw
+list subcommands, 66 ImPlot subcommands, and 22 hand-written subcommands,
+against Dear ImGui 1.92.9b and ImPlot 1.1. Phase 2 added tables, draw lists,
+and images from Psychtoolbox textures. `SPEC.md` section 13 has the phase plan and section 14 lists every
 place the code differs from the specification.
 
 ## Requirements
@@ -107,18 +108,28 @@ texture support.
 | `test_keymap.m` | Shape and content of the PTB keycode table |
 | `test_stats.m` | The counters count, and `reset` clears them |
 | `test_assert.m` | An `IM_ASSERT` becomes an error instead of an abort |
+| `test_tables.m` | Table call sequences, and the refusal of table calls outside a table |
+| `test_drawlist.m` | Draw list handles, every `DrawList.` subcommand, stale handles |
+| `test_image.m` | `Image`, `ImageButton`, `SetTextureFilter`, and `PsychImGuiImage` arguments |
 | `test_helpers.m` | The four convenience helpers, against a recording `Screen` stub |
 
 ### Tests that need a GPU
 
-Two tests need a real Psychtoolbox window. Run them by hand:
+Three tests need a real Psychtoolbox window. Run them by hand:
 
     addpath(fullfile(pwd, 'tests'), fullfile(pwd, 'tests', 'gl'));
     test_gl_render        % the binding draws into a PTB window
     test_gl_demo_gabor    % the demo's Gabor really is a Gabor
+    test_gl_phase2        % tables, draw lists, and images, pixel by pixel
+    test_gl_phase2('opengl2')   % the same on the fixed function backend
+
+Each one prints `SKIP` and returns when Psychtoolbox is not installed.
 
 `test_gl_render` draws a panel with a known background color, reads the frame
-back, and checks the color. `test_gl_demo_gabor` checks that the demo's patch
+back, and checks the color. `test_gl_phase2` draws a four color test pattern
+from a texture and from an offscreen window, a table with colored cells, and
+draw list shapes, then checks the color at known pixels. A transposed,
+mirrored, or black image fails it. `test_gl_demo_gabor` checks that the demo's patch
 has the Michelson contrast its slider asks for, because a procedural Gabor
 drawn with the wrong normalization is a plain gray square and raises nothing.
 
@@ -163,8 +174,11 @@ The demo opens a 640x480 Psychtoolbox window with a Gabor patch and a control
 panel. The sliders drive the contrast, the spatial frequency, and the
 orientation. The contrast slider is the Michelson contrast of the patch, from
 0 to 1. With ImPlot compiled in, a second panel shows a live trace of the
-contrast and a heat map of the patch envelope. Press the Quit button or ESCAPE
-to stop. `PsychImGuiDemo(120)` runs 120 frames and returns.
+contrast and a heat map of the patch envelope. A third panel has a table of
+the slider values and a Psychtoolbox texture shown with `PsychImGui('Image')`.
+A draw list overlay marks the outline, the center, and the rotation angle of
+the patch; the "overlay" check box turns it off. Press the Quit button or
+ESCAPE to stop. `PsychImGuiDemo(120)` runs 120 frames and returns.
 
 The demo opens with `PsychDefaultSetup(2)`, as every Psychtoolbox demo does,
 so colors are in the normalized 0 to 1 range.
@@ -203,6 +217,7 @@ so your script writes none itself:
 | `PsychImGuiFrame('End', ig)` | Renders and leaves the context |
 | `PsychImGuiClose(ig)` | Shuts the MEX down and stops the queue. Safe to call twice, and after the window has closed |
 | `PsychImGuiGL(ig, 'Cmd', ...)` | One subcommand inside the context, for calls outside a frame |
+| `tex = PsychImGuiImage(ig, ptbTexture [, filter])` | Describes a Psychtoolbox texture for `PsychImGui('Image')` |
 
 `opts` is the option struct of `PsychImGui('Init')`: `renderer`,
 `glslVersion`, `iniFile`, `logFile`, `implot`.
@@ -358,6 +373,86 @@ Build without ImPlot with `-DPSYCHIMGUI_IMPLOT=OFF`. The subcommands then
 raise `psychimgui:UnknownCommand`, and the opcodes of the other subcommands do
 not move.
 
+## Show a table
+
+Tables use the Dear ImGui call sequence:
+
+    if PsychImGui('BeginTable', 'log', 3, {'ImGuiTableFlags_Borders', 'ImGuiTableFlags_RowBg'})
+        PsychImGui('TableSetupColumn', 'trial');
+        PsychImGui('TableSetupColumn', 'response');
+        PsychImGui('TableSetupColumn', 'rt');
+        PsychImGui('TableHeadersRow');
+        for k = 1:numel(rt)
+            PsychImGui('TableNextRow');
+            PsychImGui('TableNextColumn'); PsychImGui('Text', sprintf('%d', k));
+            PsychImGui('TableNextColumn'); PsychImGui('Text', resp{k});
+            PsychImGui('TableNextColumn'); PsychImGui('Text', sprintf('%.3f', rt(k)));
+        end
+        PsychImGui('EndTable');
+    end
+
+| Subcommand | What it does |
+|---|---|
+| `BeginTable`, `EndTable` | Open and close a table. Call `EndTable` only when `BeginTable` returned true |
+| `TableSetupColumn`, `TableSetupScrollFreeze`, `TableHeadersRow`, `TableHeader` | Column names, frozen rows and columns, header cells |
+| `TableNextRow`, `TableNextColumn`, `TableSetColumnIndex` | Move to the next row or cell |
+| `TableGetColumnCount`, `TableGetColumnIndex` | Where you are |
+| `TableSetBgColor` | Row or cell background, a 1x4 color |
+
+A table call in the wrong place, for example `TableNextRow` outside a table,
+raises `psychimgui:Usage`. Dear ImGui itself would crash there.
+
+## Draw shapes and text
+
+A draw list takes shapes in window pixels. Get a handle every frame, from one
+of three draw lists:
+
+| Getter | Draws |
+|---|---|
+| `GetWindowDrawList` | Into the current window, clipped to it |
+| `GetBackgroundDrawList` | Behind every window |
+| `GetForegroundDrawList` | Over every window |
+
+    fg = PsychImGui('GetForegroundDrawList');
+    PsychImGui('DrawList.AddRect', fg, [100 100], [356 356], [1 0.85 0.2 1], 6, 2);
+    PsychImGui('DrawList.AddCircleFilled', fg, [228 228], 4, [1 0 0 1]);
+    PsychImGui('DrawList.AddPolyline', fg, [x(:) y(:)], [0 1 0 1], 2);
+    PsychImGui('DrawList.AddText', fg, [100 80], [1 1 1 1], 'target');
+
+The `DrawList.` subcommands are `AddLine`, `AddRect`, `AddRectFilled`,
+`AddCircle`, `AddCircleFilled`, `AddTriangle`, `AddTriangleFilled`, `AddText`,
+`AddPolyline`, `AddConvexPolyFilled`, `PushClipRect`, and `PopClipRect`.
+Points are `[x y]`, point lists are Nx2, and colors are `[r g b a]` from 0 to
+1. `PsychImGui('DrawList.AddLine?')` prints a full signature.
+
+A handle is valid only between `NewFrame` and `Render` of the frame that
+returned it. After that it raises `psychimgui:InvalidHandle`, so a stale
+handle can never draw into freed memory.
+
+## Show a Psychtoolbox texture
+
+`Image` and `ImageButton` show a Psychtoolbox texture. Make the texture with
+`specialFlags` 1, and describe it once with `PsychImGuiImage`:
+
+    ptbTex = Screen('MakeTexture', win, img, [], 1);   % GL_TEXTURE_2D
+    tex = PsychImGuiImage(ig, ptbTex);
+    ...
+    PsychImGui('Image', tex, tex.size);                 % inside a frame
+    if PsychImGui('ImageButton', 'pick', tex, [64 32])
+        ...
+    end
+
+Dear ImGui's OpenGL backends sample `GL_TEXTURE_2D` textures only.
+Psychtoolbox makes `GL_TEXTURE_RECTANGLE` textures unless `specialFlags` is 1,
+and those raise `psychimgui:Texture`. An offscreen window from
+`Screen('OpenOffscreenWindow', win, color, rect, [], 1)` works too.
+
+`PsychImGuiImage` also finds out how Psychtoolbox stored the texture. A
+texture made from a matrix is stored transposed, and `Image` turns it upright,
+so `uv0` and `uv1` select a part of the image as you see it, from the top
+left. `PsychImGuiImage(ig, ptbTex, 'nearest')` shows the pixels without
+smoothing.
+
 ## Find a subcommand
 
     PsychImGui                     % list every subcommand
@@ -393,6 +488,7 @@ whose arguments have no marshaling rule, and prints the reason.
     m/                      PsychImGui help text and the helper M-files
     src/                    MEX sources
     src/core/               engine independent core, also linked by smoke_gl
+    src/imgui_marshal.h     color, point list, and draw list handle rules
     tests/                  test suite
     tests/gl/               tests that need Psychtoolbox and a GPU
     third_party/            cimgui and cimplot clones, see PINS.md

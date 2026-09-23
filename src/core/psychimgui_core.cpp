@@ -60,9 +60,30 @@ struct State {
     char glVersion[128];
     char glRenderer[128];
     char glslVersion[32];
+    bool frameOpen;
 };
 
 State g;
+
+// Draw list handles. Kept out of State so the generation survives the memset
+// in init and shutdown: a handle taken before a Shutdown must stay stale after
+// the next Init, even when the new context reuses the same pointers.
+//
+// 256 slots cover one draw list per window for far more windows than a GUI
+// panel has; the table is scanned linearly, which beats hashing at this size.
+const int kDrawListSlots = 256;
+struct DrawListTable {
+    uint64_t gen;
+    int n;
+    ImDrawList* ptr[kDrawListSlots];
+    int clipDepth[kDrawListSlots];
+};
+DrawListTable g_dl = {1, 0, {}, {}};
+
+void drawlists_invalidate() {
+    ++g_dl.gen;
+    g_dl.n = 0;
+}
 
 const char* gl_error_name(unsigned e) {
     switch (e) {
@@ -189,6 +210,7 @@ bool init(const InitOpts& opts, const int32_t* keymap, int keymapN, Error& err) 
 
     memset(&g, 0, sizeof(g));
     assertClear();
+    drawlists_invalidate();
 
     IMGUI_CHECKVERSION();
     g.ctx = ImGui::CreateContext();
@@ -320,6 +342,7 @@ void shutdown(bool* skippedGL) {
     ImGui::DestroyContext(g.ctx);
     memset(&g, 0, sizeof(g));
     assertClear();
+    drawlists_invalidate();
 }
 
 void newFrame(const InputFrame& in) {
@@ -421,12 +444,17 @@ void newFrame(const InputFrame& in) {
     else if (g.rend == Renderer::OpenGL3)
         ImGui_ImplOpenGL3_NewFrame();
     ImGui::NewFrame();
+    drawlists_invalidate();
+    g.frameOpen = true;
 
     g.frame.newFrameNs = nowNs() - t0;
 }
 
 bool render(Error& err) {
     uint64_t t0 = nowNs();
+    // Render consumes the draw lists, so every handle dies here, before it.
+    drawlists_invalidate();
+    g.frameOpen = false;
     ImGui::Render();
     ImDrawData* dd = ImGui::GetDrawData();
     if (dd) {
@@ -479,7 +507,94 @@ bool render(Error& err) {
     return true;
 }
 
-void endFrame() { ImGui::EndFrame(); }
+void endFrame() {
+    drawlists_invalidate();
+    g.frameOpen = false;
+    ImGui::EndFrame();
+}
+
+bool frameOpen() { return g.ctx != nullptr && g.frameOpen; }
+
+double drawListHandle(ImDrawList* dl) {
+    if (!dl) return 0.0;
+    int slot = -1;
+    for (int i = 0; i < g_dl.n; ++i) {
+        if (g_dl.ptr[i] == dl) {
+            slot = i;
+            break;
+        }
+    }
+    if (slot < 0) {
+        if (g_dl.n >= kDrawListSlots) return 0.0;
+        slot = g_dl.n++;
+        g_dl.ptr[slot] = dl;
+        g_dl.clipDepth[slot] = 0;
+    }
+    // Exact in a double up to 2^53, that is 2^45 frames.
+    return (double)(g_dl.gen * (uint64_t)kDrawListSlots + (uint64_t)slot);
+}
+
+ImDrawList* drawListFromHandle(double h, int* slot) {
+    if (slot) *slot = -1;
+    if (!g.frameOpen || !(h >= 0.0) || h > 9007199254740992.0) return nullptr;
+    uint64_t v = (uint64_t)h;
+    if ((double)v != h) return nullptr;
+    uint64_t gen = v / (uint64_t)kDrawListSlots;
+    int s = (int)(v % (uint64_t)kDrawListSlots);
+    if (gen != g_dl.gen || s >= g_dl.n) return nullptr;
+    if (slot) *slot = s;
+    return g_dl.ptr[s];
+}
+
+void drawListPushClip(int slot) {
+    if (slot >= 0 && slot < g_dl.n) ++g_dl.clipDepth[slot];
+}
+
+bool drawListPopClip(int slot) {
+    if (slot < 0 || slot >= g_dl.n || g_dl.clipDepth[slot] <= 0) return false;
+    --g_dl.clipDepth[slot];
+    return true;
+}
+
+bool setTextureFilter(unsigned glId, bool linear, Error& err) {
+    if (g.rend == Renderer::None) return true;
+    // An error left by someone else would read as ours below. It would abort
+    // Screen('EndOpenGL') anyway, so dropping it here loses nothing useful.
+    for (int guard = 0; guard < 64 && glGetError() != GL_NO_ERROR; ++guard) {
+    }
+    GLint prev = 0;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &prev);
+    // Binding a name that already has another target, such as a PTB
+    // GL_TEXTURE_RECTANGLE texture, fails with GL_INVALID_OPERATION. That is
+    // exactly the texture the backends cannot sample, so report it.
+    glBindTexture(GL_TEXTURE_2D, (GLuint)glId);
+    GLenum e = glGetError();
+    if (e != GL_NO_ERROR) {
+        glBindTexture(GL_TEXTURE_2D, (GLuint)prev);
+        while (glGetError() != GL_NO_ERROR) {
+        }
+        set_error(err, "psychimgui:Texture",
+                  "OpenGL texture %u is not a GL_TEXTURE_2D texture (%s on bind). Dear "
+                  "ImGui samples GL_TEXTURE_2D only; create the PTB texture with "
+                  "Screen('MakeTexture', win, img, [], 1).",
+                  glId, gl_error_name((unsigned)e));
+        return false;
+    }
+    // PTB never sets a minification filter when it creates a texture, and the
+    // GL default is a mipmap filter. A texture PTB has not drawn yet has no
+    // mipmaps, so it is incomplete and samples as black until this runs.
+    GLint f = linear ? GL_LINEAR : GL_NEAREST;
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, f);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, f);
+    glBindTexture(GL_TEXTURE_2D, (GLuint)prev);
+    e = glGetError();
+    if (e != GL_NO_ERROR) {
+        set_error(err, "psychimgui:GLError", "OpenGL error %s (0x%04X) in SetTextureFilter.",
+                  gl_error_name((unsigned)e), (unsigned)e);
+        return false;
+    }
+    return true;
+}
 
 void wantCapture(bool* mouse, bool* keyboard, bool* text) {
     ImGuiIO& io = ImGui::GetIO();

@@ -13,6 +13,12 @@ function PsychImGuiDemo(nFrames)
 %   With ImPlot compiled in, a second panel shows a live trace of the contrast
 %   over the last 512 frames and a heat map of the patch envelope.
 %
+%   A third panel has two tabs. "Log" is a table of the slider values, one
+%   row per half second. "Texture" shows a Psychtoolbox texture through
+%   PsychImGui('Image'). An overlay drawn through the foreground draw list
+%   marks the patch outline, its center, and its rotation angle; the
+%   "overlay" check box turns it off.
+%
 %   The demo is also the shortest example of the four helpers: PsychImGuiOpen,
 %   PsychImGuiFrame, PsychImGuiClose, and PsychImGuiGL. It writes no
 %   Screen('BeginOpenGL') and Screen('EndOpenGL') pair of its own.
@@ -23,7 +29,8 @@ function PsychImGuiDemo(nFrames)
 %   display sync tests, so the demo starts fast. An experiment that measures
 %   timing must not do that.
 %
-%   See also PsychImGuiOpen, PsychImGuiFrame, PsychImGuiClose, PsychImGuiGL.
+%   See also PsychImGuiOpen, PsychImGuiFrame, PsychImGuiClose, PsychImGuiGL,
+%   PsychImGuiImage.
 
     if nargin < 1
         nFrames = Inf;
@@ -75,6 +82,21 @@ function PsychImGuiDemo(nFrames)
         % patch would look like a plain gray square. See CreateProceduralGabor.
         gabor = CreateProceduralGabor(win, 256, 256, 0, [0.5 0.5 0.5 0], 1, 0.5);
         dst = CenterRectOnPoint([0 0 256 256], ig.rect(3) / 2, ig.rect(4) / 2);
+        center = [(dst(1) + dst(3)) / 2, (dst(2) + dst(4)) / 2];
+
+        % A texture for PsychImGui('Image'). specialFlags 1 makes it
+        % GL_TEXTURE_2D, the only kind Dear ImGui's backends can sample; the
+        % PTB default, GL_TEXTURE_RECTANGLE, raises psychimgui:Texture. uint8
+        % keeps it an 8 bit texture under the normalized color range.
+        [tx, ty] = meshgrid(linspace(-1, 1, 128), linspace(-1, 1, 64));
+        thumb = uint8(255 * (0.5 + 0.5 * sin(12 * tx) .* exp(-3 * (tx .^ 2 + ty .^ 2))));
+        thumb = repmat(thumb, [1 1 3]);
+        thumb(1:8, 1:8, 2:3) = 0;    % a red corner shows which way is up
+        thumbTex = Screen('MakeTexture', win, thumb, [], 1);
+        thumbImg = PsychImGuiImage(ig, thumbTex);
+
+        showOverlay = true;
+        logRows = zeros(0, 4);       % [frame contrast frequency orientation]
 
         while running && frame < nFrames
             frame = frame + 1;
@@ -127,6 +149,8 @@ function PsychImGuiDemo(nFrames)
                 PsychImGui('Separator');
                 [~, label] = PsychImGui('InputText', 'label', label);
                 [~, showDemo] = PsychImGui('Checkbox', 'Dear ImGui demo', showDemo);
+                PsychImGui('SameLine');
+                [~, showOverlay] = PsychImGui('Checkbox', 'overlay', showOverlay);
                 if PsychImGui('Button', 'Quit')
                     running = false;
                 end
@@ -153,6 +177,47 @@ function PsychImGuiDemo(nFrames)
                     end
                 end
                 PsychImGui('End');
+            end
+
+            if mod(frame, 30) == 1
+                logRows = [logRows(max(1, end - 49):end, :); ...
+                           frame, contrast, freq, orientation]; %#ok<AGROW>
+            end
+            PsychImGui('SetNextWindowPos', [10 330]);
+            PsychImGui('SetNextWindowSize', [290 140]);
+            if PsychImGui('Begin', 'Log and texture')
+                if PsychImGui('BeginTabBar', 'tabs')
+                    if PsychImGui('BeginTabItem', 'Log')
+                        local_log_table(logRows);
+                        PsychImGui('EndTabItem');
+                    end
+                    if PsychImGui('BeginTabItem', 'Texture')
+                        PsychImGui('Image', thumbImg, thumbImg.size);
+                        PsychImGui('SameLine');
+                        PsychImGui('Text', sprintf('%d x %d\n%s', thumbImg.size, ...
+                                                   thumbImg.orientation));
+                        PsychImGui('EndTabItem');
+                    end
+                    PsychImGui('EndTabBar');
+                end
+            end
+            PsychImGui('End');
+
+            if showOverlay
+                % The foreground draw list sits above every window. Its
+                % handle is only good until PsychImGuiFrame('End'), so it is
+                % fetched again every frame.
+                fg = PsychImGui('GetForegroundDrawList');
+                yellow = [1 0.85 0.2 0.9];
+                PsychImGui('DrawList.AddRect', fg, dst(1:2), dst(3:4), yellow, 6, 2);
+                PsychImGui('DrawList.AddLine', fg, center - [8 0], center + [8 0], yellow);
+                PsychImGui('DrawList.AddLine', fg, center - [0 8], center + [0 8], yellow);
+                % Screen('DrawTexture') rotates clockwise, and y points down.
+                tip = center + 110 * [cosd(orientation), sind(orientation)];
+                PsychImGui('DrawList.AddLine', fg, center, tip, yellow, 2);
+                PsychImGui('DrawList.AddCircleFilled', fg, tip, 4, yellow);
+                PsychImGui('DrawList.AddText', fg, dst(1:2) + [4 -18], yellow, ...
+                           sprintf('%.0f deg', orientation));
             end
 
             if showDemo
@@ -183,4 +248,31 @@ function PsychImGuiDemo(nFrames)
     if ~isempty(win)
         sca;
     end
+end
+
+function local_log_table(rows)
+    flags = {'ImGuiTableFlags_Borders', 'ImGuiTableFlags_RowBg', ...
+             'ImGuiTableFlags_ScrollY'};
+    if ~PsychImGui('BeginTable', 'log', 4, flags)
+        return;
+    end
+    PsychImGui('TableSetupColumn', 'frame');
+    PsychImGui('TableSetupColumn', 'contrast');
+    PsychImGui('TableSetupColumn', 'freq');
+    PsychImGui('TableSetupColumn', 'deg');
+    PsychImGui('TableSetupScrollFreeze', 0, 1);    % header stays in view
+    PsychImGui('TableHeadersRow');
+    % Newest first, so the latest values are visible without scrolling.
+    for r = size(rows, 1):-1:1
+        PsychImGui('TableNextRow');
+        PsychImGui('TableNextColumn');
+        PsychImGui('Text', sprintf('%d', rows(r, 1)));
+        PsychImGui('TableNextColumn');
+        PsychImGui('Text', sprintf('%.2f', rows(r, 2)));
+        PsychImGui('TableNextColumn');
+        PsychImGui('Text', sprintf('%.3f', rows(r, 3)));
+        PsychImGui('TableNextColumn');
+        PsychImGui('Text', sprintf('%.0f', rows(r, 4)));
+    end
+    PsychImGui('EndTable');
 end
