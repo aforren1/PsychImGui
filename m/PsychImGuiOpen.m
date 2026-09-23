@@ -17,8 +17,23 @@ function ig = PsychImGuiOpen(win, opts)
 %   pair itself. Use PsychImGuiGL for a single subcommand outside a frame.
 %
 %   opts is the option struct of PsychImGui('Init'). Fields: renderer
-%   ('opengl3' by default, 'none' for tests), glslVersion, iniFile, logFile,
-%   implot.
+%   ('auto' by default, 'opengl3', 'opengl2', 'none' for tests),
+%   glslVersion, iniFile, logFile, implot, implot3d. One more field is read
+%   here and not passed on: stereo, true or false, overrides the stereo mode
+%   the helper reads from the window.
+%
+%   Each call makes a new PsychImGui context, one per window, and makes it
+%   current. With two windows, open each one; the other helpers switch to the
+%   context of the handle they get, so a script never calls
+%   PsychImGui('SetContext') itself:
+%
+%       igA = PsychImGuiOpen(winA);
+%       igB = PsychImGuiOpen(winB);
+%       igA = PsychImGuiFrame('Begin', igA);   % ... widgets for window A
+%       PsychImGuiFrame('End', igA);
+%       igB = PsychImGuiFrame('Begin', igB);   % ... widgets for window B
+%       PsychImGuiFrame('End', igB);
+%       Screen('Flip', winA); Screen('Flip', winB);
 %
 %   The handle struct has these fields:
 %
@@ -28,6 +43,9 @@ function ig = PsychImGuiOpen(win, opts)
 %       opened   GetSecs at the time of the call
 %       opts     the option struct that went to PsychImGui('Init')
 %       in       the last input struct, filled in by PsychImGuiFrame('Begin')
+%       ctx      the context handle PsychImGui('Init') returned
+%       stereo   true when the window has a stereo mode, so that
+%                PsychImGuiFrame('End') draws the GUI into both eyes
 %
 %   The window must have been opened after InitializeMatlabOpenGL, because
 %   Screen('BeginOpenGL') needs 3D graphics support. This function checks that
@@ -60,12 +78,18 @@ function ig = PsychImGuiOpen(win, opts)
 
     rect = Screen('Rect', win);
 
+    if isfield(opts, 'stereo') && ~isempty(opts.stereo)
+        stereo = logical(opts.stereo);
+    else
+        stereo = local_stereo_mode(win) > 0;
+    end
+
     Screen('BeginOpenGL', win);
     % onCleanup, not a plain call at the end: an error inside Init must still
     % leave Psychtoolbox in 2D mode, or the next Screen call aborts the script
     % with a message about the wrong thing.
     glGuard = onCleanup(@() local_end_gl(win));
-    PsychImGui('Init', win, rect, PsychImGuiKeymap(), opts);
+    ctx = PsychImGui('Init', win, rect, PsychImGuiKeymap(), opts);
     clear glGuard;
 
     kq = PsychImGuiInput('Start', win);
@@ -75,7 +99,23 @@ function ig = PsychImGuiOpen(win, opts)
                 'kq', kq, ...
                 'opened', local_now(), ...
                 'opts', opts, ...
-                'in', PsychImGuiInput('Empty', rect));
+                'in', PsychImGuiInput('Empty', rect), ...
+                'ctx', ctx, ...
+                'stereo', stereo);
+end
+
+function mode = local_stereo_mode(win)
+    % A stereo window needs the GUI drawn once per eye. Screen reports the
+    % mode in GetWindowInfo; a Screen that cannot answer, such as the test
+    % stub, means mono.
+    mode = 0;
+    try
+        info = Screen('GetWindowInfo', win);
+        if isfield(info, 'StereoMode')
+            mode = info.StereoMode;
+        end
+    catch
+    end
 end
 
 function t = local_now()

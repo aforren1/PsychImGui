@@ -4,9 +4,10 @@
 #
 # cimgui and cimplot are submodules of this repository. A clone with
 # --recurse-submodules, or `checkout` with `submodules: recursive`, populates
-# them and this script does nothing. In a checkout without submodules it clones
-# the commits recorded in third_party/PINS.md instead. Run it from the
-# repository root, or give that directory as the first argument.
+# them. cimplot3d and ImGuiFileDialog are pinned in PINS.md but not submodules
+# yet. The script clones, at the commit recorded in third_party/PINS.md, each
+# dependency that is missing, and does nothing when all are present. Run it
+# from the repository root, or give that directory as the first argument.
 #
 #   bash tools/fetch_third_party.sh [repo_root]
 
@@ -18,7 +19,9 @@ cd "$root"
 pins="third_party/PINS.md"
 [ -f "$pins" ] || { echo "fetch_third_party: $pins not found (wrong directory?)" >&2; exit 1; }
 
-if [ -f third_party/cimgui/imgui/imgui.h ] && [ -f third_party/cimplot/implot/implot.h ]; then
+if [ -f third_party/cimgui/imgui/imgui.h ] && [ -f third_party/cimplot/implot/implot.h ] &&
+   [ -f third_party/cimplot3d/implot3d/implot3d.h ] &&
+   [ -f third_party/ImGuiFileDialog/ImGuiFileDialog.h ]; then
     echo "fetch_third_party: third_party is already populated, nothing to do"
     exit 0
 fi
@@ -55,12 +58,15 @@ clone_pinned() {   # clone_pinned <path>
 }
 
 mkdir -p third_party
-clone_pinned third_party/cimgui
-clone_pinned third_party/cimplot
+# Each one only when it is missing, so a populated submodule is never touched.
+[ -f third_party/cimgui/imgui/imgui.h ] || clone_pinned third_party/cimgui
+[ -f third_party/cimplot/implot/implot.h ] || clone_pinned third_party/cimplot
+[ -f third_party/cimplot3d/implot3d/implot3d.h ] || clone_pinned third_party/cimplot3d
+[ -f third_party/ImGuiFileDialog/ImGuiFileDialog.h ] || clone_pinned third_party/ImGuiFileDialog
 
 # The nested pins come from each parent's own submodule record, so this only
 # reports them. A mismatch means PINS.md and the parent commit disagree.
-for nested in third_party/cimgui/imgui third_party/cimplot/implot; do
+for nested in third_party/cimgui/imgui third_party/cimplot/implot third_party/cimplot3d/implot3d; do
     want="$(pin_field "$nested" sha || true)"
     have="$(git -C "$nested" rev-parse HEAD)"
     if [ -n "$want" ] && [ "$want" != "$have" ]; then
@@ -70,4 +76,6 @@ done
 
 test -f third_party/cimgui/imgui/imgui.h
 test -f third_party/cimplot/implot/implot.h
+test -f third_party/cimplot3d/implot3d/implot3d.h
+test -f third_party/ImGuiFileDialog/ImGuiFileDialog.h
 echo "fetch_third_party: done"

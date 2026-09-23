@@ -2,12 +2,13 @@
 """Generate the psychimgui binding surface from the cimgui metadata.
 
 Reads third_party/cimgui/generator/output/{definitions,structs_and_enums}.json
-and the matching cimplot files, filters them through gen/allowlist.txt, and
-writes:
+and the matching cimplot and cimplot3d files, filters them through
+gen/allowlist.txt, and writes:
 
     src/gen_dispatch.cpp         handlers, sorted name table, enum value table,
                                  including the [DrawList] section
     src/gen_dispatch_implot.cpp  the same for the ImPlot namespace
+    src/gen_dispatch_implot3d.cpp  the same for the ImPlot3D namespace
     m/PsychImGui.m               help text with every signature
     m/PsychImGuiOp.m             opcode constants for the fast path
     tests/test_gen_marshal.m     one round trip per subcommand
@@ -46,12 +47,36 @@ BUILTINS = [
      "[, bgCol=[0 0 0 0]] [, tintCol=[1 1 1 1]])"),
     ("Enum", "bi_Enum", False, False,
      "v = PsychImGui('Enum' [, 'ImGuiWindowFlags_NoTitleBar'])"),
-    ("Init", "bi_Init", False, False, "PsychImGui('Init', win, rect, keymap [, opts])"),
-    ("NewFrame", "bi_NewFrame", True, False, "PsychImGui('NewFrame', in)"),
+    # The FileDialog subcommands are hand-written: ImGuiFileDialog has no
+    # cimgui-family metadata. See SPEC.md 5.4 and 14.11.
+    ("FileDialog.Close", "bi_FileDialogClose", True, False, "PsychImGui('FileDialog.Close')"),
+    ("FileDialog.Display", "bi_FileDialogDisplay", True, False,
+     "[done, open] = PsychImGui('FileDialog.Display', key [, minSize=[0 0]] "
+     "[, maxSize=[FLT_MAX FLT_MAX]] [, windowFlags=ImGuiWindowFlags_NoCollapse])"),
+    ("FileDialog.GetCurrentPath", "bi_FileDialogGetCurrentPath", True, False,
+     "path = PsychImGui('FileDialog.GetCurrentPath')"),
+    ("FileDialog.GetFilePathName", "bi_FileDialogGetFilePathName", True, False,
+     "path = PsychImGui('FileDialog.GetFilePathName')"),
+    ("FileDialog.GetSelection", "bi_FileDialogGetSelection", True, False,
+     "paths = PsychImGui('FileDialog.GetSelection')"),
+    ("FileDialog.IsOk", "bi_FileDialogIsOk", True, False, "ok = PsychImGui('FileDialog.IsOk')"),
+    ("FileDialog.IsOpened", "bi_FileDialogIsOpened", True, False,
+     "open = PsychImGui('FileDialog.IsOpened' [, key])"),
+    ("FileDialog.Open", "bi_FileDialogOpen", True, False,
+     "PsychImGui('FileDialog.Open', key, title, filters [, path='.'] [, fileName=''] "
+     "[, maxSelection=1] [, flags=0])"),
+    ("GetContext", "bi_GetContext", False, False, "[ctx, all] = PsychImGui('GetContext')"),
+    ("Init", "bi_Init", False, False, "ctx = PsychImGui('Init', win, rect, keymap [, opts])"),
+    # NewFrame needs the window's GL context because the OpenGL 3 backend
+    # creates its shader and font texture on the first frame.
+    ("NewFrame", "bi_NewFrame", True, True, "PsychImGui('NewFrame', in)"),
     ("Opcode", "bi_Opcode", False, False, "op = PsychImGui('Opcode', 'SliderFloat')"),
     ("PopFont", "bi_PopFont", True, False, "PsychImGui('PopFont')"),
     ("PushFont", "bi_PushFont", True, False, "PsychImGui('PushFont', idx [, sizePx])"),
     ("Render", "bi_Render", True, True, "PsychImGui('Render')"),
+    # The second eye of a stereo mode: the same draw data, submitted again.
+    ("RenderAgain", "bi_RenderAgain", True, True, "PsychImGui('RenderAgain')"),
+    ("SetContext", "bi_SetContext", False, False, "PsychImGui('SetContext', ctx)"),
     ("SetGlobalScale", "bi_SetGlobalScale", True, False, "PsychImGui('SetGlobalScale', s)"),
     ("SetTextureFilter", "bi_SetTextureFilter", True, True,
      "PsychImGui('SetTextureFilter', glId [, mode='linear'])"),
@@ -59,7 +84,7 @@ BUILTINS = [
      "[open] = PsychImGui('ShowDemoWindow' [, open])"),
     ("ShowMetricsWindow", "bi_ShowMetricsWindow", True, False,
      "[open] = PsychImGui('ShowMetricsWindow' [, open])"),
-    ("Shutdown", "bi_Shutdown", False, False, "PsychImGui('Shutdown')"),
+    ("Shutdown", "bi_Shutdown", False, False, "PsychImGui('Shutdown' [, ctx | 'all'])"),
     ("Stats", "bi_Stats", False, False, "s = PsychImGui('Stats' [, 'reset'])"),
     ("StyleColorsClassic", "bi_StyleColorsClassic", True, False,
      "PsychImGui('StyleColorsClassic')"),
@@ -80,6 +105,7 @@ RET_NAMES = {
     "BeginPopupModal": "open", "BeginTabBar": "open", "BeginTabItem": "open",
     "BeginTooltip": "open", "BeginPlot": "open", "BeginSubplots": "open",
     "BeginTable": "open", "TableNextColumn": "visible", "TableSetColumnIndex": "visible",
+    "GetPlotRectPos": "pos", "GetPlotRectSize": "size", "PlotToPixels": "pix",
     "GetWindowDrawList": "drawList", "GetBackgroundDrawList": "drawList",
     "GetForegroundDrawList": "drawList", "TableGetColumnCount": "count",
     "TableGetColumnIndex": "index",
@@ -129,6 +155,21 @@ TEST_ARG_OVERRIDE = {
     ("ImPlot.BeginSubplots", "cols"): "1",
     ("ImPlot.ColormapScale", "size"): "[60 200]",
     ("BeginTable", "columns"): "3",
+    ("ImPlot3D.SetupAxis", "axis"): "'ImAxis3D_X'",
+    ("ImPlot3D.SetupAxisLimits", "axis"): "'ImAxis3D_X'",
+    ("ImPlot3D.SetupAxisTicks", "axis"): "'ImAxis3D_X'",
+    ("ImPlot3D.SetupLegend", "location"): "'ImPlot3DLocation_North'",
+    ("ImPlot3D.PushColormap", "name"): "'Viridis'",
+    ("ImPlot3D.PushColormapIndex", "cmap"): "0",
+    ("ImPlot3D.GetColormapName", "cmap"): "0",
+    ("ImPlot3D.PushStyleColor", "idx"): "'ImPlot3DCol_TitleText'",
+    ("ImPlot3D.SetupBoxScale", "x"): "1",
+    ("ImPlot3D.SetupBoxScale", "y"): "1",
+    ("ImPlot3D.SetupBoxScale", "z"): "1",
+    ("ImPlot3D.PushStyleVar", "idx"): "'ImPlot3DStyleVar_LineWeight'",
+    ("ImPlot3D.PushStyleVar", "val"): "1",
+    ("ImPlot3D.PushStyleVarVec2", "idx"): "'ImPlot3DStyleVar_LegendPadding'",
+    ("ImPlot3D.PushStyleVarVec2", "val"): "[5 5]",
     ("TableSetBgColor", "target"): "'ImGuiTableBgTarget_CellBg'",
 }
 
@@ -166,6 +207,12 @@ PAIRS = {
     "ImPlot.PushStyleVar": ("ImPlot.PopStyleVar", True),
     "ImPlot.PushStyleVarInt": ("ImPlot.PopStyleVar", True),
     "ImPlot.PushStyleVarVec2": ("ImPlot.PopStyleVar", True),
+    "ImPlot3D.BeginPlot": ("ImPlot3D.EndPlot", False),
+    "ImPlot3D.PushColormap": ("ImPlot3D.PopColormap", True),
+    "ImPlot3D.PushColormapIndex": ("ImPlot3D.PopColormap", True),
+    "ImPlot3D.PushStyleColor": ("ImPlot3D.PopStyleColor", True),
+    "ImPlot3D.PushStyleVar": ("ImPlot3D.PopStyleVar", True),
+    "ImPlot3D.PushStyleVarVec2": ("ImPlot3D.PopStyleVar", True),
 }
 
 # Subcommands the generated test cannot call with any legal argument, so it
@@ -245,10 +292,47 @@ CALL_HOOKS = {
     # returns, and a pop of Dear ImGui's own clip rectangle corrupts the stack
     # for the End that owns it. Count the pushes made through the binding.
     "DrawList.PushClipRect": ([], ["pig::drawListPushClip(slot_self);"]),
+    # ImPlot3D asserts on a zero or negative scale and then stores it, which
+    # turns every vertex of the plot into NaN.
+    "SetupBoxScale": (["if (!(v_x > 0.0 && v_y > 0.0 && v_z > 0.0)) { "
+                       "mrs::fail(\"psychimgui:Range\", \"SetupBoxScale: x, y, and z must be "
+                       "greater than 0, got %g, %g, %g.\", v_x, v_y, v_z); return; }"], []),
     "DrawList.PopClipRect": (["if (!pig::drawListPopClip(slot_self)) { "
                               "mrs::fail(\"psychimgui:Usage\", \"DrawList.PopClipRect has "
                               "no matching DrawList.PushClipRect on this draw list in this "
                               "frame.\"); return; }"], []),
+}
+
+# Subcommands the generated test must call inside an open ImPlot3D plot.
+IMPLOT3D_INSIDE_PLOT = {
+    "PlotLine", "PlotScatter", "PlotTriangle", "PlotQuad", "PlotSurface", "PlotMesh",
+    "PlotText", "PlotToPixels", "GetPlotRectPos", "GetPlotRectSize", "SetupAxis",
+    "SetupAxes", "SetupAxisLimits", "SetupAxesLimits", "SetupAxisTicks", "SetupBoxRotation",
+    "SetupBoxScale", "SetupLegend",
+}
+
+def plot_guard(ns, mat):
+    """C++ that refuses a call needing an open plot when none is open.
+
+    ImPlot and ImPlot3D check with IM_ASSERT_USER_ERROR and then dereference
+    the current plot, which is null outside BeginPlot and EndPlot. The deferred
+    assert of section 8.3 returns, so the dereference would crash the host.
+    """
+    inside = IMPLOT_INSIDE_PLOT if ns == "ImPlot" else IMPLOT3D_INSIDE_PLOT
+    if mat not in inside:
+        return []
+    fn = "mrs::implotPlotOpen()" if ns == "ImPlot" else "mrs::implot3dPlotOpen()"
+    return [f"if (!{fn}) {{ mrs::fail(\"psychimgui:Usage\", \"{ns}.{mat} needs an "
+            f"open plot: call it between {ns}.BeginPlot and {ns}.EndPlot.\"); return; }}"]
+
+
+# Per namespace settings of the templated plot families (SPEC.md 7.6).
+PLOT_NS = {
+    "ImPlot": {"spec_t": "ImPlotSpec", "spec_start": "mrs::specStart",
+               "data_names": {1: ["values"], 2: ["xs", "ys"], 3: ["xs", "ys1", "ys2"],
+                              4: ["xs", "ys", "neg", "pos"]}},
+    "ImPlot3D": {"spec_t": "ImPlot3DSpec", "spec_start": "mrs::specStart3D",
+                 "data_names": {3: ["xs", "ys", "zs"]}},
 }
 
 # Subcommands the generated test must call inside an open ImPlot plot.
@@ -269,6 +353,7 @@ UNSUPPORTED_RE = re.compile(
     r"ImPlotColormapData\*|ImPlotGetter|ImPlotPoint\(\*.*|.*\(\*.*)$"
 )
 
+SPEC_TYPES = {"ImPlotSpec", "ImPlot3DSpec"}
 VEC2_TYPES = {"ImVec2", "ImVec2_c"}
 VEC4_TYPES = {"ImVec4", "ImVec4_c"}
 ENUM_RE = re.compile(r"^(ImGui|ImPlot|ImAxis)[A-Za-z0-9]*$")
@@ -307,7 +392,8 @@ def norm_type(t: str) -> str:
     if t in VEC4_TYPES:
         return "ImVec4"
     return {"ImPlotPoint_c": "ImPlotPoint", "ImPlotRect_c": "ImPlotRect",
-            "ImPlotRange_c": "ImPlotRange", "ImPlotSpec_c": "ImPlotSpec"}.get(t, t)
+            "ImPlotRange_c": "ImPlotRange", "ImPlotSpec_c": "ImPlotSpec",
+            "ImPlot3DSpec_c": "ImPlot3DSpec"}.get(t, t)
 
 
 class Arg:
@@ -401,7 +487,7 @@ def classify(fn_name, argsT, defaults, suppress, enum_types):
             i += 2
             continue
 
-        if t == "ImPlotSpec":
+        if t in SPEC_TYPES:
             # Trailing name-value pairs, so it takes no positional slot.
             a.kind, a.exposed, a.mname = "spec", False, "spec"
             out.append(a)
@@ -532,17 +618,20 @@ def mat_default(a: Arg) -> str:
     return d
 
 
-def emit_handler(mat_name, d, args, exposed, sig_const, linkage="static"):
+def emit_handler(mat_name, d, args, exposed, sig_const, linkage="static", guard=()):
     fn = "h_" + mat_name.replace(".", "_")
     call = f"{d.get('namespace', 'ImGui')}::{d['funcname']}"
     if any(a.kind == "drawlist" for a in args):
         call = f"v_self->{d['funcname']}"
     hook_pre, hook_post = CALL_HOOKS.get(mat_name, ([], []))
+    hook_pre = list(guard) + list(hook_pre)
     req = sum(1 for a in exposed if a.default is None)
     tot = len(exposed)
 
     kw = "static " if linkage == "static" else ""
     has_spec = any(a.kind == "spec" for a in args)
+    spec_t = next((norm_type(a.ctype) for a in args if a.kind == "spec"), "ImPlotSpec")
+    spec_start = "mrs::specStart3D" if spec_t == "ImPlot3DSpec" else "mrs::specStart"
     first_opt = next((a.idx for a in exposed if a.default is not None), tot)
 
     L = [f"{kw}void {fn}(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {{"]
@@ -557,7 +646,7 @@ def emit_handler(mat_name, d, args, exposed, sig_const, linkage="static"):
                  f'{{ mrs::usage("{mat_name}", {sig_const}); return; }}')
     L.append("    (void)nlhs; (void)plhs; (void)args;")
     if has_spec:
-        L.append(f"    int specAt = mrs::specStart(args, nargin, {first_opt});")
+        L.append(f"    int specAt = {spec_start}(args, nargin, {first_opt});")
 
     deferred, outputs, callargs = [], [], []
     for a in args:
@@ -592,7 +681,7 @@ def emit_handler(mat_name, d, args, exposed, sig_const, linkage="static"):
             L.append(f"    int {v} = {a.default};")
             L.append(f'    if (nargin > {a.idx}) {v} = mrs::getInt(args[{a.idx}], "bufSize");')
         elif k == "spec":
-            L.append("    ImPlotSpec v_spec;")
+            L.append(f"    {spec_t} v_spec;")
             deferred.append("    mrs::getSpec(args, nargin, specAt, v_spec, sizeof(double));")
             callargs.append("v_spec")
         elif k == "doublearray":
@@ -787,10 +876,6 @@ TEMPLATE_ELEMS = {
 TEMPLATE_ORDER = ["double", "float", "ImS8", "ImU8", "ImS16", "ImU16",
                   "ImS32", "ImU32", "ImS64", "ImU64"]
 
-DATA_NAMES = {1: ["values"], 2: ["xs", "ys"], 3: ["xs", "ys1", "ys2"],
-              4: ["xs", "ys", "neg", "pos"]}
-
-
 def elem_of(ctype):
     """The element type of a pointer to a templated numeric type, or None."""
     t = strip_const(ctype).strip()
@@ -813,10 +898,18 @@ def roles_of(argsT):
         t = norm_type(a["type"])
         if elem_of(a["type"]):
             roles.append("data")
-        elif t == "ImPlotSpec":
+        elif t in SPEC_TYPES:
             roles.append("spec")
         elif t == "int" and a["name"] in ("count", "rows", "cols"):
             roles.append(a["name"])
+        elif t == "int" and a["name"] == "vtx_count":
+            roles.append("count")
+        elif t == "int" and a["name"] in ("x_count", "y_count", "idx_count"):
+            # ImPlot3D's surface grid and mesh index list, both taken from the
+            # shape of a MATLAB array rather than passed.
+            roles.append(a["name"])
+        elif t == "unsigned int*" and a["name"] == "idxs":
+            roles.append("faces")
         elif idx == 0 and t in ("const char*", "char*"):
             roles.append("label")
         else:
@@ -854,8 +947,10 @@ def extra_param(a):
     raise Refused(f"extra argument kind '{k}' is not supported in a templated family")
 
 
-def emit_implot_group(mat_name, overloads, enum_types, sig_const):
+def emit_implot_group(mat_name, overloads, enum_types, sig_const, ns="ImPlot"):
     """Emit the handler, the per-shape templates, the signatures, and the tests."""
+    conf = PLOT_NS[ns]
+    prefix = ns + "."
     shapes = {}
     for ov in overloads:
         elems = {elem_of(a["type"]) for a in ov["argsT"]}
@@ -882,12 +977,13 @@ def emit_implot_group(mat_name, overloads, enum_types, sig_const):
     body, sigs, tests = [], [], []
 
     H = [f"void h_{mat_name}(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {{"]
-    H.append(f'    if (nargin < 2) {{ mrs::usage("ImPlot.{mat_name}", {sig_const}); return; }}')
+    H.append(f'    if (nargin < 2) {{ mrs::usage("{prefix}{mat_name}", {sig_const}); return; }}')
+    H += [f"    {g}" for g in plot_guard(ns, mat_name)]
     H.append("    mrs::StrBuf<256> b_label;")
     H.append('    const char* v_label = mrs::toUtf8(args[0], "labelId", b_label);')
     H.append(f"    int nData = mrs::dataArgCount(args, nargin, 1, {max_data});")
     H.append("    int count = 0;")
-    H.append(f'    mxClassID cid = mrs::checkData(args, 1, nData, "ImPlot.{mat_name}", &count);')
+    H.append(f'    mxClassID cid = mrs::checkData(args, 1, nData, "{prefix}{mat_name}", &count);')
     H.append("    if (mrs::failed()) return;")
 
     branch_kw = "    if"
@@ -898,7 +994,9 @@ def emit_implot_group(mat_name, overloads, enum_types, sig_const):
 
         extras_argsT = [a for a, r in zip(argsT, roles) if r == "extra"]
         extras, extras_exposed = classify(mat_name, extras_argsT, defaults, set(), enum_types)
-        base = 1 + n_data
+        has_faces = "faces" in roles
+        has_grid = "x_count" in roles
+        base = 1 + n_data + (1 if has_faces else 0)
         for a in extras_exposed:
             a.idx += base
         by_name = {a.name: a for a in extras}
@@ -911,6 +1009,10 @@ def emit_implot_group(mat_name, overloads, enum_types, sig_const):
             params.append("int count")
         if has_rows:
             params += ["int rows", "int cols"]
+        if has_grid:
+            params += ["int xCount", "int yCount"]
+        if has_faces:
+            params += ["const unsigned* v_faces", "int idxCount"]
         passed = [a for a in extras if a.exposed]
         for a in passed:
             cty, _, _ = extra_param(a)
@@ -925,6 +1027,14 @@ def emit_implot_group(mat_name, overloads, enum_types, sig_const):
                 data_i += 1
             elif r in ("count", "rows", "cols"):
                 callargs.append(r)
+            elif r == "x_count":
+                callargs.append("xCount")
+            elif r == "y_count":
+                callargs.append("yCount")
+            elif r == "faces":
+                callargs.append("v_faces")
+            elif r == "idx_count":
+                callargs.append("idxCount")
             elif r == "spec":
                 callargs.append("v_spec")
             else:
@@ -935,7 +1045,7 @@ def emit_implot_group(mat_name, overloads, enum_types, sig_const):
         T = ["template <typename T_>",
              f"static void {tname}(int nlhs, mxArray** plhs, " + ", ".join(params) + ") {"]
         T.append("    (void)nlhs; (void)plhs;")
-        T.append("    ImPlotSpec v_spec;")
+        T.append(f"    {conf['spec_t']} v_spec;")
         T.append("    mrs::getSpec(args, nargin, specAt, v_spec, sizeof(T_));")
         T.append("    if (mrs::failed()) return;")
         if has_rows:
@@ -944,7 +1054,7 @@ def emit_implot_group(mat_name, overloads, enum_types, sig_const):
             T.append("    v_spec.Flags = (ImPlotItemFlags)(v_spec.Flags | "
                      "ImPlotHeatmapFlags_ColMajor);")
         ret = norm_type(rep.get("ret", "void"))
-        call = f"ImPlot::{fn_name}(" + ", ".join(callargs) + ")"
+        call = f"{ns}::{fn_name}(" + ", ".join(callargs) + ")"
         if ret == "void":
             T.append(f"    {call};")
         else:
@@ -956,10 +1066,22 @@ def emit_implot_group(mat_name, overloads, enum_types, sig_const):
 
         H.append(f"{branch_kw} (nData == {n_data}) {{")
         branch_kw = "    } else if"
-        H.append(f"        int specAt = mrs::specStart(args, nargin, {first_opt});")
+        H.append(f"        int specAt = {conf['spec_start']}(args, nargin, {first_opt});")
         if has_rows:
             H.append("        int rows = (int)mxGetM(args[1]);")
             H.append("        int cols = (int)mxGetN(args[1]);")
+        if has_grid:
+            H.append("        // A grid from meshgrid is column major, so its first dimension")
+            H.append("        // is the one that varies fastest, which is ImPlot3D's x.")
+            H.append("        int xCount = (int)mxGetM(args[1]);")
+            H.append("        int yCount = (int)mxGetN(args[1]);")
+        if has_faces:
+            H.append(f"        if (nargin <= {1 + n_data}) {{ mrs::usage(\"{prefix}{mat_name}\", "
+                     f"{sig_const}); return; }}")
+            H.append("        mrs::Faces fc;")
+            H.append(f'        const unsigned* v_faces = mrs::getFaces(args[{1 + n_data}], '
+                     '"faces", count, fc);')
+            H.append("        int idxCount = fc.n;")
         for a in passed:
             cty, init, getter = extra_param(a)
             if a.kind == "str":
@@ -977,6 +1099,10 @@ def emit_implot_group(mat_name, overloads, enum_types, sig_const):
             names.append("count")
         if has_rows:
             names += ["rows", "cols"]
+        if has_grid:
+            names += ["xCount", "yCount"]
+        if has_faces:
+            names += ["v_faces", "idxCount"]
         names += [f"v_{a.name}" for a in passed]
         callstr = ", ".join(names)
         for elem in TEMPLATE_ORDER:
@@ -984,13 +1110,17 @@ def emit_implot_group(mat_name, overloads, enum_types, sig_const):
                 H.append(f"        case {TEMPLATE_ELEMS[elem]}: "
                          f"{tname}<{elem}>({callstr}); break;")
         H.append(f'        default: mrs::fail("psychimgui:Type", '
-                 f'"ImPlot.{mat_name}: unsupported data class."); break;')
+                 f'"{prefix}{mat_name}: unsupported data class."); break;')
         H.append("        }")
 
-        data_names = DATA_NAMES.get(n_data, [f"d{i}" for i in range(n_data)])
+        data_names = conf["data_names"].get(n_data, [f"d{i}" for i in range(n_data)])
         if has_rows:
             data_names = ["values"]
-        sig = f"PsychImGui('ImPlot.{mat_name}', labelId, " + ", ".join(data_names)
+        if has_grid:
+            data_names = ["X", "Y", "Z"]
+        if has_faces:
+            data_names = data_names + ["faces"]
+        sig = f"PsychImGui('{prefix}{mat_name}', labelId, " + ", ".join(data_names)
         for a in extras_exposed:
             if a.default is None:
                 sig += f", {a.mname}"
@@ -1001,10 +1131,10 @@ def emit_implot_group(mat_name, overloads, enum_types, sig_const):
         if ret != "void":
             sig = "ret = " + sig
         sigs.append(sig)
-        tests.append((n_data, extras_exposed, has_rows, ret))
+        tests.append((n_data, extras_exposed, has_rows or has_grid, ret, has_faces))
 
     H.append("    } else {")
-    H.append(f'        mrs::usage("ImPlot.{mat_name}", {sig_const});')
+    H.append(f'        mrs::usage("{prefix}{mat_name}", {sig_const});')
     H.append("    }")
     H.append("}")
     body.append("\n".join(H))
@@ -1092,6 +1222,35 @@ def index_definitions(defs):
     return {o["ov_cimguiname"]: o for group in defs.values() for o in group}
 
 
+def collect_igfd_enums(header: Path):
+    """ImGuiFileDialog's flag names, parsed from its header.
+
+    ImGuiFileDialog has no JSON metadata, but its flags are one plain enum of
+    shifts and ORs of earlier names, which a restricted evaluation reads.
+    """
+    out = {}
+    if not header.exists():
+        return out
+    text = header.read_text("utf-8", errors="ignore")
+    m = re.search(r"enum ImGuiFileDialogFlags_\s*\{(.*?)\};", text, re.S)
+    if not m:
+        return out
+    body = re.sub(r"//[^\n]*", "", m.group(1))
+    for part in body.split(","):
+        part = part.strip()
+        if not part or "=" not in part:
+            continue
+        name, expr = [x.strip() for x in part.split("=", 1)]
+        # An OR spread over several lines is one expression to eval.
+        expr = " ".join(expr.split())
+        for k in sorted(out, key=len, reverse=True):
+            expr = expr.replace(k, str(out[k]))
+        if not re.fullmatch(r"[\d\s()<|]+", expr):
+            raise SystemExit(f"ImGuiFileDialog flag {name}: cannot evaluate '{expr}'")
+        out[name] = int(eval(expr, {"__builtins__": {}}))
+    return out
+
+
 def collect_enums(se):
     out, locs = {}, se.get("locations", {})
     for ename, entries in se.get("enums", {}).items():
@@ -1105,7 +1264,7 @@ def collect_enums(se):
 
 
 def build_section(entries_in, by_ov, enum_types, prefix, linkage="static", cpp_ns="",
-                  groups=None, prefixed_symbols=False):
+                  groups=None, prefixed_symbols=False, plot_ns="ImPlot"):
     entries, helps, tests, refused, body = [], [], [], [], []
     groups = groups or {}
     for ov, name, suppress in entries_in:
@@ -1116,7 +1275,7 @@ def build_section(entries_in, by_ov, enum_types, prefix, linkage="static", cpp_n
             sig_const = "kSig_" + mat
             try:
                 gbody, gsigs, gtests = emit_implot_group(mat, groups[ov], enum_types,
-                                                         sig_const)
+                                                         sig_const, plot_ns)
             except Refused as e:
                 refused.append((ov, str(e)))
                 continue
@@ -1142,7 +1301,8 @@ def build_section(entries_in, by_ov, enum_types, prefix, linkage="static", cpp_n
             args, exposed = classify(mat, d["argsT"], d.get("defaults", {}) or {},
                                      set(suppress), enum_types)
             sig_const = "kSig_" + hmat.replace(".", "_")
-            src, nouts, ret = emit_handler(hmat, d, args, exposed, sig_const, linkage)
+            guard = plot_guard(plot_ns, mat) if prefix in ("ImPlot.", "ImPlot3D.") else []
+            src, nouts, ret = emit_handler(hmat, d, args, exposed, sig_const, linkage, guard)
         except Refused as e:
             refused.append((ov, str(e)))
             continue
@@ -1165,7 +1325,43 @@ GEN_BANNER = """// GENERATED by gen/generate.py from the cimgui metadata. Do not
 """
 
 
-def write_gen_dispatch(root, ig, implot_entries, enums, imgui_ver, implot_ver):
+def bi_ident(name):
+    """A C identifier for a hand-written subcommand name, which may hold a dot."""
+    return name.replace(".", "_")
+
+
+def write_ext_decls(out, entries, ns, macro, opt, what):
+    """Declarations of one extension's handlers, or stubs when it is compiled out.
+
+    The table slots stay in place either way so the opcode of a core
+    subcommand does not move with the build options.
+    """
+    out.append(f"#ifdef {macro}")
+    out.append(f"namespace {ns} {{")
+    for name, sym, sig_const in entries:
+        bare = sym.split("::")[-1]
+        bare_sig = sig_const.split("::")[-1]
+        out.append(f"void {bare}(int nlhs, mxArray** plhs, int nargin, "
+                   "const mxArray** args);")
+        out.append(f"extern const char {bare_sig}[];")
+    out.append(f"}}  // namespace {ns}")
+    out.append("#else")
+    out.append(f"static void h_{ns}_unavailable(int, mxArray**, int, const mxArray**) {{")
+    out.append('    mrs::fail("psychimgui:UnknownCommand",')
+    out.append(f'              "This build has {what} disabled. Rebuild with '
+               f'-D{opt}=ON.");')
+    out.append("}")
+    out.append(f"namespace {ns} {{")
+    for name, sym, sig_const in entries:
+        bare_sig = sig_const.split("::")[-1]
+        out.append(f'static const char {bare_sig}[] = "{name}: not compiled in";')
+    out.append(f"}}  // namespace {ns}")
+    out.append("#endif")
+    out.append("")
+
+
+def write_gen_dispatch(root, ig, implot_entries, enums, imgui_ver, implot_ver,
+                       implot3d_entries=()):
     entries, helps, tests, refused, body = ig
     out = [GEN_BANNER.format(imgui=imgui_ver, implot=(", ImPlot " + implot_ver) if implot_ver else "")]
     out.append('#include "imgui_psych.h"')
@@ -1188,31 +1384,12 @@ def write_gen_dispatch(root, ig, implot_entries, enums, imgui_ver, implot_ver):
     out.append("")
     out.append("\n".join(body))
 
-    # ImPlot handlers live in the other generated file and are compiled only
-    # with PSYCHIMGUI_IMPLOT. Their table slots stay in place either way so the
-    # opcode of a core subcommand does not move with the build options.
-    out.append("#ifdef PSYCHIMGUI_IMPLOT")
-    out.append("namespace pig_implot {")
-    for name, sym, sig_const in implot_entries:
-        bare = sym.split("::")[-1]
-        bare_sig = sig_const.split("::")[-1]
-        out.append(f"void {bare}(int nlhs, mxArray** plhs, int nargin, "
-                   "const mxArray** args);")
-        out.append(f"extern const char {bare_sig}[];")
-    out.append("}  // namespace pig_implot")
-    out.append("#else")
-    out.append("static void h_implot_unavailable(int, mxArray**, int, const mxArray**) {")
-    out.append('    mrs::fail("psychimgui:UnknownCommand",')
-    out.append('              "This build has ImPlot disabled. Rebuild with '
-               '-DPSYCHIMGUI_IMPLOT=ON.");')
-    out.append("}")
-    out.append("namespace pig_implot {")
-    for name, sym, sig_const in implot_entries:
-        bare_sig = sig_const.split("::")[-1]
-        out.append(f'static const char {bare_sig}[] = "{name}: not compiled in";')
-    out.append("}  // namespace pig_implot")
-    out.append("#endif")
-    out.append("")
+    # ImPlot and ImPlot3D handlers live in their own generated files and are
+    # compiled only with their build options.
+    write_ext_decls(out, implot_entries, "pig_implot", "PSYCHIMGUI_IMPLOT",
+                    "PSYCHIMGUI_IMPLOT", "ImPlot")
+    write_ext_decls(out, implot3d_entries, "pig_implot3d", "PSYCHIMGUI_IMPLOT3D",
+                    "PSYCHIMGUI_IMPLOT3D", "ImPlot3D")
 
     # enum value table, sorted for binary search
     out.append("namespace {")
@@ -1253,17 +1430,25 @@ def write_gen_dispatch(root, ig, implot_entries, enums, imgui_ver, implot_ver):
             flags.append("kEntryNeedsInit")
         if bgl:
             flags.append("kEntryNeedsGL")
-        rows.append((bname, bsym, f"kSigBi_{bname}", " | ".join(flags) if flags else "0"))
+        rows.append((bname, bsym, f"kSigBi_{bi_ident(bname)}",
+                     " | ".join(flags) if flags else "0"))
     for name, sym, sig_const in implot_entries:
         rows.append((name, "PIG_IMPLOT_FN(" + sym + ")", sig_const, "kEntryNeedsInit"))
+    for name, sym, sig_const in implot3d_entries:
+        rows.append((name, "PIG_IMPLOT3D_FN(" + sym + ")", sig_const, "kEntryNeedsInit"))
 
     for bname, bsym, binit, bgl, bsig in BUILTINS:
-        out.append(f'static const char kSigBi_{bname}[] = "{bsig}";')
+        out.append(f'static const char kSigBi_{bi_ident(bname)}[] = "{bsig}";')
     out.append("")
     out.append("#ifdef PSYCHIMGUI_IMPLOT")
     out.append("#  define PIG_IMPLOT_FN(x) x")
     out.append("#else")
-    out.append("#  define PIG_IMPLOT_FN(x) h_implot_unavailable")
+    out.append("#  define PIG_IMPLOT_FN(x) h_pig_implot_unavailable")
+    out.append("#endif")
+    out.append("#ifdef PSYCHIMGUI_IMPLOT3D")
+    out.append("#  define PIG_IMPLOT3D_FN(x) x")
+    out.append("#else")
+    out.append("#  define PIG_IMPLOT3D_FN(x) h_pig_implot3d_unavailable")
     out.append("#endif")
     out.append("")
     out.append("namespace pig {")
@@ -1278,24 +1463,28 @@ def write_gen_dispatch(root, ig, implot_entries, enums, imgui_ver, implot_ver):
     return sorted(rows, key=lambda r: r[0])
 
 
-def write_gen_implot(root, body, imgui_ver, implot_ver, entries):
-    out = [GEN_BANNER.format(imgui=imgui_ver, implot=", ImPlot " + implot_ver)]
-    out.append("#ifdef PSYCHIMGUI_IMPLOT")
+def write_gen_ext(root, body, imgui_ver, ext_label, macro, marshal_h, ns, filename):
+    out = [GEN_BANNER.format(imgui=imgui_ver, implot=", " + ext_label)]
+    out.append(f"#ifdef {macro}")
     out.append('#include "imgui_psych.h"')
     out.append("")
     out.append('#include "marshal.h"')
     out.append('#include "dispatch.h"')
-    out.append('#include "implot_marshal.h"')
+    out.append(f'#include "{marshal_h}"')
     out.append("")
-    out.append("// Its own namespace: a few subcommand names exist in both namespaces,")
+    out.append("// Its own namespace: a few subcommand names exist in several namespaces,")
     out.append("// and the handlers need external linkage for the shared dispatch table.")
-    out.append("namespace pig_implot {")
+    out.append(f"namespace {ns} {{")
     out.append("")
     out.append("\n".join(body))
-    out.append("}  // namespace pig_implot")
-    out.append("#endif  // PSYCHIMGUI_IMPLOT")
-    (root / "src" / "gen_dispatch_implot.cpp").write_text("\n".join(out) + "\n",
-                                                          encoding="utf-8")
+    out.append(f"}}  // namespace {ns}")
+    out.append(f"#endif  // {macro}")
+    (root / "src" / filename).write_text("\n".join(out) + "\n", encoding="utf-8")
+
+
+def write_gen_implot(root, body, imgui_ver, implot_ver, entries):
+    write_gen_ext(root, body, imgui_ver, "ImPlot " + implot_ver, "PSYCHIMGUI_IMPLOT",
+                  "implot_marshal.h", "pig_implot", "gen_dispatch_implot.cpp")
 
 
 def write_help(root, rows, helps, imgui_ver, implot_ver):
@@ -1336,6 +1525,29 @@ def write_help(root, rows, helps, imgui_ver, implot_ver):
     L.append("%   with Screen('MakeTexture', win, img, [], 1); the default")
     L.append("%   GL_TEXTURE_RECTANGLE texture raises psychimgui:Texture.")
     L.append("%")
+    L.append("%   Several windows")
+    L.append("%   ---------------")
+    L.append("%   Init returns a context handle and makes that context current. Every")
+    L.append("%   other subcommand acts on the current context. SetContext switches;")
+    L.append("%   enter that window with Screen('BeginOpenGL', win) before any call")
+    L.append("%   that draws, or it raises psychimgui:Context. Shutdown takes an")
+    L.append("%   optional handle or 'all'. A handle of a context that was shut down")
+    L.append("%   raises psychimgui:InvalidHandle.")
+    L.append("%")
+    L.append("%   Stereo")
+    L.append("%   ------")
+    L.append("%   Render builds and draws the frame for the eye selected with")
+    L.append("%   Screen('SelectStereoDrawBuffer'). RenderAgain draws the same frame")
+    L.append("%   into the other eye, inside its own BeginOpenGL and EndOpenGL pair.")
+    L.append("%   PsychImGuiFrame('End', ig) does both when ig.stereo is true.")
+    L.append("%")
+    L.append("%   File dialog")
+    L.append("%   -----------")
+    L.append("%   FileDialog.Open starts a dialog; call FileDialog.Display every frame")
+    L.append("%   until it returns true, then read FileDialog.IsOk and")
+    L.append("%   FileDialog.GetFilePathName or FileDialog.GetSelection, and call")
+    L.append("%   FileDialog.Close. An empty filter chooses a directory.")
+    L.append("%")
     L.append("%   The four helpers own the Screen('BeginOpenGL') and")
     L.append("%   Screen('EndOpenGL') pairs, so a script writes none itself:")
     L.append("%")
@@ -1347,7 +1559,8 @@ def write_help(root, rows, helps, imgui_ver, implot_ver):
     L.append("%")
     L.append("%   See also PsychImGuiOpen, PsychImGuiFrame, PsychImGuiClose,")
     L.append("%   PsychImGuiGL, PsychImGuiImage, PsychImGuiSetup, PsychImGuiInput,")
-    L.append("%   PsychImGuiKeymap, PsychImGuiOp, PsychImGuiDemo.")
+    L.append("%   PsychImGuiKeymap, PsychImGuiOp, PsychImGuiDemo,")
+    L.append("%   PsychImGuiStereoDemo.")
     L.append("")
     L.append("    error('psychimgui:NotBuilt', ...")
     L.append("        ['The PsychImGui MEX is not on the path. Run PsychImGuiSetup, ' ...")
@@ -1393,8 +1606,9 @@ def write_opcodes(root, rows):
     (root / "m" / "PsychImGuiOp.m").write_text("\n".join(L) + "\n", encoding="utf-8")
 
 
-def _implot_lines(tests):
-    """MATLAB statements for the ImPlot half of the generated test."""
+def _implot_lines(tests, inside_set=None, begin="tf_plot_begin", end="tf_plot_end"):
+    """MATLAB statements for the ImPlot or ImPlot3D half of the generated test."""
+    inside_set = IMPLOT_INSIDE_PLOT if inside_set is None else inside_set
     L = []
     closers = {c.split("'")[0] for c, _ in PAIRS.values()}
     for entry in tests:
@@ -1405,19 +1619,22 @@ def _implot_lines(tests):
         if full in TEST_SKIP:
             L.append(f"    % {full} has no legal argument in this ImPlot version.")
             continue
-        inside = mat in IMPLOT_INSIDE_PLOT
+        inside = mat in inside_set
         if entry[2] == "implot_group":
-            for n_data, extras, has_rows, ret in entry[3]:
+            for n_data, extras, has_rows, ret, has_faces in entry[3]:
                 if has_rows:
-                    data = ["[1 2; 3 4]"]
+                    data = ["[1 2; 3 4]"] * n_data
                 else:
                     data = ["[0 1 2 3]"] * n_data
+                if has_faces:
+                    data = data + ["[1 2 3; 2 3 4]"]
                 base = [f"'{full}'", "'x'"] + data
                 req = base + [test_value(full, a) for a in extras if a.default is None]
                 allv = base + [test_value(full, a) for a in extras]
                 for label, vals in (("defaults", req),
                                     ("full", allv + ["'LineColor'", "[1 0 0 1]"])):
-                    L += _implot_case(f"{full} {n_data}d {label}", vals, True, 0, "void")
+                    L += _implot_case(f"{full} {n_data}d {label}", vals, True, 0, "void",
+                                      None, begin, end)
             continue
         exposed, nouts, ret = entry[2], entry[3], entry[4]
         req = [f"'{full}'"] + [test_value(full, a) for a in exposed if a.default is None]
@@ -1425,14 +1642,15 @@ def _implot_lines(tests):
         closer = PAIRS.get(full)
         variants = (("defaults", req),) if full in TEST_ONCE else             (("defaults", req), ("full", allv))
         for label, vals in variants:
-            L += _implot_case(f"{full} {label}", vals, inside, nouts, ret, closer)
+            L += _implot_case(f"{full} {label}", vals, inside, nouts, ret, closer, begin, end)
     return L
 
 
-def _implot_case(name, vals, inside, nouts, ret, closer=None):
+def _implot_case(name, vals, inside, nouts, ret, closer=None, begin="tf_plot_begin",
+                 end="tf_plot_end"):
     L = []
     if inside:
-        L.append("    p = tf_plot_begin();")
+        L.append(f"    p = {begin}();")
         L.append("    if p")
     else:
         L.append("    tf_begin();")
@@ -1471,14 +1689,14 @@ def _implot_case(name, vals, inside, nouts, ret, closer=None):
         L.append("    else")
         L.append(f"        t_ok('{name}', false);")
         L.append("    end")
-        L.append("    tf_plot_end(p);")
+        L.append(f"    {end}(p);")
     else:
         L.append("    tf_end();")
     L.append("")
     return L
 
 
-def write_tests(root, tests, prefix_label, implot_tests):
+def write_tests(root, tests, prefix_label, implot_tests, implot3d_tests=()):
     L = ["function test_gen_marshal()",
          "% TEST_GEN_MARSHAL  One round trip per generated subcommand.",
          "%",
@@ -1553,6 +1771,32 @@ def write_tests(root, tests, prefix_label, implot_tests):
     L.append("    end")
     L.append("")
     L += _implot_lines(implot_tests)
+    L.append("")
+    L.append("    %% ---- ImPlot3D ----")
+    L.append("    if ~v.implot3d")
+    L.append("        fprintf('  ImPlot3D is not compiled in, skipping its cases.\\n');")
+    L.append("        return;")
+    L.append("    end")
+    L.append("    for warm = 1:3")
+    L.append("        tf_plot3d_end(tf_plot3d_begin());")
+    L.append("    end")
+    L.append("")
+    L += _implot_lines(implot3d_tests, IMPLOT3D_INSIDE_PLOT, "tf_plot3d_begin",
+                       "tf_plot3d_end")
+    L.append("end")
+    L.append("")
+    L.append("function ok = tf_plot3d_begin()")
+    L.append("    PsychImGui('NewFrame', tf_input());")
+    L.append("    PsychImGui('Begin', 'genplot3dw', [], 1024);")
+    L.append("    ok = PsychImGui('ImPlot3D.BeginPlot', 'genplot3d', [300 200]);")
+    L.append("end")
+    L.append("")
+    L.append("function tf_plot3d_end(ok)")
+    L.append("    if ok")
+    L.append("        PsychImGui('ImPlot3D.EndPlot');")
+    L.append("    end")
+    L.append("    PsychImGui('End');")
+    L.append("    PsychImGui('Render');")
     L.append("end")
     L.append("")
     L.append("function ok = tf_plot_begin()")
@@ -1625,6 +1869,25 @@ def main():
         if m:
             implot_ver = m.group(1)
 
+    implot3d_ver = ""
+    by_ov_p3, p3defs = {}, {}
+    cimplot3d = root / "third_party" / "cimplot3d"
+    if (cimplot3d / "generator/output/definitions.json").exists():
+        p3defs = json.loads((cimplot3d / "generator/output/definitions.json").read_text("utf-8"))
+        p3se = json.loads((cimplot3d / "generator/output/structs_and_enums.json")
+                          .read_text("utf-8"))
+        by_ov_p3 = index_definitions(p3defs)
+        enums.update(collect_enums(p3se))
+        enum_types |= ({k.rstrip("_") for k in p3se.get("enums", {})} |
+                       set(p3se.get("enumtypes", {})))
+        m = re.search(r'#define\s+IMPLOT3D_VERSION\s+"([^"]+)"',
+                      (cimplot3d / "implot3d" / "implot3d.h").read_text("utf-8",
+                                                                        errors="ignore"))
+        if m:
+            implot3d_ver = m.group(1)
+    enums.update(collect_igfd_enums(root / "third_party" / "ImGuiFileDialog" /
+                                    "ImGuiFileDialog.h"))
+
     sections = parse_allowlist(root / "gen" / "allowlist.txt")
 
     ig = build_section(sections.get("ImGui", []), by_ov, enum_types, "")
@@ -1634,16 +1897,22 @@ def main():
     ip = build_section(sections.get("ImPlot", []), by_ov_p, enum_types, "ImPlot.",
                        linkage="extern", cpp_ns="pig_implot", groups=pdefs)
 
-    rows = write_gen_dispatch(root, ig, ip[0], enums, imgui_ver, implot_ver)
-    write_gen_implot(root, ip[4], imgui_ver, implot_ver, ip[0])
-    write_help(root, rows, ig[1] + ip[1], imgui_ver, implot_ver)
-    write_opcodes(root, rows)
-    write_tests(root, ig[2], "", ip[2])
+    ip3 = build_section(sections.get("ImPlot3D", []), by_ov_p3, enum_types, "ImPlot3D.",
+                        linkage="extern", cpp_ns="pig_implot3d", groups=p3defs,
+                        plot_ns="ImPlot3D")
 
-    print(f"generated {len(ig[0]) - len(dl[0])} ImGui, {len(dl[0])} DrawList, and "
-          f"{len(ip[0])} ImPlot subcommands, "
+    rows = write_gen_dispatch(root, ig, ip[0], enums, imgui_ver, implot_ver, ip3[0])
+    write_gen_implot(root, ip[4], imgui_ver, implot_ver, ip[0])
+    write_gen_ext(root, ip3[4], imgui_ver, "ImPlot3D " + implot3d_ver, "PSYCHIMGUI_IMPLOT3D",
+                  "implot3d_marshal.h", "pig_implot3d", "gen_dispatch_implot3d.cpp")
+    write_help(root, rows, ig[1] + ip[1] + ip3[1], imgui_ver, implot_ver)
+    write_opcodes(root, rows)
+    write_tests(root, ig[2], "", ip[2], ip3[2])
+
+    print(f"generated {len(ig[0]) - len(dl[0])} ImGui, {len(dl[0])} DrawList, "
+          f"{len(ip[0])} ImPlot, and {len(ip3[0])} ImPlot3D subcommands, "
           f"{len(BUILTINS)} built in, {len(enums)} enum names")
-    for ov, why in ig[3] + ip[3]:
+    for ov, why in ig[3] + ip[3] + ip3[3]:
         print(f"  refused {ov}: {why}")
 
 

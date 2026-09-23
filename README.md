@@ -8,14 +8,24 @@ and reads widget values back from the return values of the same calls.
 Typical uses: operator control panels, parameter sliders, live status readouts,
 calibration tools, and debugging overlays.
 
+![PsychImGuiDemo in a 1280x720 Psychtoolbox window: a control panel, an ImPlot
+trace and heat map, a 3D gaze plot above a surface, a log table, and a draw
+list overlay around a Gabor patch](docs/images/psychimgui-demo.png)
+
+The image shows `PsychImGuiDemo` over its Gabor patch, captured from the
+Psychtoolbox window; `tools/CaptureReadmeScreenshot` makes it again.
+
 `SPEC.md` is the design reference. This file tells you how to build the
 binding, how to run the tests, and how to run the demo.
 
-Status: phases 1, 1.5, and 2 complete. 140 Dear ImGui subcommands, 12 draw
-list subcommands, 66 ImPlot subcommands, and 22 hand-written subcommands,
-against Dear ImGui 1.92.9b and ImPlot 1.1. Phase 2 added tables, draw lists,
-and images from Psychtoolbox textures. `SPEC.md` section 13 has the phase plan and section 14 lists every
-place the code differs from the specification.
+Status: phases 1, 1.5, 2, and 3 complete. 140 Dear ImGui subcommands, 12 draw
+list subcommands, 66 ImPlot subcommands, 37 ImPlot3D subcommands, and 33
+hand-written subcommands, against Dear ImGui 1.92.9b, ImPlot 1.1, ImPlot3D
+0.4, and ImGuiFileDialog 0.6.9. Phase 2 added tables, draw lists, and images
+from Psychtoolbox textures. Phase 3 added one context per window, both eyes
+of the stereo modes, GPU timing and Tracy zones, ImPlot3D, and a file dialog.
+`SPEC.md` section 13 has the phase plan and section 14 lists every place the
+code differs from the specification.
 
 ## Requirements
 
@@ -25,8 +35,9 @@ place the code differs from the specification.
 | GNU Octave | 10.1 verified on Windows and Linux, Homebrew's on macOS | Building and running the MEX |
 | CMake | 3.16 or later | Building the static Dear ImGui library |
 | C++17 compiler | MSVC 2022 for MATLAB, the bundled MinGW g++ for Octave, clang on macOS | Building |
-| Psychtoolbox | 3.0.19 or later | The demo and the GL tests only |
+| Psychtoolbox | 3.0.19 or later | The demos and the GL tests only |
 | Python and uv | Python 3.10 or later | The generator only |
+| Tracy | 0.11.1 | Profiling builds only, see "Profile with Tracy" |
 
 The generated files are committed, so you do not need Python to build.
 
@@ -34,14 +45,17 @@ The generated files are committed, so you do not need Python to build.
 
     git clone --recurse-submodules https://github.com/aforren1/PsychImGui.git
 
-Dear ImGui and ImPlot come in through `third_party/cimgui` and
-`third_party/cimplot`. Where those are not yet submodules, one script fetches
-the pinned commits that `third_party/PINS.md` records:
+Dear ImGui and ImPlot come in through the `third_party/cimgui` and
+`third_party/cimplot` submodules. ImPlot3D and ImGuiFileDialog come in through
+`third_party/cimplot3d` and `third_party/ImGuiFileDialog`, which are not
+submodules yet. One script clones every one of them that is missing, at the
+commit that `third_party/PINS.md` records:
 
     bash tools/fetch_third_party.sh
 
 The script does nothing when the directories are already populated, so it is
-safe to run either way, and it is what CI runs.
+safe to run either way, and it is what CI runs. `build` stops with the same
+command in its message when a directory is missing.
 
 ## Build
 
@@ -112,21 +126,34 @@ texture support.
 | `test_drawlist.m` | Draw list handles, every `DrawList.` subcommand, stale handles |
 | `test_image.m` | `Image`, `ImageButton`, `SetTextureFilter`, and `PsychImGuiImage` arguments |
 | `test_helpers.m` | The four convenience helpers, against a recording `Screen` stub |
+| `test_contexts.m` | Two contexts: switching, separate frames and Stats, stale handles, the limit of eight |
+| `test_stereo.m` | When `RenderAgain` is legal, and that it builds no second frame |
+| `test_filedialog.m` | `FileDialog.` argument rules, the open and close cycle, a path outside ASCII |
+| `test_helpers_p3.m` | The helpers with two windows and with a stereo window, against the `Screen` stub |
 
 ### Tests that need a GPU
 
-Three tests need a real Psychtoolbox window. Run them by hand:
+These tests need a real Psychtoolbox window. Run them by hand:
 
     addpath(fullfile(pwd, 'tests'), fullfile(pwd, 'tests', 'gl'));
     test_gl_render        % the binding draws into a PTB window
     test_gl_demo_gabor    % the demo's Gabor really is a Gabor
     test_gl_phase2        % tables, draw lists, and images, pixel by pixel
     test_gl_phase2('opengl2')   % the same on the fixed function backend
+    test_gl_contexts      % two windows, one context each, and the GPU timer
+    test_gl_stereo        % the panel in both eyes of stereo modes 4 and 8
+    test_gl_implot3d      % a 3D line plot, a surface, and a mesh
+    test_gl_implot3d('opengl2')
 
-Each one prints `SKIP` and returns when Psychtoolbox is not installed.
+Each one prints `SKIP` and returns when Psychtoolbox is not installed, or when
+its `Screen` does not load, as on Octave for Windows without the right DLLs.
 
 `test_gl_render` draws a panel with a known background color, reads the frame
-back, and checks the color. `test_gl_phase2` draws a four color test pattern
+back, and checks the color. `test_gl_contexts` draws a red panel into one
+window and a blue one into a second window and reads both back.
+`test_gl_stereo` reads each eye's framebuffer after
+`Screen('SelectStereoDrawBuffer')`, and a control frame drawn into one eye
+only proves that the check can fail. `test_gl_phase2` draws a four color test pattern
 from a texture and from an offscreen window, a table with colored cells, and
 draw list shapes, then checks the color at known pixels. A transposed,
 mirrored, or black image fails it. `test_gl_demo_gabor` checks that the demo's patch
@@ -142,7 +169,9 @@ measures timing must not set those preferences.
 
 `smoke_gl` proves the OpenGL path without MATLAB and without Psychtoolbox. It
 creates a hidden window with a legacy compatibility context, the same kind PTB
-creates, and runs the core through one Init, a few frames, and Shutdown.
+creates, and runs the core through one Init, a few frames, and Shutdown. Then
+it opens a second context, interleaves frames between the two, and submits
+every frame twice with `RenderAgain`, as for the two eyes of a stereo mode.
 
     build-matlab-windows/Release/smoke_gl.exe       # the OpenGL 3 backend
     build-matlab-windows/Release/smoke_gl.exe none  # the headless path
@@ -173,12 +202,26 @@ the MEX at any time, in any build.
 The demo opens a 640x480 Psychtoolbox window with a Gabor patch and a control
 panel. The sliders drive the contrast, the spatial frequency, and the
 orientation. The contrast slider is the Michelson contrast of the patch, from
-0 to 1. With ImPlot compiled in, a second panel shows a live trace of the
-contrast and a heat map of the patch envelope. A third panel has a table of
-the slider values and a Psychtoolbox texture shown with `PsychImGui('Image')`.
-A draw list overlay marks the outline, the center, and the rotation angle of
-the patch; the "overlay" check box turns it off. Press the Quit button or
-ESCAPE to stop. `PsychImGuiDemo(120)` runs 120 frames and returns.
+0 to 1. The "Open file..." button opens the file dialog. With ImPlot compiled
+in, a second panel shows a live trace of the contrast and a heat map of the
+patch envelope. With ImPlot3D compiled in, a third panel shows a simulated
+gaze trace in 3D above a surface of the patch envelope. A fourth panel has a
+table of the slider values and a Psychtoolbox texture shown with
+`PsychImGui('Image')`. A draw list overlay marks the outline, the center, and
+the rotation angle of the patch; the "overlay" check box turns it off. Press
+the Quit button or ESCAPE to stop. `PsychImGuiDemo(120)` runs 120 frames and
+returns, and `PsychImGuiDemo(120, struct('rect', [0 0 1280 720]))` runs in a
+larger window; the panels follow the window size.
+
+### The stereo demo
+
+    PsychImGuiStereoDemo
+
+The stereo demo draws a disc inside a frame into each eye, with a disparity
+that the control panel sets, and draws the panel into both eyes. With two or
+more displays it uses stereo mode 4, one window split across the displays.
+With one display it uses mode 8, red-blue anaglyph. `PsychImGuiStereoDemo(10)`
+uses mode 10, one window per display.
 
 The demo opens with `PsychDefaultSetup(2)`, as every Psychtoolbox demo does,
 so colors are in the normalized 0 to 1 range.
@@ -220,7 +263,14 @@ so your script writes none itself:
 | `tex = PsychImGuiImage(ig, ptbTexture [, filter])` | Describes a Psychtoolbox texture for `PsychImGui('Image')` |
 
 `opts` is the option struct of `PsychImGui('Init')`: `renderer`,
-`glslVersion`, `iniFile`, `logFile`, `implot`.
+`glslVersion`, `iniFile`, `logFile`, `implot`, `implot3d`. `PsychImGuiOpen`
+also reads `opts.stereo`, which overrides the stereo mode it reads from the
+window.
+
+The handle carries the context of its window in `ig.ctx` and whether the
+window is stereo in `ig.stereo`. Each helper makes the handle's context
+current first, so a script that uses the helpers never switches contexts
+itself.
 
 Use `PsychImGuiGL` for a subcommand that needs the OpenGL context but does not
 belong to a frame:
@@ -282,6 +332,69 @@ Rules to follow:
 2. Call `PsychImGui` only from the main thread.
 3. The script owns the widget values. Dear ImGui is immediate mode, and the MEX
    stores nothing between frames.
+4. With several windows, enter the window of the current context. After
+   `PsychImGui('SetContext', ctx)`, call `Screen('BeginOpenGL', win)` for that
+   context's window before any subcommand that draws. The MEX raises
+   `psychimgui:Context` otherwise.
+
+### Several windows
+
+Each Psychtoolbox window gets its own context: its own Dear ImGui state, font
+atlas, input state, OpenGL objects, and Stats. Psychtoolbox gives every
+onscreen window its own OpenGL context and shares no objects between windows,
+so one context cannot draw into two windows.
+
+    igA = PsychImGuiOpen(winA);             % operator screen
+    igB = PsychImGuiOpen(winB);             % a second display
+    igA = PsychImGuiFrame('Begin', igA);    % widgets for window A
+    PsychImGuiFrame('End', igA);
+    igB = PsychImGuiFrame('Begin', igB);    % widgets for window B
+    PsychImGuiFrame('End', igB);
+    Screen('Flip', winA); Screen('Flip', winB);
+    ...
+    PsychImGuiClose(igA); PsychImGuiClose(igB);
+
+The subcommands behind this, for scripts that manage the OpenGL regions
+themselves:
+
+| Subcommand | What it does |
+|---|---|
+| `ctx = PsychImGui('Init', win, rect, keymap [, opts])` | Makes a context for window `win` and makes it current. A second `Init` for the same window raises `psychimgui:AlreadyInit`. Eight contexts at most |
+| `PsychImGui('SetContext', ctx)` | Makes `ctx` current. A handle of a context that was shut down raises `psychimgui:InvalidHandle` |
+| `[ctx, all] = PsychImGui('GetContext')` | The current handle, 0 for none, and every live handle |
+| `PsychImGui('Shutdown' [, ctx or 'all'])` | Shuts down the current context, the context `ctx`, or all of them. With no context left, the MEX unlocks |
+
+Every other subcommand acts on the current context. A handle is never reused,
+so a stale handle cannot select a newer context. A draw list handle is valid
+only in the context and frame that returned it.
+
+### Stereo
+
+In a Psychtoolbox stereo mode each eye is a separate buffer. Dear ImGui builds
+one frame; `Render` draws it into the selected eye, and `RenderAgain` draws
+the same frame into the other one. The frame reads its input once.
+
+    for eye = 0:1
+        Screen('SelectStereoDrawBuffer', win, eye);
+        ... draw that eye's stimulus ...
+    end
+    ig = PsychImGuiFrame('Begin', ig);      % ig.stereo is true
+    ... widgets, once ...
+    PsychImGuiFrame('End', ig);             % Render into eye 0, RenderAgain into eye 1
+    Screen('Flip', win);
+
+`PsychImGuiOpen` reads the stereo mode with `Screen('GetWindowInfo')`, so
+`PsychImGuiFrame('End')` does both eyes on its own. Without the helper:
+
+    Screen('EndOpenGL', win);
+    Screen('SelectStereoDrawBuffer', win, 0);
+    Screen('BeginOpenGL', win);  PsychImGui('Render');       Screen('EndOpenGL', win);
+    Screen('SelectStereoDrawBuffer', win, 1);
+    Screen('BeginOpenGL', win);  PsychImGui('RenderAgain');  Screen('EndOpenGL', win);
+
+`RenderAgain` is legal after `Render` and before the next `NewFrame`; anywhere
+else it raises `psychimgui:Usage`. `test_gl_stereo` checks modes 4 and 8,
+which work on one display. `PsychImGuiStereoDemo` shows the whole pattern.
 
 ### Which OpenGL backend
 
@@ -338,11 +451,11 @@ Artifacts are named `psychimgui-matlab-macos`, `psychimgui-octave-macos`,
 `psychimgui-octave-windows`. A `v*` tag turns each one into a zip on the
 release page.
 
-`third_party` is not a set of submodules yet, so every build job runs
-`tools/fetch_third_party.sh` first. That script does nothing when the
-directories are already populated, which is what happens once `checkout` with
-`submodules: recursive` fills them; until then it clones the commits recorded
-in `third_party/PINS.md`.
+`third_party/cimplot3d` and `third_party/ImGuiFileDialog` are not submodules
+yet, so every build job runs `tools/fetch_third_party.sh` first. That script
+clones, at the commits recorded in `third_party/PINS.md`, each dependency that
+`checkout` with `submodules: recursive` did not fill, and does nothing once
+all of them are there.
 
 ## Plot with ImPlot
 
@@ -372,6 +485,70 @@ a number, a name, or a cellstr of names.
 Build without ImPlot with `-DPSYCHIMGUI_IMPLOT=OFF`. The subcommands then
 raise `psychimgui:UnknownCommand`, and the opcodes of the other subcommands do
 not move.
+
+## Plot in 3D with ImPlot3D
+
+ImPlot3D is compiled in by default. Its subcommands follow the ImPlot rules:
+
+    if PsychImGui('ImPlot3D.BeginPlot', 'gaze', [-1 300])
+        PsychImGui('ImPlot3D.SetupAxes', 'x', 'y', 'time');
+        PsychImGui('ImPlot3D.PlotLine', 'eye', x, y, t, 'LineColor', [1 0.8 0.2 1]);
+        PsychImGui('ImPlot3D.PlotSurface', 'field', X, Y, Z);     % meshgrid matrices
+        PsychImGui('ImPlot3D.PlotMesh', 'shape', vx, vy, vz, faces);
+        PsychImGui('ImPlot3D.EndPlot');
+    end
+
+Data arrays go to ImPlot3D without a copy, in any numeric class. `PlotSurface`
+takes three same-size matrices, as `meshgrid` makes them, and reads the grid
+size from their shape. `PlotMesh` takes the vertex coordinates and an Mx3
+matrix of 1-based vertex indices, one row per triangle, which is the `Faces`
+matrix of `patch`; an index outside the vertices raises `psychimgui:Range`.
+The trailing name-value pairs set the `ImPlot3DSpec` of the item, with the
+ImPlot names except `Size`.
+
+| Group | Subcommands (`ImPlot3D.` prefix omitted) |
+|---|---|
+| Plot frame | `BeginPlot`, `EndPlot` |
+| Setup | `SetupAxis`, `SetupAxes`, `SetupAxisLimits`, `SetupAxesLimits`, `SetupAxisTicks`, `SetupBoxRotation`, `SetupBoxScale`, `SetupLegend` |
+| Items | `PlotLine`, `PlotScatter`, `PlotTriangle`, `PlotQuad`, `PlotSurface`, `PlotMesh`, `PlotText` |
+| Queries | `PlotToPixels`, `GetPlotRectPos`, `GetPlotRectSize` |
+| Colormaps | `PushColormap`, `PushColormapIndex`, `PopColormap`, `GetColormapCount`, `GetColormapName`, `SampleColormap` |
+| Style | `StyleColorsAuto`, `StyleColorsDark`, `StyleColorsLight`, `StyleColorsClassic`, `PushStyleColor`, `PopStyleColor`, `PushStyleVar`, `PushStyleVarVec2`, `PopStyleVar` |
+| Diagnostics | `ShowDemoWindow`, `ShowMetricsWindow` |
+
+A subcommand that needs an open plot raises `psychimgui:Usage` outside
+`BeginPlot` and `EndPlot`, for ImPlot and ImPlot3D both. Build without
+ImPlot3D with `-DPSYCHIMGUI_IMPLOT3D=OFF`.
+
+## Choose a file
+
+The `FileDialog.` subcommands bind ImGuiFileDialog. Open the dialog once,
+display it every frame until it is done, then read the choice and close it:
+
+    if PsychImGui('Button', 'Open data file')
+        PsychImGui('FileDialog.Open', 'data', 'Choose a data file', '.csv,.mat', pwd);
+    end
+    if PsychImGui('FileDialog.Display', 'data', [500 320])
+        if PsychImGui('FileDialog.IsOk')
+            file = PsychImGui('FileDialog.GetFilePathName');
+        end
+        PsychImGui('FileDialog.Close');
+    end
+
+| Subcommand | What it does |
+|---|---|
+| `FileDialog.Open` | `(key, title, filters [, path] [, fileName] [, maxSelection] [, flags])`. An empty filter makes a directory chooser. `flags` takes `ImGuiFileDialogFlags_` names |
+| `FileDialog.Display` | `[done, open] = (key [, minSize] [, maxSize] [, windowFlags])`. `done` is true on the frame the user presses OK or Cancel; `open` is true while the dialog stays open. Call it inside a frame |
+| `FileDialog.IsOk` | True when the user pressed OK |
+| `FileDialog.GetFilePathName` | The chosen path |
+| `FileDialog.GetSelection` | Every chosen path as a cellstr, for `maxSelection` above 1 |
+| `FileDialog.GetCurrentPath` | The folder the dialog shows |
+| `FileDialog.IsOpened` | True while a dialog, or the dialog with `key`, is open |
+| `FileDialog.Close` | Closes the dialog |
+
+Paths are UTF-8 inside the MEX. MATLAB's UTF-16 char arrays and Octave's
+UTF-8 ones both convert, so a folder name outside ASCII works on both. Each
+context has its own dialog.
 
 ## Show a table
 
@@ -453,6 +630,29 @@ so `uv0` and `uv1` select a part of the image as you see it, from the top
 left. `PsychImGuiImage(ig, ptbTex, 'nearest')` shows the pixels without
 smoothing.
 
+## Profile with Tracy
+
+`PsychImGui('Stats')` reports per-subcommand counts and times in every build,
+and `frame.renderGpuNs`, the GPU time of the last finished `Render`, from
+`GL_TIMESTAMP` queries read one or more frames later so they never stall.
+The timer needs OpenGL 3.3 or `GL_ARB_timer_query`; without them, as on the
+OpenGL 2.1 context of macOS, it reports 0 and `PsychImGui('Version').gpuTimer`
+is false.
+
+For a timeline, build with the Tracy client:
+
+    git clone --branch v0.11.1 https://github.com/wolfpld/tracy.git third_party/tracy
+    setenv('PSYCHIMGUI_TRACY', '1'); build
+
+That build has one Tracy CPU zone per subcommand call, zones for `NewFrame`
+and `Render`, one frame mark per `Render`, and a Tracy GPU zone,
+"Render (GPU)", around each draw data submission. Capture with
+`tracy-capture -o run.tracy` from the Tracy 0.11.1 tools while the script
+runs. The client is built with `TRACY_NO_CRASH_HANDLER`: MATLAB's JVM raises
+access violations on purpose and handles them, and Tracy's handler would take
+the first one for a crash and hang the session. Build without
+`PSYCHIMGUI_TRACY` to take the client out again.
+
 ## Find a subcommand
 
     PsychImGui                     % list every subcommand
@@ -475,8 +675,9 @@ The binding surface comes from the cimgui metadata. To add a function, add its
     uv run --project gen python gen/generate.py
 
 The generator writes `src/gen_dispatch.cpp`, `src/gen_dispatch_implot.cpp`,
-`m/PsychImGui.m`, `m/PsychImGuiOp.m`, and `tests/test_gen_marshal.m`. All five
-are committed, because they are build inputs. The generator refuses a function
+`src/gen_dispatch_implot3d.cpp`, `m/PsychImGui.m`, `m/PsychImGuiOp.m`, and
+`tests/test_gen_marshal.m`. All six are committed, because they are build
+inputs. The generator refuses a function
 whose arguments have no marshaling rule, and prints the reason.
 
 ## Layout
@@ -484,6 +685,7 @@ whose arguments have no marshaling rule, and prints the reason.
     build.m                 build driver for both engines
     CMakeLists.txt          builds imgui_static and smoke_gl
     dist/<arch>/            the built MEX, one directory per platform
+    docs/images/            the README screenshot
     gen/                    generator and allowlist
     m/                      PsychImGui help text and the helper M-files
     src/                    MEX sources
@@ -491,8 +693,9 @@ whose arguments have no marshaling rule, and prints the reason.
     src/imgui_marshal.h     color, point list, and draw list handle rules
     tests/                  test suite
     tests/gl/               tests that need Psychtoolbox and a GPU
-    third_party/            cimgui and cimplot clones, see PINS.md
+    third_party/            cimgui, cimplot, cimplot3d, and ImGuiFileDialog, see PINS.md
     tools/smoke_gl.cpp      native OpenGL smoke test
+    tools/CaptureReadmeScreenshot.m   makes docs/images/psychimgui-demo.png again
     tools/fetch_third_party.sh   clones the PINS.md commits, for CI
     .github/workflows/ci.yml     the CI workflow
 

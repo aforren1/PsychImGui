@@ -4,8 +4,10 @@ function ig = PsychImGuiClose(ig)
 %   PsychImGuiClose(ig)
 %   ig = PsychImGuiClose(ig)
 %
-%   Destroys the Dear ImGui context inside the userspace OpenGL context and
-%   stops the keyboard queue. The MEX unlocks, so "clear mex" works again.
+%   Destroys the handle's PsychImGui context inside the window's userspace
+%   OpenGL context and stops the keyboard queue. Other windows' contexts
+%   stay open. When the last context closes, the MEX unlocks, so "clear mex"
+%   works again.
 %
 %   The call is safe to repeat, and safe after the window has closed: it
 %   catches the Screen errors and still shuts the MEX down, because a MEX that
@@ -22,9 +24,11 @@ function ig = PsychImGuiClose(ig)
 
     win = [];
     kq = [];
+    ctx = [];
     if nargin >= 1 && isstruct(ig)
         if isfield(ig, 'win'); win = ig.win; end
         if isfield(ig, 'kq');  kq = ig.kq;   end
+        if isfield(ig, 'ctx'); ctx = ig.ctx; end
     elseif nargin >= 1 && isnumeric(ig) && ~isempty(ig)
         win = ig;   % a bare window handle, for scripts that kept only that
     end
@@ -42,7 +46,13 @@ function ig = PsychImGuiClose(ig)
     end
 
     try
-        PsychImGui('Shutdown');
+        if isempty(ctx)
+            PsychImGui('Shutdown');
+        else
+            % By handle, so closing one window never shuts down another
+            % window's context; a handle already shut down is a no-op.
+            PsychImGui('Shutdown', ctx);
+        end
     catch err
         if inGL
             local_end_gl(win);
@@ -72,6 +82,7 @@ function ig = PsychImGuiClose(ig)
             ig = struct();
         end
         ig.kq = [];
+        ig.ctx = [];
         ig.closed = local_now();
     end
 end

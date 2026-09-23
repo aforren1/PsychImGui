@@ -1,17 +1,30 @@
-function PsychImGuiDemo(nFrames)
+function PsychImGuiDemo(nFrames, opts)
 % PsychImGuiDemo  A Gabor patch with a PsychImGui control panel.
 %
 %   PsychImGuiDemo()          Run until you press ESCAPE or the Quit button.
 %   PsychImGuiDemo(n)         Run n frames and return. Useful for a smoke run.
+%   PsychImGuiDemo(n, opts)   The same, with options:
 %
-%   The demo opens a 640x480 Psychtoolbox window, draws a Gabor patch, and
+%       opts.rect      window rectangle, default [0 0 640 480]. The panels
+%                      follow the window size.
+%       opts.capture   a PNG file name. The last frame is written to it
+%                      with Screen('GetImage') before the flip.
+%       opts.animate   true to move the contrast along a slow sine, so the
+%                      trace shows a signal without a hand on the slider.
+%
+%   tools/CaptureReadmeScreenshot uses both to make the README image.
+%
+%   The demo opens a Psychtoolbox window, draws a Gabor patch, and
 %   draws a control panel over it. The sliders drive the contrast, the spatial
 %   frequency, and the orientation of the patch. The contrast slider is the
-%   Michelson contrast of the patch, from 0 to 1. A text field and the Dear
-%   ImGui demo window are there to show the rest of the binding.
+%   Michelson contrast of the patch, from 0 to 1. A text field, a file
+%   dialog, and the Dear ImGui demo window are there to show the rest of the
+%   binding.
 %
 %   With ImPlot compiled in, a second panel shows a live trace of the contrast
-%   over the last 512 frames and a heat map of the patch envelope.
+%   over the last 512 frames and a heat map of the patch envelope. With
+%   ImPlot3D compiled in, a third panel shows a simulated gaze trajectory in
+%   3D above a surface of the patch envelope; drag it to rotate the box.
 %
 %   A third panel has two tabs. "Log" is a table of the slider values, one
 %   row per half second. "Texture" shows a Psychtoolbox texture through
@@ -32,9 +45,21 @@ function PsychImGuiDemo(nFrames)
 %   See also PsychImGuiOpen, PsychImGuiFrame, PsychImGuiClose, PsychImGuiGL,
 %   PsychImGuiImage.
 
-    if nargin < 1
+    if nargin < 1 || isempty(nFrames)
         nFrames = Inf;
     end
+    if nargin < 2 || isempty(opts)
+        opts = struct();
+    end
+    winRect = [0 0 640 480];
+    if isfield(opts, 'rect') && ~isempty(opts.rect)
+        winRect = opts.rect;
+    end
+    captureFile = '';
+    if isfield(opts, 'capture')
+        captureFile = opts.capture;
+    end
+    animate = isfield(opts, 'animate') && ~isempty(opts.animate) && opts.animate;
 
     here = fileparts(mfilename('fullpath'));
     root = fileparts(here);
@@ -56,7 +81,14 @@ function PsychImGuiDemo(nFrames)
         % come before the window opens.
         PsychDefaultSetup(2);
 
-        [win, rect] = ptb_test_window([0 0 640 480]); %#ok<ASGLU>
+        [win, rect] = ptb_test_window(winRect);
+        W = rect(3);
+        H = rect(4);
+        % Panel sizes follow the window, within limits that keep them usable
+        % at 640x480 and not sparse at 1280x720.
+        sideW = min(420, max(320, round(0.3 * W)));
+        sigH = min(400, max(300, round(0.46 * H)));
+        logH = min(220, max(140, round(0.26 * H)));
 
         ig = PsychImGuiOpen(win);
         PsychImGuiGL(ig, 'StyleColorsDark');
@@ -70,9 +102,16 @@ function PsychImGuiDemo(nFrames)
         running = true;
         frame = 0;
 
-        hasImPlot = PsychImGui('Version').implot;
-        trace = zeros(1, 512);
+        v = PsychImGuiGL(ig, 'Version');
+        hasImPlot = v.implot;
+        hasImPlot3D = v.implot3d;
+        hasDialog = v.fileDialog;
+        chosenFile = '';
+        trace = contrast * ones(1, 512);
         [gx, gy] = meshgrid(linspace(-2, 2, 24), linspace(-2, 2, 24));
+        % A gaze trace for the 3D panel: a slow drift with a fixational
+        % tremor, in arbitrary screen units, with time on the third axis.
+        [sx, sy] = meshgrid(linspace(-1, 1, 16), linspace(-1, 1, 16));
 
         % disableNorm = 1 and contrastPreMultiplicator = 0.5 make the
         % 'contrast' parameter below the Michelson contrast of the patch, which
@@ -100,6 +139,9 @@ function PsychImGuiDemo(nFrames)
 
         while running && frame < nFrames
             frame = frame + 1;
+            if animate
+                contrast = 0.55 + 0.35 * sin(frame / 12);
+            end
 
             % The Gabor shader writes Offset + envelope * sine into every pixel
             % of its texture rectangle and puts 0 in alpha, so the rectangle is
@@ -151,29 +193,72 @@ function PsychImGuiDemo(nFrames)
                 [~, showDemo] = PsychImGui('Checkbox', 'Dear ImGui demo', showDemo);
                 PsychImGui('SameLine');
                 [~, showOverlay] = PsychImGui('Checkbox', 'overlay', showOverlay);
+                if hasDialog && PsychImGui('Button', 'Open file...')
+                    PsychImGui('FileDialog.Open', 'demoFile', 'Choose a file', ...
+                               '.m,.png,.csv,.*', pwd);
+                end
+                if ~isempty(chosenFile)
+                    [~, fname, fext] = fileparts(chosenFile);
+                    PsychImGui('Text', ['file: ' fname fext]);
+                end
                 if PsychImGui('Button', 'Quit')
                     running = false;
                 end
             end
             PsychImGui('End');
 
+            if hasDialog && PsychImGui('FileDialog.Display', 'demoFile', [480 320])
+                if PsychImGui('FileDialog.IsOk')
+                    chosenFile = PsychImGui('FileDialog.GetFilePathName');
+                end
+                PsychImGui('FileDialog.Close');
+            end
+
             if hasImPlot
                 trace = [trace(2:end), contrast];
                 envelope = exp(-(gx .^ 2 + gy .^ 2) / 2) .* contrast;
-                PsychImGui('SetNextWindowPos', [310 10]);
-                PsychImGui('SetNextWindowSize', [320 300]);
+                PsychImGui('SetNextWindowPos', [W - sideW - 10, 10]);
+                PsychImGui('SetNextWindowSize', [sideW, sigH]);
                 if PsychImGui('Begin', 'Signals')
-                    if PsychImGui('ImPlot.BeginPlot', 'contrast', [-1 120])
+                    if PsychImGui('ImPlot.BeginPlot', 'contrast', [-1, (sigH - 60) / 2])
                         PsychImGui('ImPlot.SetupAxes', 'frame', 'contrast');
                         PsychImGui('ImPlot.SetupAxisLimits', 'ImAxis_Y1', 0, 1);
                         PsychImGui('ImPlot.PlotLine', 'trace', trace, ...
                                    'LineColor', [0.2 0.8 1 1], 'LineWeight', 2);
                         PsychImGui('ImPlot.EndPlot');
                     end
-                    if PsychImGui('ImPlot.BeginPlot', 'envelope', [-1 130])
+                    if PsychImGui('ImPlot.BeginPlot', 'envelope', [-1, (sigH - 60) / 2])
                         % The matrix goes to ImPlot column major, with no copy.
+                        PsychImGui('ImPlot.PushColormap', 'Viridis');
                         PsychImGui('ImPlot.PlotHeatmap', 'gabor', envelope, 0, 1, '');
+                        PsychImGui('ImPlot.PopColormap');
                         PsychImGui('ImPlot.EndPlot');
+                    end
+                end
+                PsychImGui('End');
+            end
+
+            if hasImPlot3D
+                % Positions come from the frame count, so the panel shows the
+                % same picture on every run.
+                tt = (frame - 1 + (1:240)) / 60;
+                gazeX = 0.6 * sin(0.7 * tt) + 0.05 * sin(23 * tt);
+                gazeY = 0.5 * cos(0.5 * tt) + 0.05 * cos(19 * tt);
+                gazeZ = linspace(-1, 1, numel(tt));
+                sz = 0.6 * contrast * exp(-2 * (sx .^ 2 + sy .^ 2)) - 1;
+                PsychImGui('SetNextWindowPos', [W - sideW - 10, sigH + 20]);
+                PsychImGui('SetNextWindowSize', [sideW, H - sigH - 30]);
+                if PsychImGui('Begin', 'Gaze in 3D')
+                    if PsychImGui('ImPlot3D.BeginPlot', 'gaze', [-1 -1], ...
+                                  'ImPlot3DFlags_NoLegend')
+                        PsychImGui('ImPlot3D.SetupAxes', 'x', 'y', 'time');
+                        PsychImGui('ImPlot3D.SetupAxesLimits', -1, 1, -1, 1, -1, 1);
+                        PsychImGui('ImPlot3D.PushColormap', 'Viridis');
+                        PsychImGui('ImPlot3D.PlotSurface', 'envelope', sx, sy, sz);
+                        PsychImGui('ImPlot3D.PopColormap');
+                        PsychImGui('ImPlot3D.PlotLine', 'gaze', gazeX, gazeY, gazeZ, ...
+                                   'LineColor', [1 0.85 0.2 1], 'LineWeight', 2);
+                        PsychImGui('ImPlot3D.EndPlot');
                     end
                 end
                 PsychImGui('End');
@@ -183,8 +268,8 @@ function PsychImGuiDemo(nFrames)
                 logRows = [logRows(max(1, end - 49):end, :); ...
                            frame, contrast, freq, orientation]; %#ok<AGROW>
             end
-            PsychImGui('SetNextWindowPos', [10 330]);
-            PsychImGui('SetNextWindowSize', [290 140]);
+            PsychImGui('SetNextWindowPos', [10, H - logH - 10]);
+            PsychImGui('SetNextWindowSize', [sideW - 30, logH]);
             if PsychImGui('Begin', 'Log and texture')
                 if PsychImGui('BeginTabBar', 'tabs')
                     if PsychImGui('BeginTabItem', 'Log')
@@ -225,6 +310,11 @@ function PsychImGuiDemo(nFrames)
             end
 
             PsychImGuiFrame('End', ig);
+            if ~isempty(captureFile) && frame == nFrames
+                % Before the flip: afterwards the back buffer is undefined.
+                imwrite(Screen('GetImage', win, [], 'backBuffer'), captureFile);
+                fprintf('PsychImGuiDemo: wrote %s\n', captureFile);
+            end
             Screen('Flip', win);
 
             % The GUI takes the keyboard while a text field is active, so the

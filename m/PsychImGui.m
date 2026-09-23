@@ -16,17 +16,28 @@ function varargout = PsychImGui(varargin)
 %     PsychImGui('Image', tex, size [, uv0=[0 0]] [, uv1=[1 1]] [, bgCol=[0 0 0 0]] [, tintCol=[1 1 1 1]])
 %     pressed = PsychImGui('ImageButton', strId, tex, size [, uv0=[0 0]] [, uv1=[1 1]] [, bgCol=[0 0 0 0]] [, tintCol=[1 1 1 1]])
 %     v = PsychImGui('Enum' [, 'ImGuiWindowFlags_NoTitleBar'])
-%     PsychImGui('Init', win, rect, keymap [, opts])
+%     PsychImGui('FileDialog.Close')
+%     [done, open] = PsychImGui('FileDialog.Display', key [, minSize=[0 0]] [, maxSize=[FLT_MAX FLT_MAX]] [, windowFlags=ImGuiWindowFlags_NoCollapse])
+%     path = PsychImGui('FileDialog.GetCurrentPath')
+%     path = PsychImGui('FileDialog.GetFilePathName')
+%     paths = PsychImGui('FileDialog.GetSelection')
+%     ok = PsychImGui('FileDialog.IsOk')
+%     open = PsychImGui('FileDialog.IsOpened' [, key])
+%     PsychImGui('FileDialog.Open', key, title, filters [, path='.'] [, fileName=''] [, maxSelection=1] [, flags=0])
+%     [ctx, all] = PsychImGui('GetContext')
+%     ctx = PsychImGui('Init', win, rect, keymap [, opts])
 %     PsychImGui('NewFrame', in)
 %     op = PsychImGui('Opcode', 'SliderFloat')
 %     PsychImGui('PopFont')
 %     PsychImGui('PushFont', idx [, sizePx])
 %     PsychImGui('Render')
+%     PsychImGui('RenderAgain')
+%     PsychImGui('SetContext', ctx)
 %     PsychImGui('SetGlobalScale', s)
 %     PsychImGui('SetTextureFilter', glId [, mode='linear'])
 %     [open] = PsychImGui('ShowDemoWindow' [, open])
 %     [open] = PsychImGui('ShowMetricsWindow' [, open])
-%     PsychImGui('Shutdown')
+%     PsychImGui('Shutdown' [, ctx | 'all'])
 %     s = PsychImGui('Stats' [, 'reset'])
 %     PsychImGui('StyleColorsClassic')
 %     PsychImGui('StyleColorsDark')
@@ -240,7 +251,7 @@ function varargout = PsychImGui(varargin)
 %     ret = PsychImGui('ImPlot.GetPlotLimits' [, xAxis=IMPLOT_AUTO] [, yAxis=IMPLOT_AUTO])
 %     ret = PsychImGui('ImPlot.GetPlotSize')
 %     ret = PsychImGui('ImPlot.GetPlotPos')
-%     ret = PsychImGui('ImPlot.PlotToPixels', x, y [, xAxis=IMPLOT_AUTO] [, yAxis=IMPLOT_AUTO])
+%     pix = PsychImGui('ImPlot.PlotToPixels', x, y [, xAxis=IMPLOT_AUTO] [, yAxis=IMPLOT_AUTO])
 %     ret = PsychImGui('ImPlot.PixelsToPlot', x, y [, xAxis=IMPLOT_AUTO] [, yAxis=IMPLOT_AUTO])
 %     PsychImGui('ImPlot.PushColormap', name)
 %     PsychImGui('ImPlot.PushColormapIndex', cmap)
@@ -262,6 +273,43 @@ function varargout = PsychImGui(varargin)
 %     PsychImGui('ImPlot.PopStyleVar' [, count=1])
 %     open = PsychImGui('ImPlot.ShowDemoWindow' [, open=[]])
 %     popen = PsychImGui('ImPlot.ShowMetricsWindow' [, popen=[]])
+%     open = PsychImGui('ImPlot3D.BeginPlot', titleId [, size=[-1 0]] [, flags=0])
+%     PsychImGui('ImPlot3D.EndPlot')
+%     PsychImGui('ImPlot3D.SetupAxis', axis [, label=[]] [, flags=0])
+%     PsychImGui('ImPlot3D.SetupAxes', xLabel, yLabel, zLabel [, xFlags=0] [, yFlags=0] [, zFlags=0])
+%     PsychImGui('ImPlot3D.SetupAxisLimits', axis, vMin, vMax [, cond=ImPlot3DCond_Once])
+%     PsychImGui('ImPlot3D.SetupAxesLimits', xMin, xMax, yMin, yMax, zMin, zMax [, cond=ImPlot3DCond_Once])
+%     PsychImGui('ImPlot3D.SetupAxisTicks', axis, values [, labels=[]] [, keepDefault=false])
+%     PsychImGui('ImPlot3D.SetupBoxRotation', elevation, azimuth [, animate=false] [, cond=ImPlot3DCond_Once])
+%     PsychImGui('ImPlot3D.SetupBoxScale', x, y, z)
+%     PsychImGui('ImPlot3D.SetupLegend', location [, flags=0])
+%     PsychImGui('ImPlot3D.PlotLine', labelId, xs, ys, zs [, spec...])
+%     PsychImGui('ImPlot3D.PlotScatter', labelId, xs, ys, zs [, spec...])
+%     PsychImGui('ImPlot3D.PlotTriangle', labelId, xs, ys, zs [, spec...])
+%     PsychImGui('ImPlot3D.PlotQuad', labelId, xs, ys, zs [, spec...])
+%     PsychImGui('ImPlot3D.PlotSurface', labelId, X, Y, Z [, scaleMin=0.0] [, scaleMax=0.0] [, spec...])
+%     PsychImGui('ImPlot3D.PlotMesh', labelId, xs, ys, zs, faces [, spec...])
+%     PsychImGui('ImPlot3D.PlotText', text, x, y, z [, angle=0.0] [, pixOffset=[0 0]])
+%     pix = PsychImGui('ImPlot3D.PlotToPixels', x, y, z)
+%     pos = PsychImGui('ImPlot3D.GetPlotRectPos')
+%     size = PsychImGui('ImPlot3D.GetPlotRectSize')
+%     PsychImGui('ImPlot3D.PushColormap', name)
+%     PsychImGui('ImPlot3D.PushColormapIndex', cmap)
+%     PsychImGui('ImPlot3D.PopColormap' [, count=1])
+%     ret = PsychImGui('ImPlot3D.GetColormapCount')
+%     ret = PsychImGui('ImPlot3D.GetColormapName', cmap)
+%     ret = PsychImGui('ImPlot3D.SampleColormap', t [, cmap=-1])
+%     PsychImGui('ImPlot3D.StyleColorsAuto')
+%     PsychImGui('ImPlot3D.StyleColorsDark')
+%     PsychImGui('ImPlot3D.StyleColorsLight')
+%     PsychImGui('ImPlot3D.StyleColorsClassic')
+%     PsychImGui('ImPlot3D.PushStyleColor', idx, col)
+%     PsychImGui('ImPlot3D.PopStyleColor' [, count=1])
+%     PsychImGui('ImPlot3D.PushStyleVar', idx, val)
+%     PsychImGui('ImPlot3D.PushStyleVarVec2', idx, val)
+%     PsychImGui('ImPlot3D.PopStyleVar' [, count=1])
+%     open = PsychImGui('ImPlot3D.ShowDemoWindow' [, open=[]])
+%     popen = PsychImGui('ImPlot3D.ShowMetricsWindow' [, popen=[]])
 %
 %   Draw lists
 %   ----------
@@ -279,6 +327,29 @@ function varargout = PsychImGui(varargin)
 %   with Screen('MakeTexture', win, img, [], 1); the default
 %   GL_TEXTURE_RECTANGLE texture raises psychimgui:Texture.
 %
+%   Several windows
+%   ---------------
+%   Init returns a context handle and makes that context current. Every
+%   other subcommand acts on the current context. SetContext switches;
+%   enter that window with Screen('BeginOpenGL', win) before any call
+%   that draws, or it raises psychimgui:Context. Shutdown takes an
+%   optional handle or 'all'. A handle of a context that was shut down
+%   raises psychimgui:InvalidHandle.
+%
+%   Stereo
+%   ------
+%   Render builds and draws the frame for the eye selected with
+%   Screen('SelectStereoDrawBuffer'). RenderAgain draws the same frame
+%   into the other eye, inside its own BeginOpenGL and EndOpenGL pair.
+%   PsychImGuiFrame('End', ig) does both when ig.stereo is true.
+%
+%   File dialog
+%   -----------
+%   FileDialog.Open starts a dialog; call FileDialog.Display every frame
+%   until it returns true, then read FileDialog.IsOk and
+%   FileDialog.GetFilePathName or FileDialog.GetSelection, and call
+%   FileDialog.Close. An empty filter chooses a directory.
+%
 %   The four helpers own the Screen('BeginOpenGL') and
 %   Screen('EndOpenGL') pairs, so a script writes none itself:
 %
@@ -290,7 +361,8 @@ function varargout = PsychImGui(varargin)
 %
 %   See also PsychImGuiOpen, PsychImGuiFrame, PsychImGuiClose,
 %   PsychImGuiGL, PsychImGuiImage, PsychImGuiSetup, PsychImGuiInput,
-%   PsychImGuiKeymap, PsychImGuiOp, PsychImGuiDemo.
+%   PsychImGuiKeymap, PsychImGuiOp, PsychImGuiDemo,
+%   PsychImGuiStereoDemo.
 
     error('psychimgui:NotBuilt', ...
         ['The PsychImGui MEX is not on the path. Run PsychImGuiSetup, ' ...

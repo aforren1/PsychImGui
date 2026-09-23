@@ -18,6 +18,10 @@
 #include "marshal.h"
 #include "mex.h"
 
+#ifdef TRACY_ENABLE
+#  include "tracy/Tracy.hpp"
+#endif
+
 namespace mrs {
 int enum_count();
 const char* enum_name(int i);
@@ -40,8 +44,29 @@ struct OpStats {
     uint64_t maxNs;
 };
 
-OpStats g_stats[512];
+// One row per context, plus row 0 for calls made while no context is
+// current, so each window's Stats answer for that window alone.
+OpStats g_stats[kMaxContexts + 1][512];
 bool g_locked = false;
+bool g_started = false;
+
+inline OpStats* stats_row() { return g_stats[currentSlot() + 1]; }
+
+#ifdef TRACY_ENABLE
+// One static source location per subcommand, built once from the dispatch
+// table, so a zone costs no allocation. Tracy keeps the pointer, which is why
+// these cannot be locals.
+tracy::SourceLocationData g_zoneLoc[512];
+bool g_zoneLocReady = false;
+
+void zone_locations() {
+    if (g_zoneLocReady) return;
+    for (int i = 0; i < kTableCount && i < 512; ++i)
+        g_zoneLoc[i] = tracy::SourceLocationData{kTable[i].name, "PsychImGui", __FILE__,
+                                                 (uint32_t)__LINE__, 0};
+    g_zoneLocReady = true;
+}
+#endif
 
 void raise(const char* id, const char* msg) { mexErrMsgIdAndTxt(id, "%s", msg); }
 
@@ -67,8 +92,30 @@ void print_commands() {
 
 void at_exit() {
     bool skipped = false;
-    pig::shutdown(&skipped);
+    pig::shutdownAll(&skipped);
+    pig::profilerShutdown();
     g_locked = false;
+    g_started = false;
+}
+
+// The MEX stays locked while any context lives, because a context holds GL
+// objects and Dear ImGui state that "clear mex" would otherwise orphan.
+void update_lock() {
+    if (contextCount() > 0 && !g_locked) {
+        mexLock();
+        g_locked = true;
+    } else if (contextCount() == 0 && g_locked) {
+        mexUnlock();
+        g_locked = false;
+    }
+}
+
+void warn_skipped() {
+    mexWarnMsgIdAndTxt("psychimgui:NoGLContext",
+                       "Shutdown ran without the window's OpenGL context current, so the "
+                       "backend objects were left to Psychtoolbox, which frees them with the "
+                       "window. Call Shutdown inside Screen('BeginOpenGL', win) for the "
+                       "window the context belongs to.");
 }
 
 // ------------------------------------------------------------ input struct --
@@ -257,8 +304,6 @@ bool need_frame(const char* cmd) {
 // ============================================================== built-ins ===
 
 void bi_Init(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
-    (void)nlhs;
-    (void)plhs;
     if (nargin < 3 || nargin > 4) {
         mrs::fail("psychimgui:Usage",
                   "PsychImGui('Init', win, rect, keymap [, opts]) takes 3 or 4 arguments.");
@@ -268,6 +313,10 @@ void bi_Init(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
     memset(&opts, 0, sizeof(opts));
     opts.renderer = Renderer::Auto;
     opts.implot = true;
+    opts.implot3d = true;
+    // The window identifies the context: a second Init for the same window
+    // is refused, one for another window starts a second context.
+    if (!mxIsEmpty(args[0])) opts.win = mrs::getScalar(args[0], "win");
     // Left empty on purpose: the core picks the version from the live context.
     // opts.glslVersion overrides it.
     opts.glslVersion[0] = 0;
@@ -340,40 +389,86 @@ void bi_Init(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
         }
         f = field(o, "implot");
         if (f && !mxIsEmpty(f)) opts.implot = mxGetScalar(f) != 0.0;
+        f = field(o, "implot3d");
+        if (f && !mxIsEmpty(f)) opts.implot3d = mxGetScalar(f) != 0.0;
     }
     if (mrs::failed()) return;
 
     Error err;
     memset(&err, 0, sizeof(err));
-    if (!init(opts, keymap, 257, err)) {
+    bool ok = init(opts, keymap, 257, err);
+    // An assert late in Init reports failure with the context already live,
+    // and a live context must keep the MEX locked either way.
+    update_lock();
+    if (!ok) {
         mrs::fail(err.id, "%s", err.msg);
         return;
     }
-    if (!g_locked) {
-        mexLock();
-        g_locked = true;
-        mexAtExit(at_exit);
-    }
+    // A new context in a slot starts with empty counters, not with those of
+    // the context that had the slot before.
+    memset(stats_row(), 0, sizeof(g_stats[0]));
+    if (nlhs > 0) plhs[0] = mxCreateDoubleScalar(currentHandle());
 }
 
 void bi_Shutdown(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
     (void)nlhs;
     (void)plhs;
-    (void)args;
-    if (nargin != 0) {
-        mrs::fail("psychimgui:Usage", "PsychImGui('Shutdown') takes no arguments.");
+    if (nargin > 1) {
+        mrs::usage("Shutdown", "PsychImGui('Shutdown' [, ctx | 'all'])");
         return;
     }
     bool skipped = false;
-    pig::shutdown(&skipped);
-    if (skipped)
-        mexWarnMsgIdAndTxt("psychimgui:NoGLContext",
-                           "Shutdown ran with no current OpenGL context, so the backend "
-                           "objects were left to the context owner. Call Shutdown inside "
-                           "Screen('BeginOpenGL', win).");
-    if (g_locked) {
-        mexUnlock();
-        g_locked = false;
+    if (nargin == 0 || mxIsEmpty(args[0])) {
+        pig::shutdown(&skipped);
+    } else if (mxIsChar(args[0])) {
+        mrs::StrBuf<8> b;
+        const char* w = mrs::toUtf8(args[0], "ctx", b);
+        if (mrs::failed()) return;
+        if (strcmp(w, "all") != 0) {
+            mrs::fail("psychimgui:Usage",
+                      "PsychImGui('Shutdown', ctx) takes a context handle or 'all', got '%s'.", w);
+            return;
+        }
+        pig::shutdownAll(&skipped);
+    } else {
+        double h = mrs::getScalar(args[0], "ctx");
+        if (mrs::failed()) return;
+        Error err;
+        memset(&err, 0, sizeof(err));
+        // A context that is already gone is not an error, for the same reason
+        // Shutdown with nothing initialized is not: cleanup code runs it
+        // without knowing what state an error left behind.
+        shutdownHandle(h, &skipped, err);
+    }
+    if (skipped) warn_skipped();
+    update_lock();
+}
+
+void bi_SetContext(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    (void)nlhs;
+    (void)plhs;
+    if (nargin != 1) {
+        mrs::usage("SetContext", "PsychImGui('SetContext', ctx)");
+        return;
+    }
+    double h = mrs::getScalar(args[0], "ctx");
+    if (mrs::failed()) return;
+    Error err;
+    memset(&err, 0, sizeof(err));
+    if (!setContext(h, err)) mrs::fail(err.id, "%s", err.msg);
+}
+
+void bi_GetContext(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    (void)args;
+    if (nargin != 0) {
+        mrs::usage("GetContext", "[ctx, all] = PsychImGui('GetContext')");
+        return;
+    }
+    if (nlhs > 0) plhs[0] = mxCreateDoubleScalar(currentHandle());
+    if (nlhs > 1) {
+        double h[kMaxContexts];
+        int n = liveHandles(h, kMaxContexts);
+        plhs[1] = mrs::outVec(h, n);
     }
 }
 
@@ -449,6 +544,19 @@ void bi_Render(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
     if (!render(err)) mrs::fail(err.id, "%s", err.msg);
 }
 
+void bi_RenderAgain(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    (void)nlhs;
+    (void)plhs;
+    (void)args;
+    if (nargin != 0) {
+        mrs::fail("psychimgui:Usage", "PsychImGui('RenderAgain') takes no arguments.");
+        return;
+    }
+    Error err;
+    memset(&err, 0, sizeof(err));
+    if (!renderAgain(err)) mrs::fail(err.id, "%s", err.msg);
+}
+
 void bi_EndFrame(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
     (void)nlhs;
     (void)plhs;
@@ -465,10 +573,12 @@ void bi_Version(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
     (void)args;
     VersionInfo v;
     versionInfo(v);
-    const char* fields[] = {"imgui",      "imguiNum", "psychimgui",  "renderer",
-                            "glslVersion", "glVersion", "glRenderer", "build",
-                            "implot",     "implotVersion"};
-    mxArray* s = mxCreateStructMatrix(1, 1, 10, fields);
+    const char* fields[] = {"imgui",      "imguiNum",   "psychimgui",      "renderer",
+                            "glslVersion", "glVersion", "glRenderer",      "build",
+                            "implot",     "implotVersion", "implot3d",     "implot3dVersion",
+                            "fileDialog", "fileDialogVersion", "gpuTimer", "tracy",
+                            "context"};
+    mxArray* s = mxCreateStructMatrix(1, 1, 17, fields);
     mxSetField(s, 0, "imgui", mrs::fromUtf8(v.imgui));
     mxSetField(s, 0, "imguiNum", mxCreateDoubleScalar(v.imguiNum));
     mxSetField(s, 0, "psychimgui", mrs::fromUtf8(v.psychimgui));
@@ -479,6 +589,13 @@ void bi_Version(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
     mxSetField(s, 0, "build", mrs::fromUtf8(v.build));
     mxSetField(s, 0, "implot", mxCreateLogicalScalar(v.implot));
     mxSetField(s, 0, "implotVersion", mrs::fromUtf8(v.implotVersion));
+    mxSetField(s, 0, "implot3d", mxCreateLogicalScalar(v.implot3d));
+    mxSetField(s, 0, "implot3dVersion", mrs::fromUtf8(v.implot3dVersion));
+    mxSetField(s, 0, "fileDialog", mxCreateLogicalScalar(v.fileDialog));
+    mxSetField(s, 0, "fileDialogVersion", mrs::fromUtf8(v.fileDialogVersion));
+    mxSetField(s, 0, "gpuTimer", mxCreateLogicalScalar(v.gpuTimer));
+    mxSetField(s, 0, "tracy", mxCreateLogicalScalar(v.tracy));
+    mxSetField(s, 0, "context", mxCreateDoubleScalar(v.context));
     if (nlhs > 0)
         plhs[0] = s;
     else
@@ -543,19 +660,20 @@ void bi_Stats(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
         return;
     }
 
+    OpStats* row = stats_row();
     int used = 0;
     for (int i = 0; i < kTableCount; ++i)
-        if (g_stats[i].calls) ++used;
+        if (row[i].calls) ++used;
 
     const char* pf[] = {"name", "calls", "totalNs", "maxNs"};
     mxArray* per = mxCreateStructMatrix(used ? 1 : 0, used ? used : 0, 4, pf);
     int k = 0;
     for (int i = 0; i < kTableCount; ++i) {
-        if (!g_stats[i].calls) continue;
+        if (!row[i].calls) continue;
         mxSetField(per, k, "name", mrs::fromUtf8(kTable[i].name));
-        mxSetField(per, k, "calls", mxCreateDoubleScalar((double)g_stats[i].calls));
-        mxSetField(per, k, "totalNs", mxCreateDoubleScalar((double)g_stats[i].totalNs));
-        mxSetField(per, k, "maxNs", mxCreateDoubleScalar((double)g_stats[i].maxNs));
+        mxSetField(per, k, "calls", mxCreateDoubleScalar((double)row[i].calls));
+        mxSetField(per, k, "totalNs", mxCreateDoubleScalar((double)row[i].totalNs));
+        mxSetField(per, k, "maxNs", mxCreateDoubleScalar((double)row[i].maxNs));
         ++k;
     }
 
@@ -574,7 +692,7 @@ void bi_Stats(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
     mxSetField(out, 0, "frame", frame);
 
     if (reset) {
-        memset(g_stats, 0, sizeof(g_stats));
+        memset(row, 0, sizeof(g_stats[0]));
         resetFrameStats();
     }
     if (nlhs > 0)
@@ -800,6 +918,14 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
     mrs::clear();
     assertClear();
 
+    if (!g_started) {
+        // Registered on the first call rather than in Init, so the profiler
+        // started below is stopped even when no context was ever created.
+        g_started = true;
+        mexAtExit(at_exit);
+        profilerStartup();
+    }
+
     if (nrhs == 0) {
         print_commands();
         return;
@@ -861,24 +987,52 @@ void mexFunction(int nlhs, mxArray* plhs[], int nrhs, const mxArray* prhs[]) {
         raise("psychimgui:NotInit", msg);
         return;
     }
-    if ((e.flags & kEntryNeedsGL) && renderer() != Renderer::None && !glContextCurrent()) {
-        char msg[220];
-        snprintf(msg, sizeof(msg),
-                 "PsychImGui('%s') needs a current OpenGL context. Call it between "
-                 "Screen('BeginOpenGL', win) and Screen('EndOpenGL', win).",
-                 e.name);
-        raise("psychimgui:NoGLContext", msg);
-        return;
+    if ((e.flags & kEntryNeedsGL) && renderer() != Renderer::None) {
+        GLState gs = glState();
+        if (gs == GLState::NoContext) {
+            char msg[220];
+            snprintf(msg, sizeof(msg),
+                     "PsychImGui('%s') needs a current OpenGL context. Call it between "
+                     "Screen('BeginOpenGL', win) and Screen('EndOpenGL', win).",
+                     e.name);
+            raise("psychimgui:NoGLContext", msg);
+            return;
+        }
+        if (gs == GLState::Mismatch) {
+            // Psychtoolbox gives every window its own userspace GL context and
+            // shares no objects between them, so the backend's font texture
+            // and shader would name nothing, or another window's objects.
+            char msg[360];
+            snprintf(msg, sizeof(msg),
+                     "PsychImGui('%s'): the current OpenGL context is not the one of the "
+                     "window PsychImGui context %g belongs to. After "
+                     "PsychImGui('SetContext', ctx), enter that window with "
+                     "Screen('BeginOpenGL', win) before any call that draws.",
+                     e.name, currentHandle());
+            raise("psychimgui:Context", msg);
+            return;
+        }
     }
 
 #if PSYCHIMGUI_STATS
+    // The row is picked before the call, so Init and Shutdown, which change
+    // the current context, count against the context that was current.
+    OpStats* row = stats_row();
     uint64_t t0 = nowNs();
 #endif
-    e.fn(nlhs, plhs, nrhs - 1, prhs + 1);
+    {
+        // The zone closes before any raise below, because mexErrMsgIdAndTxt
+        // leaves by longjmp and would skip its destructor.
+#ifdef TRACY_ENABLE
+        zone_locations();
+        tracy::ScopedZone zone(&g_zoneLoc[op], true);
+#endif
+        e.fn(nlhs, plhs, nrhs - 1, prhs + 1);
+    }
 #if PSYCHIMGUI_STATS
     uint64_t dt = nowNs() - t0;
-    if (op < (int)(sizeof(g_stats) / sizeof(g_stats[0]))) {
-        OpStats& s = g_stats[op];
+    if (op < 512) {
+        OpStats& s = row[op];
         s.calls += 1;
         s.totalNs += dt;
         if (dt > s.maxNs) s.maxNs = dt;

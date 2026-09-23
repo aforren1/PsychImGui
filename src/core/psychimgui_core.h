@@ -14,6 +14,11 @@ struct ImGuiContext;
 
 namespace pig {
 
+// One context per Psychtoolbox window. Eight covers a dual display stereo rig
+// with an operator screen and still leaves room; the table is scanned
+// linearly, which beats hashing at this size.
+const int kMaxContexts = 8;
+
 // OpenGL2 is the fixed function backend. It is the only one that works in a
 // legacy OpenGL 2.1 context, which is what Psychtoolbox gives on macOS:
 // imgui_impl_opengl3 calls glGenVertexArrays unconditionally, and a 2.1
@@ -36,6 +41,10 @@ struct InitOpts {
     Renderer renderer;
     bool iniEnabled;
     bool implot;
+    bool implot3d;
+    // The Psychtoolbox window the context belongs to. Two contexts for one
+    // window would fight over one set of GL objects, so Init refuses that.
+    double win;
     double displayW, displayH;
     char glslVersion[32];
     char iniFile[512];
@@ -77,17 +86,52 @@ struct VersionInfo {
     const char* build;
     bool implot;
     const char* implotVersion;
+    bool implot3d;
+    const char* implot3dVersion;
+    bool fileDialog;
+    const char* fileDialogVersion;
+    bool gpuTimer;   // GL_TIMESTAMP queries work in this context
+    bool tracy;      // the Tracy client is compiled in
+    double context;  // handle of the current context, 0 for none
 };
 
-// Lifecycle. init returns false and fills err on failure.
+// Lifecycle. init creates a context, makes it current, and returns false
+// with err filled on failure, leaving the previous current context current.
 bool init(const InitOpts& opts, const int32_t* keymap, int keymapN, Error& err);
+// Shuts down the current context. Nothing is current afterwards: a script
+// with several windows names the next one with setContext, and a guess here
+// would send the next widget to the wrong window.
 void shutdown(bool* skippedGL);
+// Shuts down the context with this handle, current or not, and keeps the
+// current one current. False with err filled for a handle that is not live.
+bool shutdownHandle(double handle, bool* skippedGL, Error& err);
+void shutdownAll(bool* skippedGL);
 bool isInit();
 Renderer renderer();
 bool implotEnabled();
 
+// Context handles. A handle is a serial number that is never reused in the
+// process, so a handle from a context that has been shut down can never
+// select a newer one.
+double currentHandle();          // 0 when no context is current
+int currentSlot();               // 0 to kMaxContexts-1, or -1
+int contextCount();
+int liveHandles(double* out, int maxN);
+bool setContext(double handle, Error& err);
+
+// Whether the GL context current on this thread is the one Init ran in.
+// Psychtoolbox gives every onscreen window its own userspace GL context and
+// shares no objects between windows, so a backend object used in another
+// window's context names nothing, or something else.
+enum class GLState { NoContext, Match, Mismatch };
+GLState glState();
+
 void newFrame(const InputFrame& in);
 bool render(Error& err);
+// Submits the draw data of the last render again, for the second eye of a
+// stereo mode, without building a new frame. Fails with psychimgui:Usage
+// unless render ran since the last newFrame.
+bool renderAgain(Error& err);
 void endFrame();
 
 // True between newFrame and render or endFrame. Dear ImGui dereferences the
@@ -129,6 +173,12 @@ void setGlobalScale(double s);
 void styleColors(int which);  // 0 dark, 1 light, 2 classic
 
 void versionInfo(VersionInfo& out);
+
+// The ImGuiFileDialog object of the current context, created on first use
+// when create is true. nullptr when the extension is not compiled in or no
+// context is current. Kept per context because the dialog remembers the
+// Dear ImGui frame it last drew in.
+void* fileDialog(bool create);
 const FrameStats& frameStats();
 void resetFrameStats();
 
@@ -137,6 +187,14 @@ void resetFrameStats();
 bool assertPending();
 void assertTake(Error& err);
 void assertClear();
+
+// The Tracy client's lifetime, when it is compiled in; no-ops otherwise. A MEX
+// file is loaded and unloaded inside a long-lived process, so the profiler
+// starts on the first call instead of in a static constructor, and stops
+// before the library unloads. init calls profilerStartup itself, so a caller
+// that only needs the core, such as smoke_gl, cannot run a zone too early.
+void profilerStartup();
+void profilerShutdown();
 
 // Monotonic nanosecond clock used by the Stats counters.
 uint64_t nowNs();

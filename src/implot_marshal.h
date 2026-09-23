@@ -9,73 +9,23 @@
 
 #include "implot.h"
 #include "marshal.h"
+#include "plotdata_marshal.h"
+
+// ImPlot's own accessor, from implot_internal.h. Declared here instead of
+// included, because the internal header wants IMGUI_DEFINE_MATH_OPERATORS
+// defined before the unit's first imgui.h.
+struct ImPlotPlot;
+namespace ImPlot {
+IMPLOT_API ImPlotPlot* GetCurrentPlot();
+}
 
 namespace mrs {
 
-// A data argument: real, numeric, and of a class ImPlot has an instantiation
-// for. Logical is rejected on purpose, per the specification.
-inline bool isPlotData(const mxArray* a) {
-    if (!a || mxIsComplex(a) || mxIsSparse(a)) return false;
-    switch (mxGetClassID(a)) {
-        case mxDOUBLE_CLASS:
-        case mxSINGLE_CLASS:
-        case mxINT8_CLASS:
-        case mxUINT8_CLASS:
-        case mxINT16_CLASS:
-        case mxUINT16_CLASS:
-        case mxINT32_CLASS:
-        case mxUINT32_CLASS:
-        case mxINT64_CLASS:
-        case mxUINT64_CLASS:
-            return true;
-        default:
-            return false;
-    }
-}
-
-// How many leading arguments form one data set. Arguments belong to the same
-// data set when they share a class and an element count, which is what tells
-// PlotShaded(xs, ys, yref) from PlotShaded(xs, ys1, ys2).
-inline int dataArgCount(const mxArray** args, int nargin, int first, int maxN) {
-    if (first >= nargin || !isPlotData(args[first])) return 0;
-    mxClassID c0 = mxGetClassID(args[first]);
-    size_t n0 = mxGetNumberOfElements(args[first]);
-    int n = 1;
-    while (n < maxN && first + n < nargin) {
-        const mxArray* a = args[first + n];
-        if (!isPlotData(a) || mxGetClassID(a) != c0 || mxGetNumberOfElements(a) != n0)
-            break;
-        ++n;
-    }
-    return n;
-}
-
-// Check a data set and report its class and element count.
-inline mxClassID checkData(const mxArray** args, int first, int n, const char* cmd,
-                           int* count) {
-    *count = 0;
-    if (failed()) return mxUNKNOWN_CLASS;
-    for (int i = 0; i < n; ++i) {
-        const mxArray* a = args[first + i];
-        if (!a || mxIsLogical(a)) {
-            fail("psychimgui:Type",
-                 "%s: logical data is not supported. Convert it with double().", cmd);
-            return mxUNKNOWN_CLASS;
-        }
-        if (!isPlotData(a)) {
-            fail("psychimgui:Type", "%s: argument %d must be a real numeric array.", cmd,
-                 first + i + 1);
-            return mxUNKNOWN_CLASS;
-        }
-        if (mxGetClassID(a) != mxGetClassID(args[first]) ||
-            mxGetNumberOfElements(a) != mxGetNumberOfElements(args[first])) {
-            fail("psychimgui:Type",
-                 "%s: the data arrays must share one class and one element count.", cmd);
-            return mxUNKNOWN_CLASS;
-        }
-    }
-    *count = (int)mxGetNumberOfElements(args[first]);
-    return mxGetClassID(args[first]);
+// True between ImPlot.BeginPlot and ImPlot.EndPlot. The generated handlers of
+// every subcommand that needs a plot check it first; see plot_guard in
+// gen/generate.py.
+inline bool implotPlotOpen() {
+    return ImPlot::GetCurrentContext() != nullptr && ImPlot::GetCurrentPlot() != nullptr;
 }
 
 // An Nx4 or Nx3 colormap matrix as ImVec4. Colormaps are set up once, not per

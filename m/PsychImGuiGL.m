@@ -21,7 +21,9 @@ function varargout = PsychImGuiGL(ig, subcommand, varargin)
 %   anywhere, and makes it identical in cost to a plain PsychImGui call inside
 %   a frame.
 %
-%   ig may also be a bare window handle.
+%   ig may also be a bare window handle. A handle from PsychImGuiOpen also
+%   makes its PsychImGui context current first, so the subcommand acts on
+%   that window's GUI.
 %
 %   See also PsychImGuiOpen, PsychImGuiFrame, PsychImGuiClose, PsychImGui.
 
@@ -45,14 +47,22 @@ function varargout = PsychImGuiGL(ig, subcommand, varargin)
     varargout = cell(1, nargout);
 
     if local_in_gl()
+        local_use(ig);
         [varargout{1:nargout}] = PsychImGui(subcommand, varargin{:});
         return;
     end
 
     Screen('BeginOpenGL', win);
     glGuard = onCleanup(@() local_end_gl(win));
+    local_use(ig);
     [varargout{1:nargout}] = PsychImGui(subcommand, varargin{:});
     clear glGuard;
+end
+
+function local_use(ig)
+    if isstruct(ig) && isfield(ig, 'ctx') && ~isempty(ig.ctx) && ig.ctx ~= 0
+        PsychImGui('SetContext', ig.ctx);
+    end
 end
 
 function tf = local_in_gl()

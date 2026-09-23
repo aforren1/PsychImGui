@@ -6,12 +6,23 @@
 #include <string.h>
 
 #include "gl_current.h"
+#include "gpu_timer.h"
 #include "imgui.h"
 #include "imgui_impl_opengl2.h"
 #include "imgui_impl_opengl3.h"
 
 #ifdef PSYCHIMGUI_IMPLOT
 #  include "implot.h"
+#endif
+#ifdef PSYCHIMGUI_IMPLOT3D
+#  include "implot3d.h"
+#endif
+#ifdef TRACY_ENABLE
+#  include "client/TracyProfiler.hpp"
+#  include "tracy/Tracy.hpp"
+#  define PIG_ZONE(name) ZoneScopedN(name)
+#else
+#  define PIG_ZONE(name)
 #endif
 
 #if defined(_WIN32)
@@ -39,14 +50,34 @@
 
 namespace pig {
 
+#ifdef PSYCHIMGUI_FILEDIALOG
+void* igfd_create();
+void igfd_destroy(void* d);
+const char* igfd_version();
+#endif
+
 namespace {
 
-// One context per process. The struct is a single zero-initialized static so
-// that a failed Init leaves no partially live state behind.
+// Everything one Psychtoolbox window's GUI needs, so two windows share
+// nothing but the process. The struct is zeroed as a whole, so a failed Init
+// leaves no partially live state behind.
 struct State {
+    double serial;          // the handle; 0 marks a free slot
+    double win;
+    void* glctx;            // the GL context Init ran in
     ImGuiContext* ctx;
+#ifdef PSYCHIMGUI_IMPLOT
+    ImPlotContext* plot;
+#endif
+#ifdef PSYCHIMGUI_IMPLOT3D
+    ImPlot3DContext* plot3d;
+#endif
+#ifdef PSYCHIMGUI_FILEDIALOG
+    void* dialog;           // IGFD::FileDialog, see igfd_unit.cpp
+#endif
     Renderer rend;
     bool implot;
+    bool implot3d;
     int32_t keymap[257];  // indexed by PTB keycode, which is 1 based
     unsigned buttonState;
     unsigned modState;  // bit 0 ctrl, 1 shift, 2 alt, 3 super
@@ -55,15 +86,49 @@ struct State {
     bool focusState;
     unsigned pendingHighSurrogate;
     ImFont* fonts[16];
+    // Dear ImGui 1.92 reads glyph ranges when it bakes a glyph, long after
+    // AddFontFromFileTTF returns, so each font keeps its own copy.
+    ImWchar ranges[16][64];
     int nFonts;
     FrameStats frame;
+    GpuTimer gpu;
     char glVersion[128];
     char glRenderer[128];
     char glslVersion[32];
+    char iniPath[512];      // io.IniFilename points here for the context's life
+    char gpuName[32];
     bool frameOpen;
+    bool rendered;          // render ran since the last newFrame
 };
 
-State g;
+State g_slots[kMaxContexts];
+State* g_cur = nullptr;
+// Serials are never reused, so a stale handle cannot select a new context.
+double g_nextSerial = 1.0;
+const FrameStats kNoStats = {0, 0, 0, 0, 0};
+
+inline State& cur() { return *g_cur; }
+
+// Dear ImGui, ImPlot, and ImPlot3D each keep one global current context, and
+// their CreateContext calls do not always switch to the new one, so every
+// switch sets all three together.
+void make_current(State* st) {
+    g_cur = st;
+    ImGui::SetCurrentContext(st ? st->ctx : nullptr);
+#ifdef PSYCHIMGUI_IMPLOT
+    ImPlot::SetCurrentContext(st ? st->plot : nullptr);
+#endif
+#ifdef PSYCHIMGUI_IMPLOT3D
+    ImPlot3D::SetCurrentContext(st ? st->plot3d : nullptr);
+#endif
+}
+
+State* find_handle(double h) {
+    if (!(h > 0.0)) return nullptr;
+    for (int i = 0; i < kMaxContexts; ++i)
+        if (g_slots[i].serial == h) return &g_slots[i];
+    return nullptr;
+}
 
 // Draw list handles. Kept out of State so the generation survives the memset
 // in init and shutdown: a handle taken before a Shutdown must stay stale after
@@ -175,6 +240,28 @@ uint64_t nowNs() {
 
 bool glContextCurrent() { return gl_context_is_current(); }
 
+#ifdef TRACY_ENABLE
+static bool g_profiler = false;
+#endif
+
+void profilerStartup() {
+#if defined(TRACY_ENABLE) && defined(TRACY_MANUAL_LIFETIME)
+    if (!g_profiler) tracy::StartupProfiler();
+#endif
+#ifdef TRACY_ENABLE
+    g_profiler = true;
+#endif
+}
+
+void profilerShutdown() {
+#if defined(TRACY_ENABLE) && defined(TRACY_MANUAL_LIFETIME)
+    if (g_profiler) tracy::ShutdownProfiler();
+#endif
+#ifdef TRACY_ENABLE
+    g_profiler = false;
+#endif
+}
+
 const char* renderer_name(Renderer r) {
     switch (r) {
         case Renderer::OpenGL3: return "opengl3";
@@ -184,9 +271,9 @@ const char* renderer_name(Renderer r) {
     }
 }
 
-bool isInit() { return g.ctx != nullptr; }
-Renderer renderer() { return g.rend; }
-bool implotEnabled() { return g.implot; }
+bool isInit() { return g_cur != nullptr; }
+Renderer renderer() { return g_cur ? g_cur->rend : Renderer::None; }
+bool implotEnabled() { return g_cur && g_cur->implot; }
 
 bool assertPending() { return g_assert.set; }
 void assertTake(Error& err) {
@@ -195,10 +282,65 @@ void assertTake(Error& err) {
 }
 void assertClear() { g_assert.set = false; }
 
+double currentHandle() { return g_cur ? g_cur->serial : 0.0; }
+int currentSlot() { return g_cur ? (int)(g_cur - g_slots) : -1; }
+
+int contextCount() {
+    int n = 0;
+    for (int i = 0; i < kMaxContexts; ++i)
+        if (g_slots[i].serial != 0.0) ++n;
+    return n;
+}
+
+int liveHandles(double* out, int maxN) {
+    int n = 0;
+    for (int i = 0; i < kMaxContexts && n < maxN; ++i)
+        if (g_slots[i].serial != 0.0) out[n++] = g_slots[i].serial;
+    return n;
+}
+
+bool setContext(double h, Error& err) {
+    State* st = find_handle(h);
+    if (!st) {
+        set_error(err, "psychimgui:InvalidHandle",
+                  "%g is not a live PsychImGui context handle. It was never returned by "
+                  "Init, or its context has been shut down.",
+                  h);
+        return false;
+    }
+    if (st != g_cur) {
+        // Draw list handles name pointers of one context; a switch retires
+        // them so one can never reach another context's lists.
+        drawlists_invalidate();
+        make_current(st);
+    }
+    return true;
+}
+
+GLState glState() {
+    void* now = gl_current_context();
+    if (!now) return GLState::NoContext;
+    if (g_cur && g_cur->glctx && now != g_cur->glctx) return GLState::Mismatch;
+    return GLState::Match;
+}
+
 bool init(const InitOpts& opts, const int32_t* keymap, int keymapN, Error& err) {
-    if (g.ctx) {
-        set_error(err, "psychimgui:AlreadyInit",
-                  "PsychImGui is already initialized. Call PsychImGui('Shutdown') first.");
+    for (int i = 0; i < kMaxContexts; ++i) {
+        if (g_slots[i].serial != 0.0 && g_slots[i].win == opts.win) {
+            set_error(err, "psychimgui:AlreadyInit",
+                      "PsychImGui is already initialized for window %g. Call "
+                      "PsychImGui('Shutdown') first.",
+                      opts.win);
+            return false;
+        }
+    }
+    State* st = nullptr;
+    for (int i = 0; i < kMaxContexts && !st; ++i)
+        if (g_slots[i].serial == 0.0) st = &g_slots[i];
+    if (!st) {
+        set_error(err, "psychimgui:Context",
+                  "All %d PsychImGui contexts are in use. Shut one down first.",
+                  kMaxContexts);
         return false;
     }
     if (opts.renderer != Renderer::None && !gl_context_is_current()) {
@@ -208,24 +350,34 @@ bool init(const InitOpts& opts, const int32_t* keymap, int keymapN, Error& err) 
         return false;
     }
 
-    memset(&g, 0, sizeof(g));
+    profilerStartup();
+    State* prev = g_cur;
+    memset(st, 0, sizeof(*st));
     assertClear();
     drawlists_invalidate();
 
     IMGUI_CHECKVERSION();
-    g.ctx = ImGui::CreateContext();
-    if (!g.ctx) {
+    ImGuiContext* ctx = ImGui::CreateContext();
+    if (!ctx) {
         set_error(err, "psychimgui:GLInit", "ImGui::CreateContext failed.");
         return false;
     }
+    // CreateContext keeps an existing context current, and the backend and
+    // ImPlot below attach to whichever one is current, so switch all three
+    // libraries away from the previous context first.
+    make_current(nullptr);
+    st->ctx = ctx;
+    g_cur = st;
+    ImGui::SetCurrentContext(ctx);
+    State& g = *st;
+    g.win = opts.win;
     g.rend = opts.renderer;
     snprintf(g.glslVersion, sizeof(g.glslVersion), "%s", opts.glslVersion);
 
     ImGuiIO& io = ImGui::GetIO();
-    static char iniPath[512];
     if (opts.iniEnabled && opts.iniFile[0]) {
-        snprintf(iniPath, sizeof(iniPath), "%s", opts.iniFile);
-        io.IniFilename = iniPath;
+        snprintf(g.iniPath, sizeof(g.iniPath), "%s", opts.iniFile);
+        io.IniFilename = g.iniPath;
     } else {
         io.IniFilename = nullptr;
     }
@@ -251,6 +403,7 @@ bool init(const InitOpts& opts, const int32_t* keymap, int keymapN, Error& err) 
         // Read the context before the backend does, so both the backend and
         // the GLSL version can be chosen from it. A context is already
         // current; Init checked that.
+        g.glctx = gl_current_context();
         const char* v = (const char*)glGetString(GL_VERSION);
         const char* r = (const char*)glGetString(GL_RENDERER);
         snprintf(g.glVersion, sizeof(g.glVersion), "%s", v ? v : "unknown");
@@ -273,18 +426,22 @@ bool init(const InitOpts& opts, const int32_t* keymap, int keymapN, Error& err) 
             ok = ImGui_ImplOpenGL3_Init(g.glslVersion);
         }
         if (!ok) {
-            ImGui::DestroyContext(g.ctx);
-            memset(&g, 0, sizeof(g));
+            char gv[128], gs[32];
+            snprintf(gv, sizeof(gv), "%s", g.glVersion);
+            snprintf(gs, sizeof(gs), "%s", g.glslVersion);
+            ImGui::DestroyContext(ctx);
+            memset(st, 0, sizeof(*st));
+            make_current(prev);
             set_error(err, "psychimgui:GLInit",
                       "The %s backend failed to start on '%s'%s%s.",
                       renderer_name(opts.renderer == Renderer::Auto
                                         ? Renderer::OpenGL3
                                         : opts.renderer),
-                      v ? v : "an unknown context",
-                      g.glslVersion[0] ? " with GLSL " : "",
-                      g.glslVersion[0] ? g.glslVersion : "");
+                      gv, gs[0] ? " with GLSL " : "", gs);
             return false;
         }
+        snprintf(g.gpuName, sizeof(g.gpuName), "PsychImGui window %g", opts.win);
+        gpuTimerInit(g.gpu, g.glVersion, g.gpuName);
     } else {
         // Without a renderer nothing claims ImGuiBackendFlags_RendererHasTextures,
         // so the atlas never gets built by a backend. NewFrame then dereferences
@@ -303,14 +460,25 @@ bool init(const InitOpts& opts, const int32_t* keymap, int keymapN, Error& err) 
 
 #ifdef PSYCHIMGUI_IMPLOT
     if (opts.implot) {
-        ImPlot::CreateContext();
+        g.plot = ImPlot::CreateContext();
         g.implot = true;
     }
 #else
     (void)opts.implot;
 #endif
+#ifdef PSYCHIMGUI_IMPLOT3D
+    if (opts.implot3d) {
+        g.plot3d = ImPlot3D::CreateContext();
+        g.implot3d = true;
+    }
+#else
+    (void)opts.implot3d;
+#endif
 
     g.focusState = true;
+    g.serial = g_nextSerial;
+    g_nextSerial += 1.0;
+    make_current(st);
     if (g_assert.set) {
         err = g_assert;
         g_assert.set = false;
@@ -319,16 +487,31 @@ bool init(const InitOpts& opts, const int32_t* keymap, int keymapN, Error& err) 
     return true;
 }
 
-void shutdown(bool* skippedGL) {
-    if (skippedGL) *skippedGL = false;
-    if (!g.ctx) return;
+namespace {
 
-    ImGui::SetCurrentContext(g.ctx);
+// Tears down one context. The GL objects of the backend and the timer queries
+// belong to the context's own window, so they are deleted only while that
+// window's context is current. Otherwise Psychtoolbox frees them with the
+// window, and deleting the same names in another window's context would
+// destroy that window's objects instead.
+void destroy_state(State* st, bool* skippedGL) {
+    State* keep = (g_cur == st) ? nullptr : g_cur;
+    make_current(st);
+    State& g = *st;
+#ifdef PSYCHIMGUI_FILEDIALOG
+    if (g.dialog) igfd_destroy(g.dialog);
+    g.dialog = nullptr;
+#endif
+#ifdef PSYCHIMGUI_IMPLOT3D
+    if (g.plot3d) ImPlot3D::DestroyContext(g.plot3d);
+#endif
 #ifdef PSYCHIMGUI_IMPLOT
-    if (g.implot) ImPlot::DestroyContext();
+    if (g.plot) ImPlot::DestroyContext(g.plot);
 #endif
     if (g.rend != Renderer::None) {
-        if (gl_context_is_current()) {
+        void* now = gl_current_context();
+        if (now && now == g.glctx) {
+            gpuTimerShutdown(g.gpu);
             if (g.rend == Renderer::OpenGL2)
                 ImGui_ImplOpenGL2_Shutdown();
             else
@@ -340,13 +523,46 @@ void shutdown(bool* skippedGL) {
         }
     }
     ImGui::DestroyContext(g.ctx);
-    memset(&g, 0, sizeof(g));
+    memset(st, 0, sizeof(*st));
+    make_current(keep);
     assertClear();
     drawlists_invalidate();
 }
 
+}  // namespace
+
+void shutdown(bool* skippedGL) {
+    if (skippedGL) *skippedGL = false;
+    if (!g_cur) return;
+    destroy_state(g_cur, skippedGL);
+}
+
+bool shutdownHandle(double h, bool* skippedGL, Error& err) {
+    if (skippedGL) *skippedGL = false;
+    State* st = find_handle(h);
+    if (!st) {
+        set_error(err, "psychimgui:InvalidHandle",
+                  "%g is not a live PsychImGui context handle.", h);
+        return false;
+    }
+    destroy_state(st, skippedGL);
+    return true;
+}
+
+void shutdownAll(bool* skippedGL) {
+    if (skippedGL) *skippedGL = false;
+    for (int i = 0; i < kMaxContexts; ++i) {
+        if (g_slots[i].serial == 0.0) continue;
+        bool sk = false;
+        destroy_state(&g_slots[i], &sk);
+        if (skippedGL && sk) *skippedGL = true;
+    }
+}
+
 void newFrame(const InputFrame& in) {
+    PIG_ZONE("NewFrame");
     uint64_t t0 = nowNs();
+    State& g = cur();
     ImGuiIO& io = ImGui::GetIO();
 
     bool focus = in.focus != 0;
@@ -446,12 +662,45 @@ void newFrame(const InputFrame& in) {
     ImGui::NewFrame();
     drawlists_invalidate();
     g.frameOpen = true;
+    g.rendered = false;
 
     g.frame.newFrameNs = nowNs() - t0;
 }
 
+namespace {
+
+// Hands the draw data to the backend once and checks rule R3. Render and
+// RenderAgain share it, so the second eye of a stereo pair gets exactly the
+// same treatment as the first.
+bool submit(State& g, ImDrawData* dd, const char* cmd, Error& err) {
+    if (g.rend == Renderer::None || !dd) return true;
+    int slot = gpuTimerBegin(g.gpu);
+    if (g.rend == Renderer::OpenGL2)
+        ImGui_ImplOpenGL2_RenderDrawData(dd);
+    else
+        ImGui_ImplOpenGL3_RenderDrawData(dd);
+    gpuTimerEnd(g.gpu, slot);
+    // Rule R3: Screen('EndOpenGL') aborts the script on a pending GL error,
+    // so drain here and name the subcommand that caused it.
+    unsigned e = (unsigned)glGetError();
+    if (e != 0) {
+        unsigned first = e;
+        int guard = 0;
+        while (e != 0 && guard++ < 64) e = (unsigned)glGetError();
+        set_error(err, "psychimgui:GLError",
+                  "OpenGL error %s (0x%04X) after PsychImGui('%s').", gl_error_name(first),
+                  first, cmd);
+        return false;
+    }
+    return true;
+}
+
+}  // namespace
+
 bool render(Error& err) {
+    PIG_ZONE("Render");
     uint64_t t0 = nowNs();
+    State& g = cur();
     // Render consumes the draw lists, so every handle dies here, before it.
     drawlists_invalidate();
     g.frameOpen = false;
@@ -481,39 +730,51 @@ bool render(Error& err) {
         }
     }
 
-    if (g.rend != Renderer::None && dd) {
-        if (g.rend == Renderer::OpenGL2)
-            ImGui_ImplOpenGL2_RenderDrawData(dd);
-        else
-            ImGui_ImplOpenGL3_RenderDrawData(dd);
-        // Rule R3: Screen('EndOpenGL') aborts the script on a pending GL error,
-        // so drain here and name the subcommand that caused it.
-        unsigned e = (unsigned)glGetError();
-        if (e != 0) {
-            unsigned first = e;
-            int guard = 0;
-            while (e != 0 && guard++ < 64) e = (unsigned)glGetError();
-            set_error(err, "psychimgui:GLError",
-                      "OpenGL error %s (0x%04X) after PsychImGui('Render').",
-                      gl_error_name(first), first);
-            g.frame.renderCpuNs = nowNs() - t0;
-            return false;
-        }
-    }
-    // GPU timing is reported as 0 until the timer query path of section 9.2 is
-    // wired; the backend loader owns the GL entry points it would need.
-    g.frame.renderGpuNs = 0;
+    bool ok = submit(g, dd, "Render", err);
+    g.rendered = ok;
+    // The timer reads results at least one submission late, so this is the
+    // GPU time of an earlier frame, which is what a non-blocking read can give.
+    g.frame.renderGpuNs = g.gpu.lastNs;
     g.frame.renderCpuNs = nowNs() - t0;
-    return true;
+#ifdef TRACY_ENABLE
+    // One frame set per window, so a second window's frames do not cut into
+    // the first window's timeline.
+    static const char* kFrameNames[kMaxContexts] = {
+        "PsychImGui ctx 1", "PsychImGui ctx 2", "PsychImGui ctx 3", "PsychImGui ctx 4",
+        "PsychImGui ctx 5", "PsychImGui ctx 6", "PsychImGui ctx 7", "PsychImGui ctx 8"};
+    if (g_cur == &g_slots[0])
+        FrameMark;
+    else
+        FrameMarkNamed(kFrameNames[currentSlot()]);
+#endif
+    return ok;
+}
+
+bool renderAgain(Error& err) {
+    PIG_ZONE("RenderAgain");
+    State& g = cur();
+    if (!g.rendered) {
+        set_error(err, "psychimgui:Usage",
+                  "RenderAgain submits the draw data of the last Render again, so it needs "
+                  "a Render in this frame first, after NewFrame and before the next one.");
+        return false;
+    }
+    // The first Render has already answered the texture requests, so the
+    // backend finds nothing left to upload and only draws.
+    bool ok = submit(g, ImGui::GetDrawData(), "RenderAgain", err);
+    g.frame.renderGpuNs = g.gpu.lastNs;
+    return ok;
 }
 
 void endFrame() {
+    State& g = cur();
     drawlists_invalidate();
     g.frameOpen = false;
+    g.rendered = false;
     ImGui::EndFrame();
 }
 
-bool frameOpen() { return g.ctx != nullptr && g.frameOpen; }
+bool frameOpen() { return g_cur != nullptr && g_cur->frameOpen; }
 
 double drawListHandle(ImDrawList* dl) {
     if (!dl) return 0.0;
@@ -536,7 +797,7 @@ double drawListHandle(ImDrawList* dl) {
 
 ImDrawList* drawListFromHandle(double h, int* slot) {
     if (slot) *slot = -1;
-    if (!g.frameOpen || !(h >= 0.0) || h > 9007199254740992.0) return nullptr;
+    if (!frameOpen() || !(h >= 0.0) || h > 9007199254740992.0) return nullptr;
     uint64_t v = (uint64_t)h;
     if ((double)v != h) return nullptr;
     uint64_t gen = v / (uint64_t)kDrawListSlots;
@@ -557,7 +818,7 @@ bool drawListPopClip(int slot) {
 }
 
 bool setTextureFilter(unsigned glId, bool linear, Error& err) {
-    if (g.rend == Renderer::None) return true;
+    if (renderer() == Renderer::None) return true;
     // An error left by someone else would read as ours below. It would abort
     // Screen('EndOpenGL') anyway, so dropping it here loses nothing useful.
     for (int guard = 0; guard < 64 && glGetError() != GL_NO_ERROR; ++guard) {
@@ -604,6 +865,7 @@ void wantCapture(bool* mouse, bool* keyboard, bool* text) {
 }
 
 int addFont(const char* path, double sizePx, const uint16_t* ranges, int nRanges, Error& err) {
+    State& g = cur();
     if (g.nFonts + 1 >= (int)(sizeof(g.fonts) / sizeof(g.fonts[0]))) {
         set_error(err, "psychimgui:Font", "Font table is full (%d entries).",
                   (int)(sizeof(g.fonts) / sizeof(g.fonts[0])));
@@ -617,7 +879,7 @@ int addFont(const char* path, double sizePx, const uint16_t* ranges, int nRanges
     fclose(f);
 
     ImGuiIO& io = ImGui::GetIO();
-    static ImWchar rangeBuf[64];
+    ImWchar* rangeBuf = g.ranges[g.nFonts + 1];
     const ImWchar* rp = nullptr;
     if (ranges && nRanges >= 2) {
         int n = nRanges < 63 ? nRanges : 62;
@@ -635,9 +897,10 @@ int addFont(const char* path, double sizePx, const uint16_t* ranges, int nRanges
     return g.nFonts;
 }
 
-int fontCount() { return g.nFonts + 1; }
+int fontCount() { return g_cur ? g_cur->nFonts + 1 : 0; }
 
 bool pushFont(int idx, double sizePx, Error& err) {
+    State& g = cur();
     if (idx < 0 || idx > g.nFonts) {
         set_error(err, "psychimgui:Usage", "Font index %d is out of range (0 to %d).",
                   idx, g.nFonts);
@@ -663,13 +926,14 @@ void styleColors(int which) {
 }
 
 void versionInfo(VersionInfo& out) {
+    const State* g = g_cur;
     out.imgui = IMGUI_VERSION;
     out.imguiNum = IMGUI_VERSION_NUM;
     out.psychimgui = PSYCHIMGUI_VERSION_STR;
-    out.renderer = renderer_name(g.rend);
-    out.glslVersion = g.ctx ? g.glslVersion : "";
-    out.glVersion = g.ctx ? g.glVersion : "";
-    out.glRenderer = g.ctx ? g.glRenderer : "";
+    out.renderer = renderer_name(g ? g->rend : Renderer::None);
+    out.glslVersion = g ? g->glslVersion : "";
+    out.glVersion = g ? g->glVersion : "";
+    out.glRenderer = g ? g->glRenderer : "";
     out.build = PSYCHIMGUI_BUILD_STR;
 #ifdef PSYCHIMGUI_IMPLOT
     out.implot = true;
@@ -678,10 +942,44 @@ void versionInfo(VersionInfo& out) {
     out.implot = false;
     out.implotVersion = "";
 #endif
+#ifdef PSYCHIMGUI_IMPLOT3D
+    out.implot3d = true;
+    out.implot3dVersion = IMPLOT3D_VERSION;
+#else
+    out.implot3d = false;
+    out.implot3dVersion = "";
+#endif
+#ifdef PSYCHIMGUI_FILEDIALOG
+    out.fileDialog = true;
+    out.fileDialogVersion = igfd_version();
+#else
+    out.fileDialog = false;
+    out.fileDialogVersion = "";
+#endif
+    out.gpuTimer = g && g->gpu.ok;
+#ifdef TRACY_ENABLE
+    out.tracy = true;
+#else
+    out.tracy = false;
+#endif
+    out.context = g ? g->serial : 0.0;
 }
 
-const FrameStats& frameStats() { return g.frame; }
-void resetFrameStats() { memset(&g.frame, 0, sizeof(g.frame)); }
+void* fileDialog(bool create) {
+#ifdef PSYCHIMGUI_FILEDIALOG
+    if (!g_cur) return nullptr;
+    if (!g_cur->dialog && create) g_cur->dialog = igfd_create();
+    return g_cur->dialog;
+#else
+    (void)create;
+    return nullptr;
+#endif
+}
+
+const FrameStats& frameStats() { return g_cur ? g_cur->frame : kNoStats; }
+void resetFrameStats() {
+    if (g_cur) memset(&g_cur->frame, 0, sizeof(g_cur->frame));
+}
 
 }  // namespace pig
 

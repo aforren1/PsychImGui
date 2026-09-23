@@ -11,6 +11,12 @@ function build(varargin)
 %   linked together, so each engine gets its own build directory.
 %
 %   Set MEX_CMAKE_GENERATOR to override the CMake generator.
+%
+%   Set PSYCHIMGUI_TRACY=1 to compile the Tracy profiler client into the
+%   library and its zones into the MEX (SPEC.md section 9.3). Tracy is not
+%   fetched with the other dependencies; clone it first:
+%
+%       git clone --branch v0.11.1 https://github.com/wolfpld/tracy.git third_party/tracy
 
     here = fileparts(mfilename('fullpath'));
     old = cd(here);
@@ -49,12 +55,24 @@ function build(varargin)
         run_cmd(sprintf('"%s" run --project gen python gen/generate.py', uv));
     end
 
+    check_third_party(here);
+    tracy = tracy_enabled();
+    if tracy
+        check_tracy(here);
+        tracyFlag = 'ON';
+    else
+        tracyFlag = 'OFF';
+    end
+
     % --- the static library ---------------------------------------------
     if ~exist(builddir, 'dir'); mkdir(builddir); end
+    % The Tracy option is always passed, so a build directory configured for
+    % Tracy once does not keep linking the profiler into later builds.
     cfg = ['cmake -E chdir ' builddir ' cmake ' ...
            '-DCMAKE_BUILD_TYPE=Release ' ...
            '-DCMAKE_INSTALL_PREFIX=../' instdir ' ' ...
-           '-DPSYCHIMGUI_TRACY=OFF -DPSYCHIMGUI_STATS=1 -DPSYCHIMGUI_IMPLOT=ON '];
+           '-DPSYCHIMGUI_TRACY=' tracyFlag ' -DPSYCHIMGUI_STATS=1 ' ...
+           '-DPSYCHIMGUI_IMPLOT=ON -DPSYCHIMGUI_IMPLOT3D=ON -DPSYCHIMGUI_FILEDIALOG=ON '];
 
     gen = getenv('MEX_CMAKE_GENERATOR');
     if ~isempty(gen)
@@ -120,11 +138,22 @@ function build(varargin)
     if ~exist(outdir, 'dir'); mkdir(outdir); end
     imgui_inc = fullfile('third_party', 'cimgui', 'imgui');
     implot_inc = fullfile('third_party', 'cimplot', 'implot');
+    implot3d_inc = fullfile('third_party', 'cimplot3d', 'implot3d');
+    igfd_inc = fullfile('third_party', 'ImGuiFileDialog');
 
     args = { ['-I' imgui_inc], ['-I' fullfile(imgui_inc, 'backends')], ...
-             ['-I' implot_inc], '-Isrc', ...
+             ['-I' implot_inc], ['-I' implot3d_inc], ['-I' igfd_inc], '-Isrc', ...
              '-DIMGUI_DISABLE_OBSOLETE_FUNCTIONS', ...
-             '-DPSYCHIMGUI_IMPLOT', '-DPSYCHIMGUI_STATS=1' };
+             '-DPSYCHIMGUI_IMPLOT', '-DPSYCHIMGUI_IMPLOT3D', '-DPSYCHIMGUI_FILEDIALOG', ...
+             '-DPSYCHIMGUI_STATS=1' };
+    if tracy
+        % The same definitions as the library (CMakeLists.txt), or the MEX and
+        % the core would disagree about the profiler's lifetime.
+        args = [args, {['-I' fullfile('third_party', 'tracy', 'public')], ...
+                       '-DTRACY_ENABLE', '-DTRACY_DELAYED_INIT', ...
+                       '-DTRACY_MANUAL_LIFETIME', '-DTRACY_NO_CRASH_HANDLER', ...
+                       '-DPSYCHIMGUI_TRACY'}];
+    end
     if is_octave
         args{end+1} = '-DPSYCHIMGUI_OCTAVE';
     end
@@ -158,8 +187,10 @@ function build(varargin)
     end
 
     sources = { fullfile('src', 'psychimgui.cpp'), ...
+                fullfile('src', 'filedialog.cpp'), ...
                 fullfile('src', 'gen_dispatch.cpp'), ...
-                fullfile('src', 'gen_dispatch_implot.cpp') };
+                fullfile('src', 'gen_dispatch_implot.cpp'), ...
+                fullfile('src', 'gen_dispatch_implot3d.cpp') };
 
     if ispc
         gllib = {'-lopengl32'};
@@ -197,6 +228,17 @@ function build(varargin)
         gllib = {'-lGL', '-ldl'};
     end
 
+    if tracy
+        % The Tracy client talks over sockets and walks call stacks. MSVC picks
+        % these libraries up from the client's own pragmas; MinGW and the
+        % Unix linkers need them named.
+        if ispc
+            gllib = [gllib, {'-lws2_32', '-ldbghelp', '-ladvapi32', '-luser32'}];
+        elseif ~ismac
+            gllib = [gllib, {'-lpthread'}];
+        end
+    end
+
     mexargs = [args, sources, {libfile}, gllib, ...
                {'-output', fullfile(outdir, 'PsychImGui')}];
     mex(mexargs{:});
@@ -208,6 +250,39 @@ function build(varargin)
         addpath(fullfile(here, 'tests'));
         run_tests();
     end
+end
+
+function check_third_party(here)
+% CMake refuses too, but only after the configure step, with the message
+% buried in its log. This names the fix first.
+    need = {fullfile('cimgui', 'imgui', 'imgui.cpp'), ...
+            fullfile('cimplot', 'implot', 'implot.cpp'), ...
+            fullfile('cimplot3d', 'implot3d', 'implot3d.cpp'), ...
+            fullfile('ImGuiFileDialog', 'ImGuiFileDialog.cpp')};
+    for i = 1:numel(need)
+        if ~exist(fullfile(here, 'third_party', need{i}), 'file')
+            error('build:thirdParty', ...
+                  ['third_party/%s is missing. Run\n' ...
+                   '    git submodule update --init --recursive\n' ...
+                   'or, in a checkout without submodules,\n' ...
+                   '    bash tools/fetch_third_party.sh\n' ...
+                   'See third_party/PINS.md.'], strrep(need{i}, '\', '/'));
+        end
+    end
+end
+
+function tf = tracy_enabled()
+    v = lower(strtrim(getenv('PSYCHIMGUI_TRACY')));
+    tf = any(strcmp(v, {'1', 'on', 'true', 'yes'}));
+end
+
+function check_tracy(here)
+    if exist(fullfile(here, 'third_party', 'tracy', 'public', 'TracyClient.cpp'), 'file')
+        return;
+    end
+    error('build:tracy', ['PSYCHIMGUI_TRACY is set but Tracy is missing. Run\n' ...
+        '    git clone --branch v0.11.1 https://github.com/wolfpld/tracy.git third_party/tracy\n' ...
+        'or unset PSYCHIMGUI_TRACY. See third_party/PINS.md.']);
 end
 
 function tag = platform_tag()

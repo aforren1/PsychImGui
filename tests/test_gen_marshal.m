@@ -5395,6 +5395,890 @@ function test_gen_marshal()
     end
     tf_end();
 
+
+    %% ---- ImPlot3D ----
+    if ~v.implot3d
+        fprintf('  ImPlot3D is not compiled in, skipping its cases.\n');
+        return;
+    end
+    for warm = 1:3
+        tf_plot3d_end(tf_plot3d_begin());
+    end
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot3D.BeginPlot', 'x');
+        t_ok('ImPlot3D.BeginPlot defaults', numel(o) == 1);
+    catch e
+        t_ok('ImPlot3D.BeginPlot defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    if exist('o', 'var') && ~isempty(o) && islogical(o{1}) && o{1}
+        PsychImGui('ImPlot3D.EndPlot');
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot3D.BeginPlot', 'x', [0 0], 0);
+        t_ok('ImPlot3D.BeginPlot full', numel(o) == 1);
+    catch e
+        t_ok('ImPlot3D.BeginPlot full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    if exist('o', 'var') && ~isempty(o) && islogical(o{1}) && o{1}
+        PsychImGui('ImPlot3D.EndPlot');
+    end
+    tf_end();
+
+    % ImPlot3D.EndPlot is exercised by its opener.
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.SetupAxis', 'ImAxis3D_X');
+            t_ok('ImPlot3D.SetupAxis defaults', true);
+        catch e
+            t_ok('ImPlot3D.SetupAxis defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.SetupAxis defaults', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.SetupAxis', 'ImAxis3D_X', 'x', 0);
+            t_ok('ImPlot3D.SetupAxis full', true);
+        catch e
+            t_ok('ImPlot3D.SetupAxis full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.SetupAxis full', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.SetupAxes', 'x', 'x', 'x');
+            t_ok('ImPlot3D.SetupAxes defaults', true);
+        catch e
+            t_ok('ImPlot3D.SetupAxes defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.SetupAxes defaults', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.SetupAxes', 'x', 'x', 'x', 0, 0, 0);
+            t_ok('ImPlot3D.SetupAxes full', true);
+        catch e
+            t_ok('ImPlot3D.SetupAxes full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.SetupAxes full', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.SetupAxisLimits', 'ImAxis3D_X', 0, 0);
+            t_ok('ImPlot3D.SetupAxisLimits defaults', true);
+        catch e
+            t_ok('ImPlot3D.SetupAxisLimits defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.SetupAxisLimits defaults', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.SetupAxisLimits', 'ImAxis3D_X', 0, 0, 0);
+            t_ok('ImPlot3D.SetupAxisLimits full', true);
+        catch e
+            t_ok('ImPlot3D.SetupAxisLimits full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.SetupAxisLimits full', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.SetupAxesLimits', 0, 0, 0, 0, 0, 0);
+            t_ok('ImPlot3D.SetupAxesLimits defaults', true);
+        catch e
+            t_ok('ImPlot3D.SetupAxesLimits defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.SetupAxesLimits defaults', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.SetupAxesLimits', 0, 0, 0, 0, 0, 0, 0);
+            t_ok('ImPlot3D.SetupAxesLimits full', true);
+        catch e
+            t_ok('ImPlot3D.SetupAxesLimits full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.SetupAxesLimits full', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.SetupAxisTicks', 'ImAxis3D_X', [0 1 2 3]);
+            t_ok('ImPlot3D.SetupAxisTicks defaults', true);
+        catch e
+            t_ok('ImPlot3D.SetupAxisTicks defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.SetupAxisTicks defaults', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.SetupAxisTicks', 'ImAxis3D_X', [0 1 2 3], {'a', 'b', 'c', 'd'}, false);
+            t_ok('ImPlot3D.SetupAxisTicks full', true);
+        catch e
+            t_ok('ImPlot3D.SetupAxisTicks full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.SetupAxisTicks full', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.SetupBoxRotation', 0, 0);
+            t_ok('ImPlot3D.SetupBoxRotation defaults', true);
+        catch e
+            t_ok('ImPlot3D.SetupBoxRotation defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.SetupBoxRotation defaults', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.SetupBoxRotation', 0, 0, false, 0);
+            t_ok('ImPlot3D.SetupBoxRotation full', true);
+        catch e
+            t_ok('ImPlot3D.SetupBoxRotation full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.SetupBoxRotation full', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.SetupBoxScale', 1, 1, 1);
+            t_ok('ImPlot3D.SetupBoxScale defaults', true);
+        catch e
+            t_ok('ImPlot3D.SetupBoxScale defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.SetupBoxScale defaults', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.SetupBoxScale', 1, 1, 1);
+            t_ok('ImPlot3D.SetupBoxScale full', true);
+        catch e
+            t_ok('ImPlot3D.SetupBoxScale full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.SetupBoxScale full', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.SetupLegend', 'ImPlot3DLocation_North');
+            t_ok('ImPlot3D.SetupLegend defaults', true);
+        catch e
+            t_ok('ImPlot3D.SetupLegend defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.SetupLegend defaults', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.SetupLegend', 'ImPlot3DLocation_North', 0);
+            t_ok('ImPlot3D.SetupLegend full', true);
+        catch e
+            t_ok('ImPlot3D.SetupLegend full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.SetupLegend full', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.PlotLine', 'x', [0 1 2 3], [0 1 2 3], [0 1 2 3]);
+            t_ok('ImPlot3D.PlotLine 3d defaults', true);
+        catch e
+            t_ok('ImPlot3D.PlotLine 3d defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.PlotLine 3d defaults', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.PlotLine', 'x', [0 1 2 3], [0 1 2 3], [0 1 2 3], 'LineColor', [1 0 0 1]);
+            t_ok('ImPlot3D.PlotLine 3d full', true);
+        catch e
+            t_ok('ImPlot3D.PlotLine 3d full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.PlotLine 3d full', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.PlotScatter', 'x', [0 1 2 3], [0 1 2 3], [0 1 2 3]);
+            t_ok('ImPlot3D.PlotScatter 3d defaults', true);
+        catch e
+            t_ok('ImPlot3D.PlotScatter 3d defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.PlotScatter 3d defaults', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.PlotScatter', 'x', [0 1 2 3], [0 1 2 3], [0 1 2 3], 'LineColor', [1 0 0 1]);
+            t_ok('ImPlot3D.PlotScatter 3d full', true);
+        catch e
+            t_ok('ImPlot3D.PlotScatter 3d full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.PlotScatter 3d full', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.PlotTriangle', 'x', [0 1 2 3], [0 1 2 3], [0 1 2 3]);
+            t_ok('ImPlot3D.PlotTriangle 3d defaults', true);
+        catch e
+            t_ok('ImPlot3D.PlotTriangle 3d defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.PlotTriangle 3d defaults', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.PlotTriangle', 'x', [0 1 2 3], [0 1 2 3], [0 1 2 3], 'LineColor', [1 0 0 1]);
+            t_ok('ImPlot3D.PlotTriangle 3d full', true);
+        catch e
+            t_ok('ImPlot3D.PlotTriangle 3d full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.PlotTriangle 3d full', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.PlotQuad', 'x', [0 1 2 3], [0 1 2 3], [0 1 2 3]);
+            t_ok('ImPlot3D.PlotQuad 3d defaults', true);
+        catch e
+            t_ok('ImPlot3D.PlotQuad 3d defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.PlotQuad 3d defaults', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.PlotQuad', 'x', [0 1 2 3], [0 1 2 3], [0 1 2 3], 'LineColor', [1 0 0 1]);
+            t_ok('ImPlot3D.PlotQuad 3d full', true);
+        catch e
+            t_ok('ImPlot3D.PlotQuad 3d full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.PlotQuad 3d full', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.PlotSurface', 'x', [1 2; 3 4], [1 2; 3 4], [1 2; 3 4]);
+            t_ok('ImPlot3D.PlotSurface 3d defaults', true);
+        catch e
+            t_ok('ImPlot3D.PlotSurface 3d defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.PlotSurface 3d defaults', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.PlotSurface', 'x', [1 2; 3 4], [1 2; 3 4], [1 2; 3 4], 0, 0, 'LineColor', [1 0 0 1]);
+            t_ok('ImPlot3D.PlotSurface 3d full', true);
+        catch e
+            t_ok('ImPlot3D.PlotSurface 3d full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.PlotSurface 3d full', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.PlotMesh', 'x', [0 1 2 3], [0 1 2 3], [0 1 2 3], [1 2 3; 2 3 4]);
+            t_ok('ImPlot3D.PlotMesh 3d defaults', true);
+        catch e
+            t_ok('ImPlot3D.PlotMesh 3d defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.PlotMesh 3d defaults', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.PlotMesh', 'x', [0 1 2 3], [0 1 2 3], [0 1 2 3], [1 2 3; 2 3 4], 'LineColor', [1 0 0 1]);
+            t_ok('ImPlot3D.PlotMesh 3d full', true);
+        catch e
+            t_ok('ImPlot3D.PlotMesh 3d full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.PlotMesh 3d full', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.PlotText', 'x', 0, 0, 0);
+            t_ok('ImPlot3D.PlotText defaults', true);
+        catch e
+            t_ok('ImPlot3D.PlotText defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.PlotText defaults', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.PlotText', 'x', 0, 0, 0, 0, [0 0]);
+            t_ok('ImPlot3D.PlotText full', true);
+        catch e
+            t_ok('ImPlot3D.PlotText full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.PlotText full', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            o = cell(1, 1);
+            [o{1:1}] = PsychImGui('ImPlot3D.PlotToPixels', 0, 0, 0);
+            t_ok('ImPlot3D.PlotToPixels defaults', numel(o) == 1);
+        catch e
+            t_ok('ImPlot3D.PlotToPixels defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+            o = {};
+        end
+    else
+        t_ok('ImPlot3D.PlotToPixels defaults', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            o = cell(1, 1);
+            [o{1:1}] = PsychImGui('ImPlot3D.PlotToPixels', 0, 0, 0);
+            t_ok('ImPlot3D.PlotToPixels full', numel(o) == 1);
+        catch e
+            t_ok('ImPlot3D.PlotToPixels full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+            o = {};
+        end
+    else
+        t_ok('ImPlot3D.PlotToPixels full', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            o = cell(1, 1);
+            [o{1:1}] = PsychImGui('ImPlot3D.GetPlotRectPos');
+            t_ok('ImPlot3D.GetPlotRectPos defaults', numel(o) == 1);
+        catch e
+            t_ok('ImPlot3D.GetPlotRectPos defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+            o = {};
+        end
+    else
+        t_ok('ImPlot3D.GetPlotRectPos defaults', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            o = cell(1, 1);
+            [o{1:1}] = PsychImGui('ImPlot3D.GetPlotRectPos');
+            t_ok('ImPlot3D.GetPlotRectPos full', numel(o) == 1);
+        catch e
+            t_ok('ImPlot3D.GetPlotRectPos full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+            o = {};
+        end
+    else
+        t_ok('ImPlot3D.GetPlotRectPos full', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            o = cell(1, 1);
+            [o{1:1}] = PsychImGui('ImPlot3D.GetPlotRectSize');
+            t_ok('ImPlot3D.GetPlotRectSize defaults', numel(o) == 1);
+        catch e
+            t_ok('ImPlot3D.GetPlotRectSize defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+            o = {};
+        end
+    else
+        t_ok('ImPlot3D.GetPlotRectSize defaults', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            o = cell(1, 1);
+            [o{1:1}] = PsychImGui('ImPlot3D.GetPlotRectSize');
+            t_ok('ImPlot3D.GetPlotRectSize full', numel(o) == 1);
+        catch e
+            t_ok('ImPlot3D.GetPlotRectSize full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+            o = {};
+        end
+    else
+        t_ok('ImPlot3D.GetPlotRectSize full', false);
+    end
+    tf_plot3d_end(p);
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot3D.PushColormap', 'Viridis');
+        t_ok('ImPlot3D.PushColormap defaults', true);
+        PsychImGui('ImPlot3D.PopColormap');
+    catch e
+        t_ok('ImPlot3D.PushColormap defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot3D.PushColormap', 'Viridis');
+        t_ok('ImPlot3D.PushColormap full', true);
+        PsychImGui('ImPlot3D.PopColormap');
+    catch e
+        t_ok('ImPlot3D.PushColormap full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot3D.PushColormapIndex', 0);
+        t_ok('ImPlot3D.PushColormapIndex defaults', true);
+        PsychImGui('ImPlot3D.PopColormap');
+    catch e
+        t_ok('ImPlot3D.PushColormapIndex defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot3D.PushColormapIndex', 0);
+        t_ok('ImPlot3D.PushColormapIndex full', true);
+        PsychImGui('ImPlot3D.PopColormap');
+    catch e
+        t_ok('ImPlot3D.PushColormapIndex full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    % ImPlot3D.PopColormap is exercised by its opener.
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot3D.GetColormapCount');
+        t_ok('ImPlot3D.GetColormapCount defaults', numel(o) == 1);
+    catch e
+        t_ok('ImPlot3D.GetColormapCount defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot3D.GetColormapCount');
+        t_ok('ImPlot3D.GetColormapCount full', numel(o) == 1);
+    catch e
+        t_ok('ImPlot3D.GetColormapCount full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot3D.GetColormapName', 0);
+        t_ok('ImPlot3D.GetColormapName defaults', numel(o) == 1);
+    catch e
+        t_ok('ImPlot3D.GetColormapName defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot3D.GetColormapName', 0);
+        t_ok('ImPlot3D.GetColormapName full', numel(o) == 1);
+    catch e
+        t_ok('ImPlot3D.GetColormapName full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot3D.SampleColormap', 0);
+        t_ok('ImPlot3D.SampleColormap defaults', numel(o) == 1);
+    catch e
+        t_ok('ImPlot3D.SampleColormap defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot3D.SampleColormap', 0, 0);
+        t_ok('ImPlot3D.SampleColormap full', numel(o) == 1);
+    catch e
+        t_ok('ImPlot3D.SampleColormap full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot3D.StyleColorsAuto');
+        t_ok('ImPlot3D.StyleColorsAuto defaults', true);
+    catch e
+        t_ok('ImPlot3D.StyleColorsAuto defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot3D.StyleColorsAuto');
+        t_ok('ImPlot3D.StyleColorsAuto full', true);
+    catch e
+        t_ok('ImPlot3D.StyleColorsAuto full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot3D.StyleColorsDark');
+        t_ok('ImPlot3D.StyleColorsDark defaults', true);
+    catch e
+        t_ok('ImPlot3D.StyleColorsDark defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot3D.StyleColorsDark');
+        t_ok('ImPlot3D.StyleColorsDark full', true);
+    catch e
+        t_ok('ImPlot3D.StyleColorsDark full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot3D.StyleColorsLight');
+        t_ok('ImPlot3D.StyleColorsLight defaults', true);
+    catch e
+        t_ok('ImPlot3D.StyleColorsLight defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot3D.StyleColorsLight');
+        t_ok('ImPlot3D.StyleColorsLight full', true);
+    catch e
+        t_ok('ImPlot3D.StyleColorsLight full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot3D.StyleColorsClassic');
+        t_ok('ImPlot3D.StyleColorsClassic defaults', true);
+    catch e
+        t_ok('ImPlot3D.StyleColorsClassic defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot3D.StyleColorsClassic');
+        t_ok('ImPlot3D.StyleColorsClassic full', true);
+    catch e
+        t_ok('ImPlot3D.StyleColorsClassic full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot3D.PushStyleColor', 'ImPlot3DCol_TitleText', [0 0 0 1]);
+        t_ok('ImPlot3D.PushStyleColor defaults', true);
+        PsychImGui('ImPlot3D.PopStyleColor');
+    catch e
+        t_ok('ImPlot3D.PushStyleColor defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot3D.PushStyleColor', 'ImPlot3DCol_TitleText', [0 0 0 1]);
+        t_ok('ImPlot3D.PushStyleColor full', true);
+        PsychImGui('ImPlot3D.PopStyleColor');
+    catch e
+        t_ok('ImPlot3D.PushStyleColor full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    % ImPlot3D.PopStyleColor is exercised by its opener.
+    tf_begin();
+    try
+        PsychImGui('ImPlot3D.PushStyleVar', 'ImPlot3DStyleVar_LineWeight', 1);
+        t_ok('ImPlot3D.PushStyleVar defaults', true);
+        PsychImGui('ImPlot3D.PopStyleVar');
+    catch e
+        t_ok('ImPlot3D.PushStyleVar defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot3D.PushStyleVar', 'ImPlot3DStyleVar_LineWeight', 1);
+        t_ok('ImPlot3D.PushStyleVar full', true);
+        PsychImGui('ImPlot3D.PopStyleVar');
+    catch e
+        t_ok('ImPlot3D.PushStyleVar full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot3D.PushStyleVarVec2', 'ImPlot3DStyleVar_LegendPadding', [5 5]);
+        t_ok('ImPlot3D.PushStyleVarVec2 defaults', true);
+        PsychImGui('ImPlot3D.PopStyleVar');
+    catch e
+        t_ok('ImPlot3D.PushStyleVarVec2 defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot3D.PushStyleVarVec2', 'ImPlot3DStyleVar_LegendPadding', [5 5]);
+        t_ok('ImPlot3D.PushStyleVarVec2 full', true);
+        PsychImGui('ImPlot3D.PopStyleVar');
+    catch e
+        t_ok('ImPlot3D.PushStyleVarVec2 full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    % ImPlot3D.PopStyleVar is exercised by its opener.
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot3D.ShowDemoWindow');
+        t_ok('ImPlot3D.ShowDemoWindow defaults', numel(o) == 1);
+    catch e
+        t_ok('ImPlot3D.ShowDemoWindow defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot3D.ShowDemoWindow', true);
+        t_ok('ImPlot3D.ShowDemoWindow full', numel(o) == 1);
+    catch e
+        t_ok('ImPlot3D.ShowDemoWindow full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot3D.ShowMetricsWindow');
+        t_ok('ImPlot3D.ShowMetricsWindow defaults', numel(o) == 1);
+    catch e
+        t_ok('ImPlot3D.ShowMetricsWindow defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot3D.ShowMetricsWindow', true);
+        t_ok('ImPlot3D.ShowMetricsWindow full', numel(o) == 1);
+    catch e
+        t_ok('ImPlot3D.ShowMetricsWindow full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+end
+
+function ok = tf_plot3d_begin()
+    PsychImGui('NewFrame', tf_input());
+    PsychImGui('Begin', 'genplot3dw', [], 1024);
+    ok = PsychImGui('ImPlot3D.BeginPlot', 'genplot3d', [300 200]);
+end
+
+function tf_plot3d_end(ok)
+    if ok
+        PsychImGui('ImPlot3D.EndPlot');
+    end
+    PsychImGui('End');
+    PsychImGui('Render');
 end
 
 function ok = tf_plot_begin()

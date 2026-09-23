@@ -37,11 +37,12 @@ function run_tests()
             v.psychimgui, v.imgui, v.imguiNum, v.implot, v.build);
 
     % A stale context from an interrupted run would make Init fail.
-    PsychImGui('Shutdown');
+    PsychImGui('Shutdown', 'all');
 
     tests = {@test_dispatch, @test_gen_marshal, @test_inputtext, ...
              @test_tables, @test_drawlist, @test_image, ...
-             @test_keymap, @test_stats, @test_assert, @test_helpers};
+             @test_keymap, @test_stats, @test_assert, @test_helpers, ...
+             @test_contexts, @test_stereo, @test_filedialog, @test_helpers_p3};
     for i = 1:numel(tests)
         name = func2str(tests{i});
         fprintf('\n---- %s ----\n', name);
@@ -53,7 +54,10 @@ function run_tests()
             TST_FAIL = TST_FAIL + 1;
             fprintf(2, '  FAIL  %s threw %s: %s\n', name, e.identifier, e.message);
         end
-        PsychImGui('Shutdown');
+        % Every context, not only the current one: a test with several
+        % windows can leave more than one, and the MEX has to be unlocked
+        % before the path changes below.
+        PsychImGui('Shutdown', 'all');
         fprintf('  %d passed, %d failed\n', TST_PASS - p0, TST_FAIL - f0);
     end
 
@@ -76,7 +80,7 @@ function local_fresh_context(name)
     if strcmp(name, 'test_dispatch')
         return;
     end
-    PsychImGui('Shutdown');
+    PsychImGui('Shutdown', 'all');
     PsychImGui('Init', 0, [0 0 640 480], PsychImGuiKeymapOrEmpty(), ...
                struct('renderer', 'none', 'iniFile', ''));
 end

@@ -385,8 +385,63 @@ int main(int argc, char** argv) {
         rc = 6;
     }
 
+    // A second context, as a second Psychtoolbox window makes, with frames
+    // interleaved between the two, and every frame submitted twice, as for
+    // the two eyes of a stereo mode. Both contexts share this one GL context,
+    // which is legal: each backend keeps its objects in its own context's
+    // Dear ImGui state.
+    if (rc == 0) {
+        double first = pig::currentHandle();
+        pig::InitOpts o2 = opts;
+        o2.win = 1;
+        memset(&err, 0, sizeof(err));
+        if (!pig::init(o2, NULL, 0, err)) {
+            printf("smoke_gl: second Init failed: %s: %s\n", err.id, err.msg);
+            rc = 8;
+        }
+        double second = pig::currentHandle();
+        for (int frame = 0; frame < 4 && rc == 0; ++frame) {
+            for (int k = 0; k < 2 && rc == 0; ++k) {
+                memset(&err, 0, sizeof(err));
+                pig::setContext(k == 0 ? first : second, err);
+                pig::InputFrame in;
+                memset(&in, 0, sizeof(in));
+                in.displayW = 320;
+                in.displayH = 240;
+                in.focus = 1;
+                in.fbscale = 1.0;
+                in.time = 1.0 + 0.016 * frame;
+                pig::newFrame(in);
+                ImGui::Begin(k == 0 ? "first" : "second");
+                ImGui::Text("context %d, frame %d", k, frame);
+                ImGui::End();
+                if (!pig::render(err) || !pig::renderAgain(err)) {
+                    printf("smoke_gl: context %d: %s: %s\n", k, err.id, err.msg);
+                    rc = 9;
+                } else if (pig::assertPending()) {
+                    pig::assertTake(err);
+                    printf("smoke_gl: context %d: %s: %s\n", k, err.id, err.msg);
+                    rc = 10;
+                }
+            }
+        }
+        if (rc == 0 && ImGui::GetFrameCount() != 4) {
+            printf("smoke_gl: the second context counted %d frames, not 4\n",
+                   ImGui::GetFrameCount());
+            rc = 11;
+        }
+        pig::VersionInfo v2;
+        pig::versionInfo(v2);
+        printf("smoke_gl: two contexts, RenderAgain ok; GPU timer %s, last Render %.1f us\n",
+               v2.gpuTimer ? "on" : "off", pig::frameStats().renderGpuNs / 1e3);
+        bool sk = false;
+        pig::shutdownHandle(second, &sk, err);
+        pig::setContext(first, err);
+    }
+
     bool skipped = false;
     pig::shutdown(&skipped);
+    pig::profilerShutdown();
     if (!headless) {
         GLenum e = glGetError();
         if (e != GL_NO_ERROR) {

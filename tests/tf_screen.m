@@ -15,6 +15,13 @@ function out = tf_screen(cmd, arg)
 %                                  region, 0 otherwise.
 %   tf_screen('set3d', v)          The value Screen('Preference',
 %                                  'Enable3DGraphics') reports.
+%   tf_screen('setstereo', m)      The StereoMode Screen('GetWindowInfo')
+%                                  reports. The stub records every
+%                                  Screen('SelectStereoDrawBuffer', win, eye)
+%                                  in the 'gl' list as SelectStereoDrawBuffer0
+%                                  or SelectStereoDrawBuffer1, and raises when
+%                                  it comes inside an OpenGL region, as
+%                                  Psychtoolbox does.
 %
 %   The stub answers only the subcommands the PsychImGui helpers use. It
 %   is written to a temporary folder rather than committed as a file, so a
@@ -34,6 +41,7 @@ function out = tf_screen(cmd, arg)
 %   See SPEC.md section 14.6.
 
     global TF_SCREEN_GL TF_SCREEN_MODE TF_SCREEN_3D TF_SCREEN_DIR %#ok<GVMIS>
+    global TF_SCREEN_STEREO %#ok<GVMIS>
     out = [];
     switch cmd
         case 'install'
@@ -43,6 +51,7 @@ function out = tf_screen(cmd, arg)
             TF_SCREEN_GL = {};
             TF_SCREEN_MODE = 0;
             TF_SCREEN_3D = 1;
+            TF_SCREEN_STEREO = 0;
             out = TF_SCREEN_DIR;
         case 'cleanup'
             local_cleanup(TF_SCREEN_DIR);
@@ -63,6 +72,8 @@ function out = tf_screen(cmd, arg)
             out = TF_SCREEN_MODE;
         case 'set3d'
             TF_SCREEN_3D = arg;
+        case 'setstereo'
+            TF_SCREEN_STEREO = arg;
         otherwise
             error('psychimgui:Usage', 'tf_screen: unknown command "%s".', cmd);
     end
@@ -126,10 +137,11 @@ function src = local_screen_src()
     src = { ...
     'function varargout = Screen(cmd, varargin)'
     '% Recording Screen stub for test_helpers. See tests/tf_screen.m.'
-    '    global TF_SCREEN_GL TF_SCREEN_MODE TF_SCREEN_3D'
+    '    global TF_SCREEN_GL TF_SCREEN_MODE TF_SCREEN_3D TF_SCREEN_STEREO'
     '    if ~iscell(TF_SCREEN_GL);   TF_SCREEN_GL = {};  end'
     '    if isempty(TF_SCREEN_MODE); TF_SCREEN_MODE = 0; end'
     '    if isempty(TF_SCREEN_3D);   TF_SCREEN_3D = 1;   end'
+    '    if isempty(TF_SCREEN_STEREO); TF_SCREEN_STEREO = 0; end'
     '    varargout = {};'
     '    switch cmd'
     '        case ''PsychImGuiStub'''
@@ -167,6 +179,13 @@ function src = local_screen_src()
     '        case ''EndOpenGL'''
     '            TF_SCREEN_GL{end+1} = ''EndOpenGL'';'
     '            TF_SCREEN_MODE = 0;'
+    '        case ''GetWindowInfo'''
+    '            varargout{1} = struct(''StereoMode'', TF_SCREEN_STEREO);'
+    '        case ''SelectStereoDrawBuffer'''
+    '            if TF_SCREEN_MODE'
+    '                error(''Screen:userspace'', ''SelectStereoDrawBuffer inside BeginOpenGL.'');'
+    '            end'
+    '            TF_SCREEN_GL{end+1} = sprintf(''SelectStereoDrawBuffer%d'', varargin{2});'
     '        case ''GetOpenGLDrawMode'''
     '            varargout{1} = 0;'
     '            varargout{2} = TF_SCREEN_MODE;'

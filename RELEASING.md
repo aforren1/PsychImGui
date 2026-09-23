@@ -40,11 +40,14 @@ With Psychtoolbox installed, run the GL tests and the demo in MATLAB:
 
 ```matlab
 cd tests/gl; test_gl_render; test_gl_demo_gabor; test_gl_phase2; test_gl_phase2('opengl2')
+test_gl_contexts; test_gl_stereo; test_gl_implot3d; test_gl_implot3d('opengl2')
 PsychImGuiDemo(90)
+PsychImGuiStereoDemo(8, 90); PsychImGuiStereoDemo(4, 90, [0 0 800 400])
 ```
 
-Expect `0 failed` from each test, and the demo to print its Gabor pixel
-standard deviation and no `PsychImGuiDemo failed` line. If the version
+Expect `0 failed` from each test, the demo to print its Gabor pixel
+standard deviation, and no `PsychImGuiDemo failed` or
+`PsychImGuiStereoDemo failed` line. If the version
 bump came with new subcommands, confirm `PsychImGui('Version')` shows the
 new number and that `m/PsychImGui.m` was regenerated (`build gen`) so the
 help lists them.
@@ -55,9 +58,10 @@ help lists them.
   Anything that changed against the specification gets a row in section 14.
 - `README.md`: new subcommands or helpers appear where their group is
   described.
-- `third_party/PINS.md`: only if a submodule moved. Then also confirm that
-  `IMGUI_VERSION_NUM` in `third_party/cimgui/imgui/imgui.h` matches what
-  `third_party/cimplot/implot/implot.h` expects.
+- `third_party/PINS.md`: only if a submodule or a pinned clone moved. Then
+  also confirm that ImPlot, ImPlot3D, and ImGuiFileDialog still compile
+  against `third_party/cimgui/imgui`, and run `bash tools/fetch_third_party.sh`
+  in a fresh checkout to prove that the pins resolve.
 
 ## 4. Push and wait for green
 

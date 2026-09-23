@@ -28,4 +28,14 @@ bool gl_context_is_current() {
 #endif
 }
 
+void* gl_current_context() {
+#if defined(_WIN32)
+    return (void*)wglGetCurrentContext();
+#elif defined(__APPLE__)
+    return (void*)CGLGetCurrentContext();
+#else
+    return (void*)glXGetCurrentContext();
+#endif
+}
+
 }  // namespace pig

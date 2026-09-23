@@ -1,7 +1,7 @@
 # PsychImGui specification
 
-Status: implemented through phase 2. Specification version 0.1,
-2026-09-22. Section 14 records where the code differs from sections 1
+Status: implemented through phase 3. Specification version 0.1,
+2026-09-23. Section 14 records where the code differs from sections 1
 to 13 and why.
 
 `PsychImGui` is a MEX binding of Dear ImGui for MATLAB and GNU Octave. It draws
@@ -25,8 +25,8 @@ readouts, calibration tools, and debugging overlays.
 
 ### 1.2 In scope
 
-- One Dear ImGui context per MATLAB or Octave process, bound to one PTB
-  onscreen window.
+- One Dear ImGui context per PTB onscreen window, up to eight in one MATLAB
+  or Octave process, in phase 3. Section 5.1.
 - Generated bindings for about 100 core Dear ImGui functions, selected by an
   allowlist. The list grows by editing one file.
 - Mouse, wheel, keyboard, and text input from PTB functions.
@@ -36,6 +36,8 @@ readouts, calibration tools, and debugging overlays.
   the candidates.
 - Tables, draw lists through handles, and images from Psychtoolbox textures,
   in phase 2. Sections 5.2, 5.6, and 5.7.
+- The GUI in both eyes of the PTB stereo modes, GPU timing, Tracy zones,
+  ImPlot3D, and ImGuiFileDialog, in phase 3. Sections 5.1, 5.4, 9.2, 9.3.
 - MATLAB R2023a and Octave 10.1 on Windows, verified. Linux verified in CI
   and in WSL. macOS on Apple silicon (`maca64`) is a CI target; see section
   14 for what is and is not verified there.
@@ -47,7 +49,8 @@ readouts, calibration tools, and debugging overlays.
 - Callbacks from Dear ImGui into MATLAB code.
 - Raw `ImDrawList` pointers, and draw list methods other than those of
   section 5.6.
-- Rendering into more than one PTB window at a time.
+- One context that draws into more than one PTB window. Each window gets a
+  context of its own; section 5.1.
 - Any code shared with other bindings. This project is self-contained.
 
 ## 2. Dependencies and pinned versions
@@ -58,7 +61,10 @@ readouts, calibration tools, and debugging overlays.
 | Dear ImGui | v1.92.9b (through cimgui) | `third_party/cimgui/imgui` | Core library plus `backends/imgui_impl_opengl3.*`. |
 | cimplot | commit from the same date as the cimgui pin | `third_party/cimplot` (git submodule) | Provides `generator/output/definitions.json` for ImPlot and contains ImPlot as a nested submodule. The cimgui project updates cimgui and cimplot together, so pins from the same day match. cimplot C sources are not compiled. |
 | ImPlot | v1.x (through cimplot) | `third_party/cimplot/implot` | `implot.cpp`, `implot_items.cpp`, `implot_demo.cpp`. Compiled with `PSYCHIMGUI_IMPLOT=ON` (default). |
-| Tracy | 0.11.x | `third_party/tracy` (git submodule, optional) | Profiler client, compiled only with `PSYCHIMGUI_TRACY=ON`. |
+| cimplot3d | commit from the same day as the cimplot pin | `third_party/cimplot3d` (plain clone, phase 3) | `definitions.json` for ImPlot3D, and ImPlot3D as a nested submodule. |
+| ImPlot3D | v0.4 (through cimplot3d) | `third_party/cimplot3d/implot3d` | `implot3d.cpp`, `implot3d_items.cpp`, `implot3d_meshes.cpp`, `implot3d_demo.cpp`. Compiled with `PSYCHIMGUI_IMPLOT3D=ON` (default). |
+| ImGuiFileDialog | `master`, 0.6.9 WIP | `third_party/ImGuiFileDialog` (plain clone, phase 3) | File dialog, hand-written binding. Compiled with `PSYCHIMGUI_FILEDIALOG=ON` (default). |
+| Tracy | 0.11.1 | `third_party/tracy` (plain clone, optional, not fetched) | Profiler client, compiled only with `PSYCHIMGUI_TRACY=ON`. |
 | Psychtoolbox | 3.0.19 or later | user install | `Screen('BeginOpenGL')`, `KbEventGet` with `CookedKey`, `GetMouseWheel`. |
 | MATLAB | R2023a verified, R2019b or later expected | user install | C++17 MEX with MSVC 2022. |
 | Octave | 10.1 verified, 8.x expected | user install | `mkoctfile --mex` with the bundled MinGW g++. |
@@ -81,7 +87,7 @@ MATLAB / Octave script
 |  dispatch: sorted name table + opcode fast path              |
 |  marshal:  mxArray <-> C types (generated per function)      |
 |  input:    PTB events -> ImGuiIO                             |
-|  state:    one ImGui context, keymap, stats, deferred error  |
+|  state:    a context per window, keymap, stats, deferred error|
 |  render:   ImGui::Render -> imgui_impl_opengl3               |
 +--------------------------------------------------------------+
   |  OpenGL calls, only between Screen('BeginOpenGL') and Screen('EndOpenGL')
@@ -204,6 +210,8 @@ sca;
 | R6 | The MEX never calls `Screen`. | The MEX has no PTB dependency. This keeps the build independent of PTB internals. |
 | R7 | `Shutdown` runs inside `BeginOpenGL` when possible. | GL objects can only be deleted in a current context. If none is current, the MEX skips GL deletion and logs a warning. PTB frees the objects with the context. |
 | R8 | The script owns widget values. | Dear ImGui is immediate mode. The MEX stores no widget values between frames, except the text buffer described in section 7.5. |
+| R9 | With several windows, the current context and the current GL context belong to the same window. After `SetContext`, call `Screen('BeginOpenGL', win)` for that context's window before any GL subcommand. | Verified in `Windows/Screen/PsychWindowGlue.c`: every onscreen window has its own `contextObject` and `glusercontextObject`, and objects are shared between them only through `wglShareLists`, which PTB calls only for the slave window of a dual window stereo mode. The font texture and shader of one context name nothing, or another window's objects, in another window's context. `Init` records the current GL context handle, and every GL subcommand compares it with the current one and raises `psychimgui:Context` on a mismatch. |
+| R10 | In a stereo mode, `Render` once and `RenderAgain` once, each inside its own `Screen('SelectStereoDrawBuffer')` and `BeginOpenGL`, `EndOpenGL` pair. | Verified in `SCREENglMatrixFunctionWrappers.c`: `BeginOpenGL` binds the framebuffer object of the selected eye when the imaging pipeline is on, which `PsychImaging` always turns on, and calls `PsychSwitchFixedFunctionStereoDrawbuffer` otherwise. `SelectStereoDrawBuffer` is a `Screen` call, so it cannot happen inside the region. |
 
 ## 5. MATLAB API reference
 
@@ -216,14 +224,17 @@ opcode (section 9.1). Names are case sensitive and match Dear ImGui names.
 
 | Subcommand | Signature | Notes |
 |---|---|---|
-| Init | `PsychImGui('Init', win, rect, keymap [, opts])` | `rect` is `Screen('Rect', win)`. `keymap` is `int32(256,1)` from `PsychImGuiKeymap`. `opts` struct fields: `renderer` (`'opengl3'` default, `'none'` for tests), `glslVersion` (`'#version 130'` default), `iniFile` (path or `''` to disable), `logFile`. Calls `mexLock`. Error `psychimgui:AlreadyInit` if called twice without `Shutdown`. |
-| Shutdown | `PsychImGui('Shutdown')` | Destroys the backend and the context. Calls `mexUnlock`. Safe to call when not initialized. |
-| NewFrame | `PsychImGui('NewFrame', in)` | `in` is the input struct from section 6.1. Feeds `ImGuiIO`, sets `DisplaySize` and `DeltaTime`, calls `ImGui::NewFrame`. |
+| Init | `ctx = PsychImGui('Init', win, rect, keymap [, opts])` | `rect` is `Screen('Rect', win)`. `keymap` is `int32(256,1)` from `PsychImGuiKeymap`. `opts` struct fields: `renderer` (`'auto'` default, `'opengl3'`, `'opengl2'`, `'none'` for tests), `glslVersion` (from the context by default), `iniFile` (path or `''` to disable), `logFile`, `implot`, `implot3d`. Makes a context for window `win`, makes it current, and returns its handle, a double. Calls `mexLock` for the first context. Error `psychimgui:AlreadyInit` if a context for the same `win` exists, `psychimgui:Context` when eight exist. |
+| Shutdown | `PsychImGui('Shutdown' [, ctx or 'all'])` | Destroys the backend and the context: the current one, the one with handle `ctx`, or all. The current context stays current when another one is shut down; nothing is current after the current one is. Calls `mexUnlock` when no context is left. Safe to call when not initialized, and with a handle that is already shut down. |
+| SetContext | `PsychImGui('SetContext', ctx)` | Makes `ctx` current. Every other subcommand acts on the current context. A handle that was never issued or is shut down raises `psychimgui:InvalidHandle`. Retires every draw list handle. |
+| GetContext | `[ctx, all] = PsychImGui('GetContext')` | The current handle, 0 for none, and a row vector of every live handle. |
+| NewFrame | `PsychImGui('NewFrame', in)` | `in` is the input struct from section 6.1. Feeds `ImGuiIO`, sets `DisplaySize` and `DeltaTime`, calls `ImGui::NewFrame`. A GL subcommand from phase 3 on, because the OpenGL 3 backend creates its shader and font texture on the first frame. |
 | Render | `PsychImGui('Render')` | `ImGui::Render`, then `ImGui_ImplOpenGL3_RenderDrawData`, then GL error drain. With `renderer='none'` the draw data is discarded. |
+| RenderAgain | `PsychImGui('RenderAgain')` | Submits the draw data of the last `Render` again, for the second eye of a stereo mode, without building a frame. Legal after `Render` and before the next `NewFrame` or `EndFrame`; `psychimgui:Usage` elsewhere. Rule R10. |
 | EndFrame | `PsychImGui('EndFrame')` | `ImGui::EndFrame` without rendering. For frames the script decides not to draw. |
-| Version | `v = PsychImGui('Version')` | Struct: `imgui` (string), `imguiNum`, `psychimgui`, `renderer`, `glVersion`, `glRenderer`, `build` (compiler, engine, date). |
+| Version | `v = PsychImGui('Version')` | Struct: `imgui` (string), `imguiNum`, `psychimgui`, `renderer`, `glslVersion`, `glVersion`, `glRenderer`, `build` (compiler, engine, date), `implot`, `implotVersion`, `implot3d`, `implot3dVersion`, `fileDialog`, `fileDialogVersion`, `gpuTimer`, `tracy`, `context`. The context fields describe the current context. |
 | Opcode | `op = PsychImGui('Opcode', 'SliderFloat')` | Numeric opcode for the fast path. |
-| Stats | `s = PsychImGui('Stats' [, 'reset'])` | Struct array per subcommand: `name`, `calls`, `totalNs`, `maxNs`. Plus `frame` struct: `newFrameNs`, `renderCpuNs`, `renderGpuNs` (0 when unavailable), `drawCalls`, `vertices`. |
+| Stats | `s = PsychImGui('Stats' [, 'reset'])` | Struct array per subcommand: `name`, `calls`, `totalNs`, `maxNs`. Plus `frame` struct: `newFrameNs`, `renderCpuNs`, `renderGpuNs` (0 when unavailable), `drawCalls`, `vertices`. Per context: each context counts its own calls, and `reset` clears the current context's counters only. |
 | Enum | `v = PsychImGui('Enum', 'ImGuiWindowFlags_NoTitleBar')` | Numeric value from the generated enum table. `PsychImGui('Enum')` returns the whole table as a struct. |
 | WantCapture | `[mouse, keyboard, text] = PsychImGui('WantCapture')` | `io.WantCaptureMouse`, `io.WantCaptureKeyboard`, `io.WantTextInput` after `NewFrame`. Scripts use these to decide whether a click or key belongs to the GUI or to the experiment. |
 | AddFontFromFileTTF | `idx = PsychImGui('AddFontFromFileTTF', path, sizePx [, glyphRanges])` | Returns a font index. Index 0 is the default font. |
@@ -305,16 +316,18 @@ Section 14.10 says why the binding checks this itself.
 | File | Purpose |
 |---|---|
 | `m/PsychImGui.m` | Help text only. The MEX shadows it once built. Generated. |
-| `m/PsychImGuiOpen.m` | `ig = PsychImGuiOpen(win [, opts])`. Checks that 3D graphics are on, runs `Init` inside one OpenGL region, starts the keyboard queue, and returns the handle struct the other three take. Fields: `win`, `rect`, `kq`, `opened`, `opts`, `in`. |
-| `m/PsychImGuiFrame.m` | `ig = PsychImGuiFrame('Begin', ig)` and `PsychImGuiFrame('End', ig)`. Poll, `BeginOpenGL`, `NewFrame`; then `Render`, `EndOpenGL`. The older `('Begin', win, kq)` form still works. |
-| `m/PsychImGuiClose.m` | `PsychImGuiClose(ig)`. `Shutdown` inside one OpenGL region, then stops the queue. Safe to call twice and safe after the window has closed, so it suits an `onCleanup`. |
-| `m/PsychImGuiGL.m` | `PsychImGuiGL(ig, 'Subcommand', ...)`. One subcommand inside the OpenGL region, for calls such as `AddFontFromFileTTF` outside a frame. Calls straight through when a frame already opened the region. |
+| `m/PsychImGuiOpen.m` | `ig = PsychImGuiOpen(win [, opts])`. Checks that 3D graphics are on, runs `Init` inside one OpenGL region, starts the keyboard queue, and returns the handle struct the other three take. Fields: `win`, `rect`, `kq`, `opened`, `opts`, `in`, `ctx` (the handle `Init` returned), `stereo` (from `Screen('GetWindowInfo').StereoMode`, or `opts.stereo`). |
+| `m/PsychImGuiFrame.m` | `ig = PsychImGuiFrame('Begin', ig)` and `PsychImGuiFrame('End', ig)`. Poll, `BeginOpenGL`, `SetContext`, `NewFrame`; then `Render`, `EndOpenGL`. With `ig.stereo`, `End` renders eye 0 and submits eye 1 with `RenderAgain`, each in its own region after `SelectStereoDrawBuffer`. The older `('Begin', win, kq)` form still works. |
+| `m/PsychImGuiClose.m` | `PsychImGuiClose(ig)`. `Shutdown` of the handle's context inside one OpenGL region of its window, then stops the queue. Other windows' contexts stay open. Safe to call twice and safe after the window has closed, so it suits an `onCleanup`. |
+| `m/PsychImGuiGL.m` | `PsychImGuiGL(ig, 'Subcommand', ...)`. One subcommand inside the OpenGL region, for calls such as `AddFontFromFileTTF` outside a frame, after `SetContext` for a handle from `PsychImGuiOpen`. Calls straight through when a frame already opened the region. |
 | `m/PsychImGuiSetup.m` | Puts `dist/<arch>` ahead of `m/` on the path. `('arch')`, `('distdir')`, and `('nocheck')` for the parts of that. |
 | `m/PsychImGuiInput.m` | `Start`, `Poll`, `Stop`, `Empty`. Wraps `KbQueueCreate`, `KbQueueStart`, `KbEventGet`, `GetMouse`, `GetMouseWheel`, `GetSecs`. Returns the input struct of section 6.1. |
 | `m/PsychImGuiKeymap.m` | Builds the 256-entry PTB keycode to `ImGuiKey` table. |
 | `m/PsychImGuiOp.m` | Generated struct of opcodes for the fast path. A namespace is a nested struct: `op.ImPlot.BeginPlot`, `op.DrawList.AddLine`. |
 | `m/PsychImGuiImage.m` | `tex = PsychImGuiImage(ig, ptbTexture [, filter])`. Describes a Psychtoolbox texture for `Image` and `ImageButton`. Section 5.7. |
-| `m/PsychImGuiDemo.m` | Demo: PTB window with a Gabor patch, a control panel with sliders, an ImPlot panel, a panel with a table and an `Image` of a PTB texture, a draw list overlay, and `ShowDemoWindow`. |
+| `m/PsychImGuiDemo.m` | Demo: PTB window with a Gabor patch, a control panel with sliders and a file dialog button, an ImPlot panel, an ImPlot3D panel, a panel with a table and an `Image` of a PTB texture, a draw list overlay, and `ShowDemoWindow`. `PsychImGuiDemo(n, opts)` takes `opts.rect`, `opts.capture`, and `opts.animate`; the panels follow the window size. |
+| `m/PsychImGuiStereoDemo.m` | Stereo demo: a disc with a disparity from a slider in each eye, and the control panel in both eyes. Mode 4 with two displays, mode 8 with one; `PsychImGuiStereoDemo(10)` for mode 10. |
+| `tools/CaptureReadmeScreenshot.m` | Runs the demo at 1280x720 and writes the README screenshot, `docs/images/psychimgui-demo.png`. |
 
 ### 5.4 Extensions and ImPlot subcommands
 
@@ -337,9 +350,9 @@ Policy for extensions:
 | Extension | Metadata | Relevance for experiments | Status |
 |---|---|---|---|
 | ImPlot (`epezent/implot`, v1.x) | `cimgui/cimplot` | High. Live signal traces, psychometric curves, staircases, heat maps of response fields. | Phase 1.5 |
-| ImPlot3D (`brenocq/implot3d`) | `cimgui/cimplot3d` | Medium. Eye or hand trajectories in 3D. | Phase 3 |
-| ImGuiFileDialog (`aiekick/ImGuiFileDialog`) | none, C++ API | Medium. File chooser for stimulus or data files. Five functions, hand-written. | Phase 3 |
-| ImAnim (`soufianekhiat/ImAnim`, MIT, 2025) | none. C-style `iam_*` API of about 200 functions with structs, plus one fluent C++ class for motion paths. Parseable with libclang, not with pycparser. | Medium. Tweens, springs, easing presets, oscillators, noise channels, motion paths, and keyframe clips with save and load. Useful for smooth GUI transitions and for previewing a stimulus time course; the math parts duplicate what MATLAB does natively. Keyed by `ImGuiID` and driven by `io.DeltaTime`, so it fits the frame model without extra plumbing. | Phase 3, after a libclang generator path exists |
+| ImPlot3D (`brenocq/implot3d`) | `cimgui/cimplot3d` | Medium. Eye or hand trajectories in 3D. | Phase 3, implemented |
+| ImGuiFileDialog (`aiekick/ImGuiFileDialog`) | none, C++ API | Medium. File chooser for stimulus or data files. Eight subcommands, hand-written. | Phase 3, implemented |
+| ImAnim (`soufianekhiat/ImAnim`, MIT, 2025) | none. C-style `iam_*` API of about 200 functions with structs, plus one fluent C++ class for motion paths. Parseable with libclang, not with pycparser. | Medium. Tweens, springs, easing presets, oscillators, noise channels, motion paths, and keyframe clips with save and load. Useful for smooth GUI transitions and for previewing a stimulus time course; the math parts duplicate what MATLAB does natively. Keyed by `ImGuiID` and driven by `io.DeltaTime`, so it fits the frame model without extra plumbing. | Not bound in phase 3; section 14.11 says why |
 | imgui-knobs, imgui_toggle, imspinner, ImGuiNotify | none, small C++ APIs | Low to medium. Rotary knobs, toggle switches, spinners, toast notifications. Each is under ten functions. | Hand-written on request |
 | imgui_test_engine (`ocornut/imgui_test_engine`) | none | Not user-facing. Scripted UI interaction for automated tests of the binding itself. | Considered for the test suite in phase 3 |
 | ImGuizmo, imnodes, imgui-node-editor, ImGuiColorTextEdit, imgui_markdown | cimgui-family for the first two | Low for experiments. | Not planned |
@@ -381,6 +394,52 @@ pos = PsychImGui('ImPlot.GetPlotMousePos' [, xAxis='X1'] [, yAxis='Y1'])   % 1x2
 
 Marshaling rules specific to ImPlot are in section 7.6.
 
+ImPlot3D lifecycle and allowlist (phase 3): `Init` calls
+`ImPlot3D::CreateContext()` when compiled in and `opts.implot3d` is not
+false, and `Shutdown` destroys it with the other two. The `[ImPlot3D]`
+allowlist section:
+
+| Group | Subcommands (`ImPlot3D.` prefix omitted) |
+|---|---|
+| Plot frame | BeginPlot, EndPlot |
+| Setup | SetupAxis, SetupAxes, SetupAxisLimits, SetupAxesLimits, SetupAxisTicks (values form), SetupBoxRotation (elevation and azimuth form), SetupBoxScale, SetupLegend |
+| Items | PlotLine, PlotScatter, PlotTriangle, PlotQuad, PlotSurface, PlotMesh, PlotText |
+| Queries | PlotToPixels (x, y, z form), GetPlotRectPos, GetPlotRectSize |
+| Colormaps | PushColormap (by name or index), PopColormap, GetColormapCount, GetColormapName, SampleColormap |
+| Style | StyleColorsAuto, StyleColorsDark, StyleColorsLight, StyleColorsClassic, PushStyleColor, PopStyleColor, PushStyleVar (float and Vec2 forms), PopStyleVar |
+| Diagnostics | ShowDemoWindow, ShowMetricsWindow |
+
+```
+open = PsychImGui('ImPlot3D.BeginPlot', titleId [, size=[-1 0]] [, flags=0])
+PsychImGui('ImPlot3D.PlotLine', labelId, xs, ys, zs [, spec...])
+PsychImGui('ImPlot3D.PlotSurface', labelId, X, Y, Z [, scaleMin=0.0] [, scaleMax=0.0] [, spec...])
+PsychImGui('ImPlot3D.PlotMesh', labelId, xs, ys, zs, faces [, spec...])
+pix = PsychImGui('ImPlot3D.PlotToPixels', x, y, z)
+```
+
+`PlotSurface` reads the grid size from the shape of `X`: rows are ImPlot3D's
+`x_count`, because the first dimension of a column major matrix varies
+fastest. `PlotMesh` takes `faces` as an Mx3 matrix of 1-based vertex indices,
+the `Faces` of `patch`; section 14.11.
+
+ImGuiFileDialog subcommands (phase 3, hand-written):
+
+| Subcommand | Signature |
+|---|---|
+| FileDialog.Open | `PsychImGui('FileDialog.Open', key, title, filters [, path='.'] [, fileName=''] [, maxSelection=1] [, flags=0])` |
+| FileDialog.Display | `[done, open] = PsychImGui('FileDialog.Display', key [, minSize=[0 0]] [, maxSize=[FLT_MAX FLT_MAX]] [, windowFlags=ImGuiWindowFlags_NoCollapse])` |
+| FileDialog.IsOk | `ok = PsychImGui('FileDialog.IsOk')` |
+| FileDialog.GetFilePathName | `path = PsychImGui('FileDialog.GetFilePathName')` |
+| FileDialog.GetSelection | `paths = PsychImGui('FileDialog.GetSelection')`, a 1xN cellstr |
+| FileDialog.GetCurrentPath | `path = PsychImGui('FileDialog.GetCurrentPath')` |
+| FileDialog.IsOpened | `open = PsychImGui('FileDialog.IsOpened' [, key])` |
+| FileDialog.Close | `PsychImGui('FileDialog.Close')` |
+
+An empty `filters` makes a directory chooser. `flags` takes the
+`ImGuiFileDialogFlags_` names, which the generator reads from
+`ImGuiFileDialog.h` into the enum table. `Display` needs an open frame. Each
+context owns one dialog object, created by the first `Open`.
+
 ### 5.5 Error identifiers
 
 | Identifier | Meaning |
@@ -396,7 +455,8 @@ Marshaling rules specific to ImPlot are in section 7.6.
 | `psychimgui:Type` | Argument has the wrong class, for example a `string` scalar where char is required. |
 | `psychimgui:Range` | Numeric argument out of range for its C type. |
 | `psychimgui:Font` | Font file not found or failed to load. |
-| `psychimgui:InvalidHandle` | A draw list handle is not live: it comes from an earlier frame, from before `Render` or `EndFrame`, or from before a `Shutdown`, or it was never issued. Section 5.6. |
+| `psychimgui:InvalidHandle` | A draw list handle is not live: it comes from an earlier frame, from before `Render` or `EndFrame`, from another context, or from before a `Shutdown`, or it was never issued. Section 5.6. Also a context handle that was never issued or is shut down, for `SetContext`. |
+| `psychimgui:Context` | The current GL context is not the one of the current PsychImGui context's window (rule R9), or `Init` found all eight contexts in use. |
 | `psychimgui:Texture` | A texture is not one the OpenGL backends can sample: not `GL_TEXTURE_2D`, or not a valid texture name. Section 5.7. |
 
 ### 5.6 Draw lists
@@ -708,19 +768,24 @@ UTF-8 conversion per call, about one microsecond for short strings.
 
 ### 8.1 State
 
-One static `State` struct in `psychimgui.cpp`:
+A table of eight `State` structs in `src/core/psychimgui_core.cpp`, one per
+context, and a pointer to the current one (phase 3; section 14.11). Each
+holds:
 
 | Member | Content |
 |---|---|
-| `ctx` | `ImGuiContext*` |
-| `renderer` | `OpenGL3` or `None` |
+| `ctx` | `ImGuiContext*`, plus the ImPlot and ImPlot3D contexts |
+| `serial`, `win`, `glctx` | the handle, the PTB window, the GL context `Init` ran in |
+| `renderer` | `OpenGL3`, `OpenGL2`, or `None` |
 | `keymap[257]` | `ImGuiKey` per PTB keycode, 1-based |
 | `modState` | held modifier bitset |
 | `buttonState` | previous frame button bits |
 | `lastTime` | previous `in.time` |
 | `fonts[16]` | `ImFont*` table |
-| `stats` | fixed arrays, section 9 |
-| `deferredError` | flag, id, message buffer of 512 bytes |
+| `stats` | fixed arrays, section 9; the per-subcommand rows live in `psychimgui.cpp`, one per context |
+| `gpu` | the timestamp query ring of section 9.2 |
+| `dialog` | the ImGuiFileDialog object, created by the first `FileDialog.Open` |
+| `deferredError` | flag, id, message buffer of 512 bytes; one for the process |
 
 The struct is zero-initialized. No heap allocation happens on the per-frame
 path except inside Dear ImGui.
@@ -736,6 +801,11 @@ path except inside Dear ImGui.
   MATLAB exit.
 - Current context detection: `wglGetCurrentContext`, `glXGetCurrentContext`,
   `CGLGetCurrentContext` behind one `gl_current.h`.
+- Phase 3, several contexts: `Init` makes a context, makes it current, and
+  records the current GL context handle; the MEX locks while any context
+  lives. `Shutdown` deletes the GL objects only when the recorded GL context
+  is current, and unlocks when no context is left. `atExit` shuts down every
+  context and stops the Tracy profiler. Section 14.11.
 
 ### 8.3 Asserts and errors
 
@@ -777,14 +847,17 @@ Always compiled unless `PSYCHIMGUI_STATS=0`. Per opcode: `calls`, `totalNs`,
 `clock_gettime(CLOCK_MONOTONIC)` elsewhere. Overhead about 30 ns per call.
 `Render` also records `drawCalls` and `vertices` from `ImDrawData`, and GPU time
 from a `GL_TIMESTAMP` query pair when `GL_ARB_timer_query` is available. GPU
-time is read two frames later to avoid a stall.
+time is read two frames later to avoid a stall. Implemented in phase 3 by
+`src/core/gpu_timer.cpp`; section 14.11.
 
 ### 9.3 Tracy
 
 CMake option `PSYCHIMGUI_TRACY` (default OFF) compiles `TracyClient.cpp` into
 the MEX and adds `ZoneScopedN` in dispatch, `NewFrame`, `Render`, and the
 InputText conversion, plus `FrameMark` at the end of `Render`. Capture with
-`tracy-capture`, export with `tracy-csvexport` for text analysis.
+`tracy-capture`, export with `tracy-csvexport` for text analysis. Phase 3
+implements this with a GPU zone around each submission; section 14.11 lists
+what differs.
 
 ### 9.4 What to measure first
 
@@ -810,6 +883,11 @@ PsychImGui/
     gen_dispatch.cpp      generated, committed
     gl_current.h          current-context detection per platform
     imconfig_psych.h      IMGUI_USER_CONFIG: IM_ASSERT redirection, IMGUI_DISABLE_OBSOLETE_FUNCTIONS
+    gen_dispatch_implot3d.cpp  generated, committed (phase 3)
+    filedialog.cpp        the FileDialog subcommands (phase 3)
+    igfd_psych.h, igfd_config_psych.h  ImGuiFileDialog configuration (phase 3)
+    plotdata_marshal.h, implot3d_marshal.h  plot data and ImPlot3D rules (phase 3)
+    core/gpu_timer.cpp    GL_TIMESTAMP queries and the Tracy GPU zone (phase 3)
   gen/
     generate.py           generator
     allowlist.txt         allowlist
@@ -823,7 +901,9 @@ PsychImGui/
   third_party/
     cimgui/               submodule (contains imgui/ submodule)
     cimplot/              submodule (contains implot/ submodule)
-    tracy/                submodule, optional
+    cimplot3d/            plain clone (contains implot3d/ submodule), phase 3
+    ImGuiFileDialog/      plain clone, phase 3
+    tracy/                plain clone, optional
 ```
 
 `gen/allowlist.txt` has one section per namespace (`[ImGui]`, `[ImPlot]`).
@@ -891,6 +971,14 @@ path runs in `run_tests.m` under both engines:
   the next `NewFrame`, and `Shutdown`.
 - `test_image.m`: `Image`, `ImageButton`, and `SetTextureFilter` argument
   rules, and `PsychImGuiImage` against the recording `Screen` stub.
+- `test_contexts.m` (phase 3): two contexts, switching, interleaved frames,
+  per-context Stats, a draw list handle that does not cross contexts, stale
+  context handles, the MEX lock, and the limit of eight.
+- `test_stereo.m` (phase 3): when `RenderAgain` is legal.
+- `test_filedialog.m` (phase 3): the `FileDialog.` argument rules, the open,
+  display, and close cycle, and a path outside ASCII.
+- `test_helpers_p3.m` (phase 3): the helpers with two windows and with a
+  stereo window, against the recording `Screen` stub.
 
 ### 11.2 With PTB and a GPU
 
@@ -907,6 +995,19 @@ upright offscreen window, a sharp quadrant edge with `'nearest'` and a blended
 one with `'linear'`, both cell backgrounds, a clip rectangle, and the
 foreground and background draw lists. `test_gl_phase2('opengl2')` runs it on
 the fixed function backend.
+
+Phase 3 adds three. `tests/gl/test_gl_contexts.m` opens two windows with a
+context each, draws a red and a blue panel, reads both back, checks
+`psychimgui:Context` for `NewFrame` and `Render` with the other window's
+context current, shuts one context down from the other window's context, and
+reads the GPU timer. `tests/gl/test_gl_stereo.m` opens stereo modes 4 and 8,
+which work on one display, draws a panel with `PsychImGuiFrame`, and reads
+each eye with `Screen('SelectStereoDrawBuffer')` and
+`Screen('GetImage', win, [], 'drawBuffer')`; a control frame that skips
+`RenderAgain` leaves eye 1 empty. `tests/gl/test_gl_implot3d.m` draws a red
+helix, a surface, and a blue mesh triangle, counts their pixels, and checks
+that `ImPlot3D.PlotToPixels` lands on the helix. All GL tests skip when
+`Screen` is missing or does not load.
 
 Every script that opens a PTB window goes through one helper,
 `tests/gl/ptb_test_window.m`, which sets `Screen('Preference',
@@ -931,7 +1032,7 @@ histogram.
 |---|---|
 | `IM_ASSERT` aborts the MATLAB process | Redirected to a deferred error, section 8.3. Error recovery enabled. |
 | PTB imaging pipeline with float FBOs or sRGB blending changes GUI colors | Document. Offer `opts.srgb` to gamma-adjust style colors. |
-| Stereo modes or panel fitter change the client rectangle | `display` is re-read every frame. Per-eye GUI rendering is not supported in phase 1. |
+| Stereo modes or panel fitter change the client rectangle | `display` is re-read every frame. Per-eye GUI rendering came with `RenderAgain` in phase 3. |
 | Octave char is UTF-8 bytes, MATLAB char is UTF-16 | Compile-time branch in `marshal.h`. Both paths produce UTF-8 for Dear ImGui. |
 | `clear all` while a PTB window is open | `mexLock` in `Init` prevents unloading. `Shutdown` unlocks. |
 | `BeginOpenGL` and `EndOpenGL` cost | Measure first. Two context switches per frame are expected to cost 50 to 200 us. |
@@ -970,12 +1071,13 @@ histogram.
 | 1 | Lifecycle, input, generator, allowlist of section 5.2, `Stats`, `renderer='none'` tests, demo. |
 | 1.5 | ImPlot: context lifecycle, section 7.6 rules, allowlist of section 5.4, generated tests, a demo panel with a live trace and a heat map. |
 | 2 | Tables (`BeginTable`, `TableNextRow`, `TableNextColumn`, `TableSetupColumn`, `TableHeadersRow`), `ImDrawList` through an opaque handle for the window and background draw lists (`AddLine`, `AddRect`, `AddCircle`, `AddText`), `PsychImGui('Image', ptbTexture, size)` by reading the GL texture id with `Screen('GetOpenGLTexture')`. Implemented; section 14.10 lists what differs. |
-| 3 | Tracy GPU zones, per-eye rendering for stereo modes, multiple contexts for multiple PTB windows, ImPlot3D through `cimplot3d`, ImGuiFileDialog hand-written. |
+| 3 | Tracy GPU zones, per-eye rendering for stereo modes, multiple contexts for multiple PTB windows, ImPlot3D through `cimplot3d`, ImGuiFileDialog hand-written. Implemented; section 14.11 lists what differs. |
 
 ## 14. Deviations from version 0.1
 
 This section records every place where the implementation differs from the
-specification above, and why. Section 13 phases 1, 1.5, and 2 are implemented.
+specification above, and why. Section 13 phases 1, 1.5, 2, and 3 are
+implemented.
 
 ### 14.1 Dependencies
 
@@ -983,7 +1085,7 @@ specification above, and why. Section 13 phases 1, 1.5, and 2 are implemented.
 |---|---|
 | `third_party/cimgui` and `third_party/cimplot` are git submodules, pinned at the commits in `third_party/PINS.md`. They started as plain clones while phase 1 was written and were registered as submodules at the same paths and commits on 2026-09-22. | The repository did not exist while phase 1 was written. |
 | The cimplot pin is not from the same day as the cimgui pin. | cimgui is pinned at 2026-09-14 (Dear ImGui 1.92.9b) and cimplot at 2026-08-13 (ImPlot 1.1 WIP), which is the newest cimplot commit. ImPlot 1.1 compiles and links against Dear ImGui 1.92.9b unchanged, and the whole ImPlot test suite passes. |
-| `third_party/tracy` is not cloned. | Tracy is optional. See 14.5. |
+| `third_party/tracy` is not cloned. Phase 3 clones it for profiling builds, 14.11. | Tracy is optional. See 14.5. |
 
 ### 14.2 Build
 
@@ -1037,8 +1139,8 @@ the test suite fires recover as designed.
 
 | Deviation | Reason |
 |---|---|
-| `Stats.frame.renderGpuNs` is always 0. | Section 9.2 asks for a `GL_TIMESTAMP` query pair. The GL entry points for timer queries live in the backend's private loader (`imgui_impl_opengl3_loader.h`), and a second GL loader inside the MEX for one counter was not worth it in phase 1. Everything else in 9.2 is recorded: per-opcode `calls`, `totalNs`, and `maxNs`, and per-frame `newFrameNs`, `renderCpuNs`, `drawCalls`, and `vertices`. |
-| `PSYCHIMGUI_TRACY` compiles the client but adds no zones. | The option sets `TRACY_ENABLE` and compiles `TracyClient.cpp` when `third_party/tracy` is present, but no `ZoneScopedN` or `FrameMark` call exists yet, and the clone is not there. Section 9.3 stays open. |
+| `Stats.frame.renderGpuNs` is always 0. Superseded in phase 3, section 14.11. | Section 9.2 asks for a `GL_TIMESTAMP` query pair. The GL entry points for timer queries live in the backend's private loader (`imgui_impl_opengl3_loader.h`), and a second GL loader inside the MEX for one counter was not worth it in phase 1. Everything else in 9.2 is recorded: per-opcode `calls`, `totalNs`, and `maxNs`, and per-frame `newFrameNs`, `renderCpuNs`, `drawCalls`, and `vertices`. |
+| `PSYCHIMGUI_TRACY` compiles the client but adds no zones. Superseded in phase 3, section 14.11. | The option sets `TRACY_ENABLE` and compiles `TracyClient.cpp` when `third_party/tracy` is present, but no `ZoneScopedN` or `FrameMark` call exists yet, and the clone is not there. Section 9.3 stays open. |
 
 Measured on the development machine (Windows 11, Intel Iris Xe, MSVC 19.44,
 Octave 10.1 with GCC 14.2), 200000 calls per case:
@@ -1144,3 +1246,103 @@ Octave 10.1, Psychtoolbox 3.0.22): the headless suite passes 754 of 754
 under MATLAB and under Octave; `test_gl_phase2` passes 29 of 29 with the
 OpenGL 3 backend and with the OpenGL 2 backend; `test_gl_render` and
 `test_gl_demo_gabor` still pass; `PsychImGuiDemo(120)` runs clean.
+
+### 14.11 Phase 3
+
+Several windows:
+
+| Deviation | Reason |
+|---|---|
+| A context handle is a double serial number, never reused in the process, and `Init` knows a context by its `win` argument. `Init` for a window that already has a context raises `psychimgui:AlreadyInit`; `Init` for another window makes a second context. | Every single-window script keeps working: it ignores the output of `Init`, and its second `Init` for the same window still raises. A serial number cannot match a newer context the way a reused slot or pointer could, which is the draw list rule of 14.10 applied to contexts. |
+| Eight contexts at most, in a fixed table, scanned linearly. | Section 8.1 has one static struct; eight of them cost no heap per context and cover an operator display plus a dual display stereo rig. A ninth `Init` raises `psychimgui:Context`. |
+| `GetContext` and `Shutdown(ctx)` and `Shutdown('all')` are new. `Shutdown` with no argument shuts down the current context and leaves none current; `Shutdown` of a handle that is already shut down does nothing. | A script with two windows has to name the next context itself, and a guess would send its widgets to the wrong window. `Shutdown` stays safe to repeat, as section 5.1 asks, so cleanup code can run it without knowing what an error left behind. `run_tests` uses `'all'`, because a test with several windows can leave more than one context, and the MEX has to unlock before the test stub leaves the path (14.6). |
+| Every GL subcommand compares the current platform GL context (`wglGetCurrentContext`, `glXGetCurrentContext`, `CGLGetCurrentContext`) with the one `Init` recorded, and raises `psychimgui:Context` on a mismatch. `NewFrame` is a GL subcommand now. | The task asked for the check at `Render`. `AddFontFromFileTTF`, `SetTextureFilter`, and `RenderAgain` touch the same objects, and `NewFrame` creates the OpenGL 3 backend's shader and font texture on the first frame, so a `NewFrame` in the wrong window would create them where the context's own window cannot see them. One behavior changes: with a real renderer, `NewFrame` outside `BeginOpenGL` now raises `psychimgui:NoGLContext`. Rule R1 already required the region. |
+| `Shutdown` deletes the backend's GL objects only when the GL context `Init` recorded is current, not whenever any context is. | In another window's context the same object names belong to that window, so the old rule would have deleted the other window's font texture. Measured in `test_gl_contexts`: a `Shutdown` of window A's context inside window B's region warns `psychimgui:NoGLContext`, and window B draws correctly afterwards. |
+| `SetContext` retires every draw list handle. Each context has its own row of Stats counters, and calls made with no context current count in a row of their own. | The draw list table of 14.10 is one per process; retiring it at a switch keeps a handle from one context from reaching another context's lists. |
+| The glyph range buffer of `AddFontFromFileTTF` is one per font of each context. | It was one static buffer. Dear ImGui 1.92 reads glyph ranges when it bakes a glyph, long after the call, so a second font, or a second context, overwrote the ranges of the first. |
+| The helper handle has two new fields, `ctx` and `stereo`, and every helper calls `SetContext` with `ctx` first. `PsychImGuiClose` shuts down its own context by handle. `PsychImGuiFrame('Begin')` with a closed handle raises `psychimgui:NotInit`, as it did in phase 1; `PsychImGuiGL` with a closed handle raises `psychimgui:InvalidHandle`. | A script with a handle per window then never switches contexts itself. The handle of an older script has no `ctx` field and uses the current context, as before. |
+
+Stereo:
+
+| Deviation | Reason |
+|---|---|
+| `RenderAgain` is the second submission, not a `Render` option. | The task offered either form. A separate subcommand keeps `Render`'s signature, and its opcode, unchanged, and makes the rule simple to check: legal from `Render` to the next `NewFrame` or `EndFrame`. |
+| `PsychImGuiFrame('End')` of a stereo window leaves the region `Begin` opened, then enters it again once per eye. | `SelectStereoDrawBuffer` is a `Screen` call and cannot run inside the region, and the eye that was selected at `Begin` is whatever the script drew last. The cost is one more `BeginOpenGL` and `EndOpenGL` pair per stereo frame. |
+| `test_gl_stereo` reads each eye with `Screen('GetImage', win, [], 'drawBuffer')` after `SelectStereoDrawBuffer`, not with `'backLeftBuffer'` and `'backRightBuffer'`. | `SCREENGetImage.c` accepts those two names only when the framebuffer is GL stereo or in modes 11 and 12. Measured in modes 4 and 8: `Screen` raises "Invalid or unknown 'bufferName'" and closes every window. `'drawBuffer'` reads the framebuffer object of the selected eye. A control frame that skips `RenderAgain` reads black in eye 1, so the check can fail. |
+| `PsychImGuiStereoDemo` picks mode 4 with two or more displays and mode 8 with one; mode 10 is available by argument. | Mode 10 needs each display to be a separate Psychtoolbox screen, which a Windows desktop spanning two monitors is not by default. Mode 4 needs one window across both displays, which screen 0 gives on Windows. |
+
+Profiling:
+
+| Deviation | Reason |
+|---|---|
+| The GPU timer runs in every build, not only with Tracy, and fills `Stats.frame.renderGpuNs`. It reports the most recent submission whose result has arrived, at least one submission old, and never waits: a slot still in flight when the ring of eight comes round is skipped. `RenderAgain` is timed as well. | Section 9.2 asked for it and 14.5 recorded it as missing. The entry points come from `wglGetProcAddress`, `glXGetProcAddressARB`, or `dlsym`, per context, after a check for OpenGL 3.3 or `GL_ARB_timer_query`; without them timing is off and no entry point is called, which is the case for the OpenGL 2.1 context of macOS. `PsychImGui('Version').gpuTimer` reports it. |
+| One Tracy CPU zone per dispatched call, from a table of source locations built once from the dispatch table, plus zones in `NewFrame`, `Render`, and `RenderAgain`. The InputText conversion has no zone of its own. | The per-call zone covers every subcommand without an allocation per call. A zone per conversion inside a call adds nothing a per-call zone does not show. The zone closes before the dispatch layer raises, because `mexErrMsgIdAndTxt` leaves by `longjmp` and would skip its destructor. |
+| One Tracy GPU zone, "Render (GPU)", per submission, emitted through Tracy's C API with the timer's own queries. | Tracy's `TracyOpenGL.hpp` needs its GL entry points from a loader; the timer above has them already. The GPU context id comes from Tracy's own counter, so it cannot collide with another GPU context in the process. |
+| `FrameMark` for the first context slot and `FrameMarkNamed` for the others. | Frames of a second window would otherwise cut into the timeline of the first. |
+| The Tracy client is built with `TRACY_DELAYED_INIT`, `TRACY_MANUAL_LIFETIME`, and `TRACY_NO_CRASH_HANDLER`, starts on the first MEX call, and stops in `mexAtExit`. `build.m` turns it on with the environment variable `PSYCHIMGUI_TRACY=1` and stops with the clone command when `third_party/tracy` is missing; CMake stops with the same command. | A MEX file is loaded and unloaded inside a long-running host, so static constructors are the wrong time to start threads. MATLAB's JVM raises access violations on purpose and handles them; the sibling PsychNanoVG project found that Tracy's crash handler takes the first one for a crash and hangs MATLAB in `Screen('CloseAll')`. With the handler off, MATLAB exited normally after the capture below. |
+
+Measured on the development machine (Windows 11, Intel Iris Xe, driver
+32.0.101.7088, OpenGL 4.6, MATLAB R2023a): a Tracy 0.11.1 capture of
+`PsychImGuiDemo(300)` at 640x480, read with a scratch program against
+Tracy's server library because `tracy-csvexport` 0.11.1 exports CPU zones
+only, gives "Render (GPU)" a median of 147 us per frame (minimum 142 us, 95th
+percentile 153 us, maximum 174 us, 299 frames). The CPU `Render` zone has a
+mean of 0.88 ms in the same capture. The timestamp queries alone, through
+`Stats`, read 43 us for the 12 vertex panel of `test_gl_contexts` and 38 us
+for the `smoke_gl` frame. With Tracy off, `perf_dispatch` measures `Button`
+at 0.155 us inside the MEX, against 0.14 us in 14.5.
+
+ImPlot3D:
+
+| Deviation | Reason |
+|---|---|
+| `third_party/cimplot3d` and `third_party/ImGuiFileDialog` are plain clones pinned in `PINS.md`, not submodules. `tools/fetch_third_party.sh` clones each missing dependency, and `build.m` stops with the command when one is missing. | The repository owner converts clones to submodules. The CI fetch step already runs the script in every job, so the workflow needs no change. |
+| The allowlist binds 37 subcommands, not the whole API. | The task named a curated set. Left out: `PlotImage` (an `ImTextureRef`, section 5.7 would apply), the quaternion forms of the box rotation, custom formatters and transforms, and `AddColormap`. |
+| `PlotSurface` takes `X`, `Y`, `Z` as matrices of one size and reads `x_count` and `y_count` from the shape of `X`. | ImPlot3D takes the counts as arguments. The shape of a `meshgrid` matrix already says them, and a count that disagreed with the arrays would read past their end. |
+| `PlotMesh` takes an Mx3 matrix of 1-based vertex indices, any numeric class, and copies it into a transposed, 0-based `unsigned` list, on the stack up to 1024 triangles. Every index is checked against the vertex count. | This is the one copy in the plot data path. It is the `Faces` convention of `patch` and `delaunay`, which is column major and 1-based, while ImPlot3D reads three consecutive 0-based indices per triangle. ImPlot3D indexes the vertex arrays without a check, so an index out of range would read outside the MATLAB array; it raises `psychimgui:Range` instead. |
+| The trailing spec pairs map onto `ImPlot3DSpec`, which has no `Size` field; `Marker` takes `ImPlot3DMarker_` names. | The ImPlot3D struct differs from `ImPlotSpec` in exactly these two ways. The data rules moved to `src/plotdata_marshal.h`, shared by both extensions, so either builds without the other. |
+| ImPlot and ImPlot3D subcommands that need an open plot raise `psychimgui:Usage` outside `BeginPlot` and `EndPlot`. `ImPlot3D.SetupBoxScale` raises `psychimgui:Range` for a scale that is not positive. | Both libraries guard these with `IM_ASSERT_USER_ERROR` and then dereference the current plot, which is null there; the deferred assert of section 8.3 returns, so the host crashed. For ImPlot this is a change against phases 1.5 and 2, from a crash to an error. A zero scale passes ImPlot3D's assert and then turns every vertex into NaN. |
+
+ImGuiFileDialog:
+
+| Deviation | Reason |
+|---|---|
+| Eight subcommands, not five. `IsOpened` and `GetCurrentPath` are added. | `IsOpened` lets a script keep a button disabled while its dialog is open, and `GetCurrentPath` makes the UTF-8 path round trip testable without a user. |
+| `Display` returns `[done, open]`. `done` is ImGuiFileDialog's own result, true on the frame the user presses OK or Cancel; `open` is true while the dialog stays open. | The task described the return as whether the dialog is still open. ImGuiFileDialog's documented loop reads its own result, `if Display(...) ... Close()`, so the first output keeps that meaning and the second output gives the other. |
+| On Windows the dialog lists folders with `std::filesystem`; on Linux and macOS with POSIX `dirent`. `src/igfd_config_psych.h` sets this. | The `dirent` shim ImGuiFileDialog ships for Windows converts names with the process code page, so a name outside it cannot be opened again; `std::filesystem` goes through the wide API. MSVC 2022 and the MinGW g++ 14 of Octave 10.1 both have it. On Linux the names are UTF-8 bytes already, and leaving `std::filesystem` out keeps the MEX independent of the libstdc++ that MATLAB loads, which can be older than the compiler's. Measured: a folder named with U+00FC and U+20AC comes back from `GetCurrentPath` unchanged under MATLAB and Octave on Windows and under Octave 6.4 on Linux. |
+| ImGuiFileDialog compiles into the static library through `src/core/igfd_unit.cpp`, and the core owns the dialog objects through two functions in that file. | `ImGuiFileDialog.h` needs `IMGUI_DEFINE_MATH_OPERATORS` before the first `imgui.h` of a unit, and the core includes `imgui.h` first. Its flag names come into the enum table from its header, because it has no JSON metadata. |
+| Exceptions from ImGuiFileDialog, for example `std::regex_error` from a filter, become `psychimgui:Usage`. | An exception must not cross the MEX boundary. |
+
+Other:
+
+| Deviation | Reason |
+|---|---|
+| The opcode numbers of many subcommands changed. | The new names sort into the one table. `PsychImGuiOp` is generated from the same table, as section 9.1 says. |
+| `tests/gl/test_gl_render.m` and `test_gl_demo_gabor.m` skip when `Screen` does not load, as `test_gl_phase2` does. `tests/gl/ptb_test_window.m` takes a stereo mode, a screen, and `'full'`. | They counted a `Screen` that does not load under Octave on Windows as a failure. |
+| `tools/smoke_gl.cpp` opens a second context in the same GL context, interleaves frames, and submits each frame twice. | The Linux CI job runs `smoke_gl` against Mesa, which is the only GL coverage CI has for the context switch and `RenderAgain`. |
+| `PsychImGuiDemo(n, opts)` takes a window rectangle, a capture file, and an animated contrast, and `tools/CaptureReadmeScreenshot.m` makes `docs/images/psychimgui-demo.png` with them at 1280x720. | The README shows the demo, and the image has to be reproducible after the look of the GUI changes. The release zips do not carry it. |
+
+ImAnim stays out of phase 3. Section 5.4 put it in phase 3 on the condition
+that a libclang generator path exists, and none does: the generator reads
+cimgui-family JSON with the standard library only, and ImAnim publishes
+neither JSON nor a cimgui-family binding. Its C-style `iam_*` API has about
+200 functions that pass and return structs, far past the ten functions that
+section 5.4 allows for a hand-written binding, and its motion path API is a
+fluent C++ class that no rule of section 7.3 can express. What it offers an
+experiment, easing curves and springs for GUI transitions, MATLAB can compute
+itself and pass in as values. It becomes worth binding when either a
+cimgui-family repository publishes `definitions.json` for it, so the existing
+generator applies unchanged, or the generator gains a libclang front end,
+which would also open the other extensions of section 5.4 that lack metadata.
+
+Phase 3 results on the development machine (Windows 11, MATLAB R2023a,
+Octave 10.1, Psychtoolbox 3.0.22): the headless suite passes 918 of 918
+under MATLAB, under Octave 10.1 on Windows, and under Octave 6.4 with g++ 11
+in WSL Ubuntu 22.04. The 754 tests of phase 2 are among them, unchanged. The
+GL tests pass under MATLAB: `test_gl_render` 18 of 18, `test_gl_demo_gabor`
+6 of 6, `test_gl_phase2` 29 of 29 with each backend, `test_gl_contexts` 14 of
+14, `test_gl_stereo` 12 of 12, and `test_gl_implot3d` 6 of 6 with each
+backend. Under Octave, where `Screen` does not load on this machine, all six
+skip. `smoke_gl` passes with the OpenGL 3 backend, the OpenGL 2 backend, and
+the headless path. `PsychImGuiDemo` and `PsychImGuiStereoDemo` in modes 4 and
+8 run clean.

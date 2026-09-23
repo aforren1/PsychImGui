@@ -4,3 +4,9 @@
 [submodule "third_party/cimplot"]
 	path = third_party/cimplot
 	url = https://github.com/cimgui/cimplot
+[submodule "third_party/ImGuiFileDialog"]
+	path = third_party/ImGuiFileDialog
+	url = https://github.com/aiekick/ImGuiFileDialog
+[submodule "third_party/cimplot3d"]
+	path = third_party/cimplot3d
+	url = https://github.com/cimgui/cimplot3d

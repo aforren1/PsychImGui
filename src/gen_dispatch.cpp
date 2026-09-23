@@ -17,12 +17,23 @@ void bi_EndFrame(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_Image(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_ImageButton(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_Enum(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+void bi_FileDialogClose(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+void bi_FileDialogDisplay(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+void bi_FileDialogGetCurrentPath(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+void bi_FileDialogGetFilePathName(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+void bi_FileDialogGetSelection(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+void bi_FileDialogIsOk(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+void bi_FileDialogIsOpened(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+void bi_FileDialogOpen(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+void bi_GetContext(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_Init(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_NewFrame(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_Opcode(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_PopFont(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_PushFont(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_Render(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+void bi_RenderAgain(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+void bi_SetContext(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_SetGlobalScale(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_SetTextureFilter(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_ShowDemoWindow(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
@@ -2389,7 +2400,7 @@ void h_ShowMetricsWindow(int nlhs, mxArray** plhs, int nargin, const mxArray** a
 extern const char kSig_ShowMetricsWindow[];
 }  // namespace pig_implot
 #else
-static void h_implot_unavailable(int, mxArray**, int, const mxArray**) {
+static void h_pig_implot_unavailable(int, mxArray**, int, const mxArray**) {
     mrs::fail("psychimgui:UnknownCommand",
               "This build has ImPlot disabled. Rebuild with -DPSYCHIMGUI_IMPLOT=ON.");
 }
@@ -2463,9 +2474,135 @@ static const char kSig_ShowMetricsWindow[] = "ImPlot.ShowMetricsWindow: not comp
 }  // namespace pig_implot
 #endif
 
+#ifdef PSYCHIMGUI_IMPLOT3D
+namespace pig_implot3d {
+void h_BeginPlot(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_BeginPlot[];
+void h_EndPlot(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_EndPlot[];
+void h_SetupAxis(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_SetupAxis[];
+void h_SetupAxes(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_SetupAxes[];
+void h_SetupAxisLimits(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_SetupAxisLimits[];
+void h_SetupAxesLimits(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_SetupAxesLimits[];
+void h_SetupAxisTicks(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_SetupAxisTicks[];
+void h_SetupBoxRotation(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_SetupBoxRotation[];
+void h_SetupBoxScale(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_SetupBoxScale[];
+void h_SetupLegend(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_SetupLegend[];
+void h_PlotLine(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_PlotLine[];
+void h_PlotScatter(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_PlotScatter[];
+void h_PlotTriangle(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_PlotTriangle[];
+void h_PlotQuad(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_PlotQuad[];
+void h_PlotSurface(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_PlotSurface[];
+void h_PlotMesh(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_PlotMesh[];
+void h_PlotText(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_PlotText[];
+void h_PlotToPixels(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_PlotToPixels[];
+void h_GetPlotRectPos(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_GetPlotRectPos[];
+void h_GetPlotRectSize(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_GetPlotRectSize[];
+void h_PushColormap(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_PushColormap[];
+void h_PushColormapIndex(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_PushColormapIndex[];
+void h_PopColormap(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_PopColormap[];
+void h_GetColormapCount(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_GetColormapCount[];
+void h_GetColormapName(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_GetColormapName[];
+void h_SampleColormap(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_SampleColormap[];
+void h_StyleColorsAuto(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_StyleColorsAuto[];
+void h_StyleColorsDark(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_StyleColorsDark[];
+void h_StyleColorsLight(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_StyleColorsLight[];
+void h_StyleColorsClassic(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_StyleColorsClassic[];
+void h_PushStyleColor(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_PushStyleColor[];
+void h_PopStyleColor(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_PopStyleColor[];
+void h_PushStyleVar(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_PushStyleVar[];
+void h_PushStyleVarVec2(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_PushStyleVarVec2[];
+void h_PopStyleVar(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_PopStyleVar[];
+void h_ShowDemoWindow(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_ShowDemoWindow[];
+void h_ShowMetricsWindow(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_ShowMetricsWindow[];
+}  // namespace pig_implot3d
+#else
+static void h_pig_implot3d_unavailable(int, mxArray**, int, const mxArray**) {
+    mrs::fail("psychimgui:UnknownCommand",
+              "This build has ImPlot3D disabled. Rebuild with -DPSYCHIMGUI_IMPLOT3D=ON.");
+}
+namespace pig_implot3d {
+static const char kSig_BeginPlot[] = "ImPlot3D.BeginPlot: not compiled in";
+static const char kSig_EndPlot[] = "ImPlot3D.EndPlot: not compiled in";
+static const char kSig_SetupAxis[] = "ImPlot3D.SetupAxis: not compiled in";
+static const char kSig_SetupAxes[] = "ImPlot3D.SetupAxes: not compiled in";
+static const char kSig_SetupAxisLimits[] = "ImPlot3D.SetupAxisLimits: not compiled in";
+static const char kSig_SetupAxesLimits[] = "ImPlot3D.SetupAxesLimits: not compiled in";
+static const char kSig_SetupAxisTicks[] = "ImPlot3D.SetupAxisTicks: not compiled in";
+static const char kSig_SetupBoxRotation[] = "ImPlot3D.SetupBoxRotation: not compiled in";
+static const char kSig_SetupBoxScale[] = "ImPlot3D.SetupBoxScale: not compiled in";
+static const char kSig_SetupLegend[] = "ImPlot3D.SetupLegend: not compiled in";
+static const char kSig_PlotLine[] = "ImPlot3D.PlotLine: not compiled in";
+static const char kSig_PlotScatter[] = "ImPlot3D.PlotScatter: not compiled in";
+static const char kSig_PlotTriangle[] = "ImPlot3D.PlotTriangle: not compiled in";
+static const char kSig_PlotQuad[] = "ImPlot3D.PlotQuad: not compiled in";
+static const char kSig_PlotSurface[] = "ImPlot3D.PlotSurface: not compiled in";
+static const char kSig_PlotMesh[] = "ImPlot3D.PlotMesh: not compiled in";
+static const char kSig_PlotText[] = "ImPlot3D.PlotText: not compiled in";
+static const char kSig_PlotToPixels[] = "ImPlot3D.PlotToPixels: not compiled in";
+static const char kSig_GetPlotRectPos[] = "ImPlot3D.GetPlotRectPos: not compiled in";
+static const char kSig_GetPlotRectSize[] = "ImPlot3D.GetPlotRectSize: not compiled in";
+static const char kSig_PushColormap[] = "ImPlot3D.PushColormap: not compiled in";
+static const char kSig_PushColormapIndex[] = "ImPlot3D.PushColormapIndex: not compiled in";
+static const char kSig_PopColormap[] = "ImPlot3D.PopColormap: not compiled in";
+static const char kSig_GetColormapCount[] = "ImPlot3D.GetColormapCount: not compiled in";
+static const char kSig_GetColormapName[] = "ImPlot3D.GetColormapName: not compiled in";
+static const char kSig_SampleColormap[] = "ImPlot3D.SampleColormap: not compiled in";
+static const char kSig_StyleColorsAuto[] = "ImPlot3D.StyleColorsAuto: not compiled in";
+static const char kSig_StyleColorsDark[] = "ImPlot3D.StyleColorsDark: not compiled in";
+static const char kSig_StyleColorsLight[] = "ImPlot3D.StyleColorsLight: not compiled in";
+static const char kSig_StyleColorsClassic[] = "ImPlot3D.StyleColorsClassic: not compiled in";
+static const char kSig_PushStyleColor[] = "ImPlot3D.PushStyleColor: not compiled in";
+static const char kSig_PopStyleColor[] = "ImPlot3D.PopStyleColor: not compiled in";
+static const char kSig_PushStyleVar[] = "ImPlot3D.PushStyleVar: not compiled in";
+static const char kSig_PushStyleVarVec2[] = "ImPlot3D.PushStyleVarVec2: not compiled in";
+static const char kSig_PopStyleVar[] = "ImPlot3D.PopStyleVar: not compiled in";
+static const char kSig_ShowDemoWindow[] = "ImPlot3D.ShowDemoWindow: not compiled in";
+static const char kSig_ShowMetricsWindow[] = "ImPlot3D.ShowMetricsWindow: not compiled in";
+}  // namespace pig_implot3d
+#endif
+
 namespace {
 struct EnumEntry { const char* name; double value; };
 const EnumEntry kEnumTable[] = {
+    {"ImAxis3D_X", 0.0},
+    {"ImAxis3D_Y", 1.0},
+    {"ImAxis3D_Z", 2.0},
     {"ImAxis_X1", 0.0},
     {"ImAxis_X2", 1.0},
     {"ImAxis_X3", 2.0},
@@ -2689,6 +2826,24 @@ const EnumEntry kEnumTable[] = {
     {"ImGuiDragDropFlags_SourceNoDisableHover", 2.0},
     {"ImGuiDragDropFlags_SourceNoHoldToOpenOthers", 4.0},
     {"ImGuiDragDropFlags_SourceNoPreviewTooltip", 1.0},
+    {"ImGuiFileDialogFlags_CaseInsensitiveExtentionFiltering", 256.0},
+    {"ImGuiFileDialogFlags_ConfirmOverwrite", 1.0},
+    {"ImGuiFileDialogFlags_Default", 521.0},
+    {"ImGuiFileDialogFlags_DisableCreateDirectoryButton", 4.0},
+    {"ImGuiFileDialogFlags_DisablePlaceMode", 2048.0},
+    {"ImGuiFileDialogFlags_DisableQuickPathSelection", 4096.0},
+    {"ImGuiFileDialogFlags_DisableThumbnailMode", 1024.0},
+    {"ImGuiFileDialogFlags_DontShowHiddenFiles", 2.0},
+    {"ImGuiFileDialogFlags_HideColumnDate", 32.0},
+    {"ImGuiFileDialogFlags_HideColumnSize", 16.0},
+    {"ImGuiFileDialogFlags_HideColumnType", 8.0},
+    {"ImGuiFileDialogFlags_Modal", 512.0},
+    {"ImGuiFileDialogFlags_NaturalSorting", 16384.0},
+    {"ImGuiFileDialogFlags_NoDialog", 64.0},
+    {"ImGuiFileDialogFlags_None", 0.0},
+    {"ImGuiFileDialogFlags_OptionalFileName", 32768.0},
+    {"ImGuiFileDialogFlags_ReadOnlyFileNameField", 128.0},
+    {"ImGuiFileDialogFlags_ShowDevicesButton", 8192.0},
     {"ImGuiFocusedFlags_AnyWindow", 4.0},
     {"ImGuiFocusedFlags_ChildWindows", 1.0},
     {"ImGuiFocusedFlags_DockHierarchy", 16.0},
@@ -3224,6 +3379,162 @@ const EnumEntry kEnumTable[] = {
     {"ImGuiWindowFlags_Popup", 67108864.0},
     {"ImGuiWindowFlags_Tooltip", 33554432.0},
     {"ImGuiWindowFlags_UnsavedDocument", 262144.0},
+    {"ImPlane3D_XY", 2.0},
+    {"ImPlane3D_XZ", 1.0},
+    {"ImPlane3D_YZ", 0.0},
+    {"ImPlot3DAxisFlags_AutoFit", 64.0},
+    {"ImPlot3DAxisFlags_Invert", 128.0},
+    {"ImPlot3DAxisFlags_Lock", 48.0},
+    {"ImPlot3DAxisFlags_LockMax", 32.0},
+    {"ImPlot3DAxisFlags_LockMin", 16.0},
+    {"ImPlot3DAxisFlags_NoDecorations", 11.0},
+    {"ImPlot3DAxisFlags_NoGridLines", 2.0},
+    {"ImPlot3DAxisFlags_NoLabel", 1.0},
+    {"ImPlot3DAxisFlags_NoTickLabels", 8.0},
+    {"ImPlot3DAxisFlags_NoTickMarks", 4.0},
+    {"ImPlot3DAxisFlags_None", 0.0},
+    {"ImPlot3DAxisFlags_PanStretch", 256.0},
+    {"ImPlot3DCol_AxisBg", 11.0},
+    {"ImPlot3DCol_AxisBgActive", 13.0},
+    {"ImPlot3DCol_AxisBgHovered", 12.0},
+    {"ImPlot3DCol_AxisGrid", 9.0},
+    {"ImPlot3DCol_AxisText", 8.0},
+    {"ImPlot3DCol_AxisTick", 10.0},
+    {"ImPlot3DCol_FrameBg", 2.0},
+    {"ImPlot3DCol_InlayText", 1.0},
+    {"ImPlot3DCol_LegendBg", 5.0},
+    {"ImPlot3DCol_LegendBorder", 6.0},
+    {"ImPlot3DCol_LegendText", 7.0},
+    {"ImPlot3DCol_PlotBg", 3.0},
+    {"ImPlot3DCol_PlotBorder", 4.0},
+    {"ImPlot3DCol_TitleText", 0.0},
+    {"ImPlot3DColormap_BrBG", 12.0},
+    {"ImPlot3DColormap_Cool", 7.0},
+    {"ImPlot3DColormap_Dark", 1.0},
+    {"ImPlot3DColormap_Deep", 0.0},
+    {"ImPlot3DColormap_Greys", 15.0},
+    {"ImPlot3DColormap_Hot", 6.0},
+    {"ImPlot3DColormap_Jet", 9.0},
+    {"ImPlot3DColormap_Paired", 3.0},
+    {"ImPlot3DColormap_Pastel", 2.0},
+    {"ImPlot3DColormap_PiYG", 13.0},
+    {"ImPlot3DColormap_Pink", 8.0},
+    {"ImPlot3DColormap_Plasma", 5.0},
+    {"ImPlot3DColormap_RdBu", 11.0},
+    {"ImPlot3DColormap_Spectral", 14.0},
+    {"ImPlot3DColormap_Twilight", 10.0},
+    {"ImPlot3DColormap_Viridis", 4.0},
+    {"ImPlot3DCond_Always", 1.0},
+    {"ImPlot3DCond_None", 0.0},
+    {"ImPlot3DCond_Once", 2.0},
+    {"ImPlot3DDummyFlags_None", 0.0},
+    {"ImPlot3DFlags_CanvasOnly", 7.0},
+    {"ImPlot3DFlags_Equal", 32.0},
+    {"ImPlot3DFlags_NoClip", 8.0},
+    {"ImPlot3DFlags_NoInputs", 512.0},
+    {"ImPlot3DFlags_NoLegend", 2.0},
+    {"ImPlot3DFlags_NoMenus", 16.0},
+    {"ImPlot3DFlags_NoMouseText", 4.0},
+    {"ImPlot3DFlags_NoPan", 128.0},
+    {"ImPlot3DFlags_NoRotate", 64.0},
+    {"ImPlot3DFlags_NoTitle", 1.0},
+    {"ImPlot3DFlags_NoZoom", 256.0},
+    {"ImPlot3DFlags_None", 0.0},
+    {"ImPlot3DImageFlags_NoFit", 2.0},
+    {"ImPlot3DImageFlags_NoLegend", 1.0},
+    {"ImPlot3DImageFlags_None", 0.0},
+    {"ImPlot3DItemFlags_NoFit", 2.0},
+    {"ImPlot3DItemFlags_NoLegend", 1.0},
+    {"ImPlot3DItemFlags_None", 0.0},
+    {"ImPlot3DLegendFlags_Horizontal", 4.0},
+    {"ImPlot3DLegendFlags_NoButtons", 1.0},
+    {"ImPlot3DLegendFlags_NoHighlightItem", 2.0},
+    {"ImPlot3DLegendFlags_None", 0.0},
+    {"ImPlot3DLineFlags_Loop", 2048.0},
+    {"ImPlot3DLineFlags_NoFit", 2.0},
+    {"ImPlot3DLineFlags_NoLegend", 1.0},
+    {"ImPlot3DLineFlags_None", 0.0},
+    {"ImPlot3DLineFlags_Segments", 1024.0},
+    {"ImPlot3DLineFlags_SkipNaN", 4096.0},
+    {"ImPlot3DLocation_Center", 0.0},
+    {"ImPlot3DLocation_East", 8.0},
+    {"ImPlot3DLocation_North", 1.0},
+    {"ImPlot3DLocation_NorthEast", 9.0},
+    {"ImPlot3DLocation_NorthWest", 5.0},
+    {"ImPlot3DLocation_South", 2.0},
+    {"ImPlot3DLocation_SouthEast", 10.0},
+    {"ImPlot3DLocation_SouthWest", 6.0},
+    {"ImPlot3DLocation_West", 4.0},
+    {"ImPlot3DMarker_Asterisk", 9.0},
+    {"ImPlot3DMarker_Auto", -1.0},
+    {"ImPlot3DMarker_Circle", 0.0},
+    {"ImPlot3DMarker_Cross", 7.0},
+    {"ImPlot3DMarker_Diamond", 2.0},
+    {"ImPlot3DMarker_Down", 4.0},
+    {"ImPlot3DMarker_Left", 5.0},
+    {"ImPlot3DMarker_None", -2.0},
+    {"ImPlot3DMarker_Plus", 8.0},
+    {"ImPlot3DMarker_Right", 6.0},
+    {"ImPlot3DMarker_Square", 1.0},
+    {"ImPlot3DMarker_Up", 3.0},
+    {"ImPlot3DMeshFlags_NoFill", 2048.0},
+    {"ImPlot3DMeshFlags_NoFit", 2.0},
+    {"ImPlot3DMeshFlags_NoLegend", 1.0},
+    {"ImPlot3DMeshFlags_NoLines", 1024.0},
+    {"ImPlot3DMeshFlags_NoMarkers", 4096.0},
+    {"ImPlot3DMeshFlags_None", 0.0},
+    {"ImPlot3DProp_FillAlpha", 5.0},
+    {"ImPlot3DProp_FillColor", 3.0},
+    {"ImPlot3DProp_FillColors", 4.0},
+    {"ImPlot3DProp_Flags", 15.0},
+    {"ImPlot3DProp_LineColor", 0.0},
+    {"ImPlot3DProp_LineColors", 1.0},
+    {"ImPlot3DProp_LineWeight", 2.0},
+    {"ImPlot3DProp_Marker", 6.0},
+    {"ImPlot3DProp_MarkerFillColor", 11.0},
+    {"ImPlot3DProp_MarkerFillColors", 12.0},
+    {"ImPlot3DProp_MarkerLineColor", 9.0},
+    {"ImPlot3DProp_MarkerLineColors", 10.0},
+    {"ImPlot3DProp_MarkerSize", 7.0},
+    {"ImPlot3DProp_MarkerSizes", 8.0},
+    {"ImPlot3DProp_Offset", 13.0},
+    {"ImPlot3DProp_Stride", 14.0},
+    {"ImPlot3DQuadFlags_NoFill", 2048.0},
+    {"ImPlot3DQuadFlags_NoFit", 2.0},
+    {"ImPlot3DQuadFlags_NoLegend", 1.0},
+    {"ImPlot3DQuadFlags_NoLines", 1024.0},
+    {"ImPlot3DQuadFlags_NoMarkers", 4096.0},
+    {"ImPlot3DQuadFlags_None", 0.0},
+    {"ImPlot3DScale_Linear", 0.0},
+    {"ImPlot3DScale_Log10", 1.0},
+    {"ImPlot3DScale_SymLog", 2.0},
+    {"ImPlot3DScatterFlags_NoFit", 2.0},
+    {"ImPlot3DScatterFlags_NoLegend", 1.0},
+    {"ImPlot3DScatterFlags_None", 0.0},
+    {"ImPlot3DStyleVar_FillAlpha", 3.0},
+    {"ImPlot3DStyleVar_LabelPadding", 7.0},
+    {"ImPlot3DStyleVar_LegendInnerPadding", 10.0},
+    {"ImPlot3DStyleVar_LegendPadding", 9.0},
+    {"ImPlot3DStyleVar_LegendSpacing", 11.0},
+    {"ImPlot3DStyleVar_LineWeight", 0.0},
+    {"ImPlot3DStyleVar_Marker", 1.0},
+    {"ImPlot3DStyleVar_MarkerSize", 2.0},
+    {"ImPlot3DStyleVar_PlotDefaultSize", 4.0},
+    {"ImPlot3DStyleVar_PlotMinSize", 5.0},
+    {"ImPlot3DStyleVar_PlotPadding", 6.0},
+    {"ImPlot3DStyleVar_ViewScaleFactor", 8.0},
+    {"ImPlot3DSurfaceFlags_NoFill", 2048.0},
+    {"ImPlot3DSurfaceFlags_NoFit", 2.0},
+    {"ImPlot3DSurfaceFlags_NoLegend", 1.0},
+    {"ImPlot3DSurfaceFlags_NoLines", 1024.0},
+    {"ImPlot3DSurfaceFlags_NoMarkers", 4096.0},
+    {"ImPlot3DSurfaceFlags_None", 0.0},
+    {"ImPlot3DTriangleFlags_NoFill", 2048.0},
+    {"ImPlot3DTriangleFlags_NoFit", 2.0},
+    {"ImPlot3DTriangleFlags_NoLegend", 1.0},
+    {"ImPlot3DTriangleFlags_NoLines", 1024.0},
+    {"ImPlot3DTriangleFlags_NoMarkers", 4096.0},
+    {"ImPlot3DTriangleFlags_None", 0.0},
     {"ImPlotAxisFlags_AutoFit", 2048.0},
     {"ImPlotAxisFlags_AuxDefault", 258.0},
     {"ImPlotAxisFlags_Foreground", 512.0},
@@ -3445,7 +3756,7 @@ const EnumEntry kEnumTable[] = {
     {"ImTextureStatus_WantDestroy", 4.0},
     {"ImTextureStatus_WantUpdates", 3.0},
 };
-const int kEnumCount = 978;
+const int kEnumCount = 1155;
 }  // namespace
 
 namespace mrs {
@@ -3469,17 +3780,28 @@ static const char kSigBi_EndFrame[] = "PsychImGui('EndFrame')";
 static const char kSigBi_Image[] = "PsychImGui('Image', tex, size [, uv0=[0 0]] [, uv1=[1 1]] [, bgCol=[0 0 0 0]] [, tintCol=[1 1 1 1]])";
 static const char kSigBi_ImageButton[] = "pressed = PsychImGui('ImageButton', strId, tex, size [, uv0=[0 0]] [, uv1=[1 1]] [, bgCol=[0 0 0 0]] [, tintCol=[1 1 1 1]])";
 static const char kSigBi_Enum[] = "v = PsychImGui('Enum' [, 'ImGuiWindowFlags_NoTitleBar'])";
-static const char kSigBi_Init[] = "PsychImGui('Init', win, rect, keymap [, opts])";
+static const char kSigBi_FileDialog_Close[] = "PsychImGui('FileDialog.Close')";
+static const char kSigBi_FileDialog_Display[] = "[done, open] = PsychImGui('FileDialog.Display', key [, minSize=[0 0]] [, maxSize=[FLT_MAX FLT_MAX]] [, windowFlags=ImGuiWindowFlags_NoCollapse])";
+static const char kSigBi_FileDialog_GetCurrentPath[] = "path = PsychImGui('FileDialog.GetCurrentPath')";
+static const char kSigBi_FileDialog_GetFilePathName[] = "path = PsychImGui('FileDialog.GetFilePathName')";
+static const char kSigBi_FileDialog_GetSelection[] = "paths = PsychImGui('FileDialog.GetSelection')";
+static const char kSigBi_FileDialog_IsOk[] = "ok = PsychImGui('FileDialog.IsOk')";
+static const char kSigBi_FileDialog_IsOpened[] = "open = PsychImGui('FileDialog.IsOpened' [, key])";
+static const char kSigBi_FileDialog_Open[] = "PsychImGui('FileDialog.Open', key, title, filters [, path='.'] [, fileName=''] [, maxSelection=1] [, flags=0])";
+static const char kSigBi_GetContext[] = "[ctx, all] = PsychImGui('GetContext')";
+static const char kSigBi_Init[] = "ctx = PsychImGui('Init', win, rect, keymap [, opts])";
 static const char kSigBi_NewFrame[] = "PsychImGui('NewFrame', in)";
 static const char kSigBi_Opcode[] = "op = PsychImGui('Opcode', 'SliderFloat')";
 static const char kSigBi_PopFont[] = "PsychImGui('PopFont')";
 static const char kSigBi_PushFont[] = "PsychImGui('PushFont', idx [, sizePx])";
 static const char kSigBi_Render[] = "PsychImGui('Render')";
+static const char kSigBi_RenderAgain[] = "PsychImGui('RenderAgain')";
+static const char kSigBi_SetContext[] = "PsychImGui('SetContext', ctx)";
 static const char kSigBi_SetGlobalScale[] = "PsychImGui('SetGlobalScale', s)";
 static const char kSigBi_SetTextureFilter[] = "PsychImGui('SetTextureFilter', glId [, mode='linear'])";
 static const char kSigBi_ShowDemoWindow[] = "[open] = PsychImGui('ShowDemoWindow' [, open])";
 static const char kSigBi_ShowMetricsWindow[] = "[open] = PsychImGui('ShowMetricsWindow' [, open])";
-static const char kSigBi_Shutdown[] = "PsychImGui('Shutdown')";
+static const char kSigBi_Shutdown[] = "PsychImGui('Shutdown' [, ctx | 'all'])";
 static const char kSigBi_Stats[] = "s = PsychImGui('Stats' [, 'reset'])";
 static const char kSigBi_StyleColorsClassic[] = "PsychImGui('StyleColorsClassic')";
 static const char kSigBi_StyleColorsDark[] = "PsychImGui('StyleColorsDark')";
@@ -3490,7 +3812,12 @@ static const char kSigBi_WantCapture[] = "[mouse, keyboard, text] = PsychImGui('
 #ifdef PSYCHIMGUI_IMPLOT
 #  define PIG_IMPLOT_FN(x) x
 #else
-#  define PIG_IMPLOT_FN(x) h_implot_unavailable
+#  define PIG_IMPLOT_FN(x) h_pig_implot_unavailable
+#endif
+#ifdef PSYCHIMGUI_IMPLOT3D
+#  define PIG_IMPLOT3D_FN(x) x
+#else
+#  define PIG_IMPLOT3D_FN(x) h_pig_implot3d_unavailable
 #endif
 
 namespace pig {
@@ -3555,8 +3882,17 @@ const Entry kTable[] = {
     {"EndTable", h_EndTable, kSig_EndTable, kEntryNeedsInit},
     {"EndTooltip", h_EndTooltip, kSig_EndTooltip, kEntryNeedsInit},
     {"Enum", bi_Enum, kSigBi_Enum, 0},
+    {"FileDialog.Close", bi_FileDialogClose, kSigBi_FileDialog_Close, kEntryNeedsInit},
+    {"FileDialog.Display", bi_FileDialogDisplay, kSigBi_FileDialog_Display, kEntryNeedsInit},
+    {"FileDialog.GetCurrentPath", bi_FileDialogGetCurrentPath, kSigBi_FileDialog_GetCurrentPath, kEntryNeedsInit},
+    {"FileDialog.GetFilePathName", bi_FileDialogGetFilePathName, kSigBi_FileDialog_GetFilePathName, kEntryNeedsInit},
+    {"FileDialog.GetSelection", bi_FileDialogGetSelection, kSigBi_FileDialog_GetSelection, kEntryNeedsInit},
+    {"FileDialog.IsOk", bi_FileDialogIsOk, kSigBi_FileDialog_IsOk, kEntryNeedsInit},
+    {"FileDialog.IsOpened", bi_FileDialogIsOpened, kSigBi_FileDialog_IsOpened, kEntryNeedsInit},
+    {"FileDialog.Open", bi_FileDialogOpen, kSigBi_FileDialog_Open, kEntryNeedsInit},
     {"GetBackgroundDrawList", h_GetBackgroundDrawList, kSig_GetBackgroundDrawList, kEntryNeedsInit},
     {"GetContentRegionAvail", h_GetContentRegionAvail, kSig_GetContentRegionAvail, kEntryNeedsInit},
+    {"GetContext", bi_GetContext, kSigBi_GetContext, 0},
     {"GetCursorScreenPos", h_GetCursorScreenPos, kSig_GetCursorScreenPos, kEntryNeedsInit},
     {"GetForegroundDrawList", h_GetForegroundDrawList, kSig_GetForegroundDrawList, kEntryNeedsInit},
     {"GetFrameCount", h_GetFrameCount, kSig_GetFrameCount, kEntryNeedsInit},
@@ -3633,6 +3969,43 @@ const Entry kTable[] = {
     {"ImPlot.StyleColorsLight", PIG_IMPLOT_FN(pig_implot::h_StyleColorsLight), pig_implot::kSig_StyleColorsLight, kEntryNeedsInit},
     {"ImPlot.TagX", PIG_IMPLOT_FN(pig_implot::h_TagX), pig_implot::kSig_TagX, kEntryNeedsInit},
     {"ImPlot.TagY", PIG_IMPLOT_FN(pig_implot::h_TagY), pig_implot::kSig_TagY, kEntryNeedsInit},
+    {"ImPlot3D.BeginPlot", PIG_IMPLOT3D_FN(pig_implot3d::h_BeginPlot), pig_implot3d::kSig_BeginPlot, kEntryNeedsInit},
+    {"ImPlot3D.EndPlot", PIG_IMPLOT3D_FN(pig_implot3d::h_EndPlot), pig_implot3d::kSig_EndPlot, kEntryNeedsInit},
+    {"ImPlot3D.GetColormapCount", PIG_IMPLOT3D_FN(pig_implot3d::h_GetColormapCount), pig_implot3d::kSig_GetColormapCount, kEntryNeedsInit},
+    {"ImPlot3D.GetColormapName", PIG_IMPLOT3D_FN(pig_implot3d::h_GetColormapName), pig_implot3d::kSig_GetColormapName, kEntryNeedsInit},
+    {"ImPlot3D.GetPlotRectPos", PIG_IMPLOT3D_FN(pig_implot3d::h_GetPlotRectPos), pig_implot3d::kSig_GetPlotRectPos, kEntryNeedsInit},
+    {"ImPlot3D.GetPlotRectSize", PIG_IMPLOT3D_FN(pig_implot3d::h_GetPlotRectSize), pig_implot3d::kSig_GetPlotRectSize, kEntryNeedsInit},
+    {"ImPlot3D.PlotLine", PIG_IMPLOT3D_FN(pig_implot3d::h_PlotLine), pig_implot3d::kSig_PlotLine, kEntryNeedsInit},
+    {"ImPlot3D.PlotMesh", PIG_IMPLOT3D_FN(pig_implot3d::h_PlotMesh), pig_implot3d::kSig_PlotMesh, kEntryNeedsInit},
+    {"ImPlot3D.PlotQuad", PIG_IMPLOT3D_FN(pig_implot3d::h_PlotQuad), pig_implot3d::kSig_PlotQuad, kEntryNeedsInit},
+    {"ImPlot3D.PlotScatter", PIG_IMPLOT3D_FN(pig_implot3d::h_PlotScatter), pig_implot3d::kSig_PlotScatter, kEntryNeedsInit},
+    {"ImPlot3D.PlotSurface", PIG_IMPLOT3D_FN(pig_implot3d::h_PlotSurface), pig_implot3d::kSig_PlotSurface, kEntryNeedsInit},
+    {"ImPlot3D.PlotText", PIG_IMPLOT3D_FN(pig_implot3d::h_PlotText), pig_implot3d::kSig_PlotText, kEntryNeedsInit},
+    {"ImPlot3D.PlotToPixels", PIG_IMPLOT3D_FN(pig_implot3d::h_PlotToPixels), pig_implot3d::kSig_PlotToPixels, kEntryNeedsInit},
+    {"ImPlot3D.PlotTriangle", PIG_IMPLOT3D_FN(pig_implot3d::h_PlotTriangle), pig_implot3d::kSig_PlotTriangle, kEntryNeedsInit},
+    {"ImPlot3D.PopColormap", PIG_IMPLOT3D_FN(pig_implot3d::h_PopColormap), pig_implot3d::kSig_PopColormap, kEntryNeedsInit},
+    {"ImPlot3D.PopStyleColor", PIG_IMPLOT3D_FN(pig_implot3d::h_PopStyleColor), pig_implot3d::kSig_PopStyleColor, kEntryNeedsInit},
+    {"ImPlot3D.PopStyleVar", PIG_IMPLOT3D_FN(pig_implot3d::h_PopStyleVar), pig_implot3d::kSig_PopStyleVar, kEntryNeedsInit},
+    {"ImPlot3D.PushColormap", PIG_IMPLOT3D_FN(pig_implot3d::h_PushColormap), pig_implot3d::kSig_PushColormap, kEntryNeedsInit},
+    {"ImPlot3D.PushColormapIndex", PIG_IMPLOT3D_FN(pig_implot3d::h_PushColormapIndex), pig_implot3d::kSig_PushColormapIndex, kEntryNeedsInit},
+    {"ImPlot3D.PushStyleColor", PIG_IMPLOT3D_FN(pig_implot3d::h_PushStyleColor), pig_implot3d::kSig_PushStyleColor, kEntryNeedsInit},
+    {"ImPlot3D.PushStyleVar", PIG_IMPLOT3D_FN(pig_implot3d::h_PushStyleVar), pig_implot3d::kSig_PushStyleVar, kEntryNeedsInit},
+    {"ImPlot3D.PushStyleVarVec2", PIG_IMPLOT3D_FN(pig_implot3d::h_PushStyleVarVec2), pig_implot3d::kSig_PushStyleVarVec2, kEntryNeedsInit},
+    {"ImPlot3D.SampleColormap", PIG_IMPLOT3D_FN(pig_implot3d::h_SampleColormap), pig_implot3d::kSig_SampleColormap, kEntryNeedsInit},
+    {"ImPlot3D.SetupAxes", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupAxes), pig_implot3d::kSig_SetupAxes, kEntryNeedsInit},
+    {"ImPlot3D.SetupAxesLimits", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupAxesLimits), pig_implot3d::kSig_SetupAxesLimits, kEntryNeedsInit},
+    {"ImPlot3D.SetupAxis", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupAxis), pig_implot3d::kSig_SetupAxis, kEntryNeedsInit},
+    {"ImPlot3D.SetupAxisLimits", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupAxisLimits), pig_implot3d::kSig_SetupAxisLimits, kEntryNeedsInit},
+    {"ImPlot3D.SetupAxisTicks", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupAxisTicks), pig_implot3d::kSig_SetupAxisTicks, kEntryNeedsInit},
+    {"ImPlot3D.SetupBoxRotation", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupBoxRotation), pig_implot3d::kSig_SetupBoxRotation, kEntryNeedsInit},
+    {"ImPlot3D.SetupBoxScale", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupBoxScale), pig_implot3d::kSig_SetupBoxScale, kEntryNeedsInit},
+    {"ImPlot3D.SetupLegend", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupLegend), pig_implot3d::kSig_SetupLegend, kEntryNeedsInit},
+    {"ImPlot3D.ShowDemoWindow", PIG_IMPLOT3D_FN(pig_implot3d::h_ShowDemoWindow), pig_implot3d::kSig_ShowDemoWindow, kEntryNeedsInit},
+    {"ImPlot3D.ShowMetricsWindow", PIG_IMPLOT3D_FN(pig_implot3d::h_ShowMetricsWindow), pig_implot3d::kSig_ShowMetricsWindow, kEntryNeedsInit},
+    {"ImPlot3D.StyleColorsAuto", PIG_IMPLOT3D_FN(pig_implot3d::h_StyleColorsAuto), pig_implot3d::kSig_StyleColorsAuto, kEntryNeedsInit},
+    {"ImPlot3D.StyleColorsClassic", PIG_IMPLOT3D_FN(pig_implot3d::h_StyleColorsClassic), pig_implot3d::kSig_StyleColorsClassic, kEntryNeedsInit},
+    {"ImPlot3D.StyleColorsDark", PIG_IMPLOT3D_FN(pig_implot3d::h_StyleColorsDark), pig_implot3d::kSig_StyleColorsDark, kEntryNeedsInit},
+    {"ImPlot3D.StyleColorsLight", PIG_IMPLOT3D_FN(pig_implot3d::h_StyleColorsLight), pig_implot3d::kSig_StyleColorsLight, kEntryNeedsInit},
     {"Image", bi_Image, kSigBi_Image, kEntryNeedsInit},
     {"ImageButton", bi_ImageButton, kSigBi_ImageButton, kEntryNeedsInit},
     {"Indent", h_Indent, kSig_Indent, kEntryNeedsInit},
@@ -3659,7 +4032,7 @@ const Entry kTable[] = {
     {"LabelText", h_LabelText, kSig_LabelText, kEntryNeedsInit},
     {"ListBox", h_ListBox, kSig_ListBox, kEntryNeedsInit},
     {"MenuItem", h_MenuItem, kSig_MenuItem, kEntryNeedsInit},
-    {"NewFrame", bi_NewFrame, kSigBi_NewFrame, kEntryNeedsInit},
+    {"NewFrame", bi_NewFrame, kSigBi_NewFrame, kEntryNeedsInit | kEntryNeedsGL},
     {"NewLine", h_NewLine, kSig_NewLine, kEntryNeedsInit},
     {"Opcode", bi_Opcode, kSigBi_Opcode, 0},
     {"OpenPopup", h_OpenPopup, kSig_OpenPopup, kEntryNeedsInit},
@@ -3681,10 +4054,12 @@ const Entry kTable[] = {
     {"RadioButton", h_RadioButton, kSig_RadioButton, kEntryNeedsInit},
     {"RadioButtonInt", h_RadioButtonInt, kSig_RadioButtonInt, kEntryNeedsInit},
     {"Render", bi_Render, kSigBi_Render, kEntryNeedsInit | kEntryNeedsGL},
+    {"RenderAgain", bi_RenderAgain, kSigBi_RenderAgain, kEntryNeedsInit | kEntryNeedsGL},
     {"SameLine", h_SameLine, kSig_SameLine, kEntryNeedsInit},
     {"Selectable", h_Selectable, kSig_Selectable, kEntryNeedsInit},
     {"Separator", h_Separator, kSig_Separator, kEntryNeedsInit},
     {"SeparatorText", h_SeparatorText, kSig_SeparatorText, kEntryNeedsInit},
+    {"SetContext", bi_SetContext, kSigBi_SetContext, 0},
     {"SetCursorPos", h_SetCursorPos, kSig_SetCursorPos, kEntryNeedsInit},
     {"SetGlobalScale", bi_SetGlobalScale, kSigBi_SetGlobalScale, kEntryNeedsInit},
     {"SetItemDefaultFocus", h_SetItemDefaultFocus, kSig_SetItemDefaultFocus, kEntryNeedsInit},
@@ -3736,6 +4111,6 @@ const Entry kTable[] = {
     {"Version", bi_Version, kSigBi_Version, 0},
     {"WantCapture", bi_WantCapture, kSigBi_WantCapture, kEntryNeedsInit},
 };
-const int kTableCount = 240;
+const int kTableCount = 288;
 }  // namespace pig
 

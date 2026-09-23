@@ -13,10 +13,11 @@
 # they have a default (callbacks, user_data, ImGuiStyle* dst). An argument with
 # no rule and no default makes the generator refuse the entry.
 #
-# Sections are namespaces. [ImGui] subcommands have no prefix. [ImPlot]
-# subcommands are called as PsychImGui('ImPlot.Name', ...), and [DrawList]
-# subcommands, the ImDrawList methods, as PsychImGui('DrawList.Name', h, ...),
-# where h is a handle from GetWindowDrawList and friends.
+# Sections are namespaces. [ImGui] subcommands have no prefix. [ImPlot] and
+# [ImPlot3D] subcommands are called as PsychImGui('ImPlot.Name', ...) and
+# PsychImGui('ImPlot3D.Name', ...), and [DrawList] subcommands, the
+# ImDrawList methods, as PsychImGui('DrawList.Name', h, ...), where h is a
+# handle from GetWindowDrawList and friends.
 
 [ImGui]
 
@@ -315,3 +316,63 @@ ImPlot_PopStyleVar          PopStyleVar
 # --- Diagnostics ---
 ImPlot_ShowDemoWindow       ShowDemoWindow
 ImPlot_ShowMetricsWindow    ShowMetricsWindow
+
+[ImPlot3D]
+
+# A curated first set (SPEC.md 14.11). The data functions follow the ImPlot
+# rules of section 7.6: the T* overloads are grouped under one name and
+# dispatched on the MATLAB class of the data.
+
+# --- Plot frame ---
+ImPlot3D_BeginPlot                  BeginPlot
+ImPlot3D_EndPlot                    EndPlot
+
+# --- Setup ---
+ImPlot3D_SetupAxis                  SetupAxis
+ImPlot3D_SetupAxes                  SetupAxes
+ImPlot3D_SetupAxisLimits            SetupAxisLimits
+ImPlot3D_SetupAxesLimits            SetupAxesLimits
+ImPlot3D_SetupAxisTicks_doublePtr   SetupAxisTicks
+ImPlot3D_SetupBoxRotation_double    SetupBoxRotation
+ImPlot3D_SetupBoxScale              SetupBoxScale
+ImPlot3D_SetupLegend                SetupLegend
+
+# --- Items ---
+# PlotSurface takes X, Y, and Z as same-size matrices, as meshgrid makes them;
+# the grid size comes from the shape. PlotMesh takes the vertices and an Mx3
+# matrix of 1-based vertex indices, the Faces of patch.
+ImPlot3D_PlotLine                   PlotLine
+ImPlot3D_PlotScatter                PlotScatter
+ImPlot3D_PlotTriangle               PlotTriangle
+ImPlot3D_PlotQuad                   PlotQuad
+ImPlot3D_PlotSurface                PlotSurface
+ImPlot3D_PlotMesh                   PlotMesh
+ImPlot3D_PlotText                   PlotText
+
+# --- Queries ---
+ImPlot3D_PlotToPixels_double        PlotToPixels
+ImPlot3D_GetPlotRectPos             GetPlotRectPos
+ImPlot3D_GetPlotRectSize            GetPlotRectSize
+
+# --- Colormaps ---
+ImPlot3D_PushColormap_Str           PushColormap
+ImPlot3D_PushColormap_Plot3DColormap    PushColormapIndex
+ImPlot3D_PopColormap                PopColormap
+ImPlot3D_GetColormapCount           GetColormapCount
+ImPlot3D_GetColormapName            GetColormapName
+ImPlot3D_SampleColormap             SampleColormap
+
+# --- Style ---
+ImPlot3D_StyleColorsAuto            StyleColorsAuto
+ImPlot3D_StyleColorsDark            StyleColorsDark
+ImPlot3D_StyleColorsLight           StyleColorsLight
+ImPlot3D_StyleColorsClassic         StyleColorsClassic
+ImPlot3D_PushStyleColor_Vec4        PushStyleColor
+ImPlot3D_PopStyleColor              PopStyleColor
+ImPlot3D_PushStyleVar_Float         PushStyleVar
+ImPlot3D_PushStyleVar_Vec2          PushStyleVarVec2
+ImPlot3D_PopStyleVar                PopStyleVar
+
+# --- Diagnostics ---
+ImPlot3D_ShowDemoWindow             ShowDemoWindow
+ImPlot3D_ShowMetricsWindow          ShowMetricsWindow

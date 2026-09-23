@@ -18,12 +18,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 option(PSYCHIMGUI_IMPLOT "Compile ImPlot into the binding" ON)
+option(PSYCHIMGUI_IMPLOT3D "Compile ImPlot3D into the binding" ON)
+option(PSYCHIMGUI_FILEDIALOG "Compile ImGuiFileDialog into the binding" ON)
 option(PSYCHIMGUI_TRACY "Compile the Tracy profiler client" OFF)
 option(PSYCHIMGUI_SMOKE_GL "Build the native GL smoke test executable" ON)
 set(PSYCHIMGUI_STATS 1 CACHE STRING "Compile the per-subcommand Stats counters")
 
 set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/cimgui/imgui)
 set(IMPLOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/cimplot/implot)
+set(IMPLOT3D_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/cimplot3d/implot3d)
+set(IGFD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/ImGuiFileDialog)
 
 if(NOT EXISTS ${IMGUI_DIR}/imgui.cpp)
   message(FATAL_ERROR
@@ -41,6 +45,7 @@ add_library(imgui_static STATIC
   ${IMGUI_DIR}/backends/imgui_impl_opengl2.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/core/psychimgui_core.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/src/core/gl_current.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/core/gpu_timer.cpp
 )
 
 target_include_directories(imgui_static PUBLIC
@@ -83,14 +88,66 @@ if(PSYCHIMGUI_IMPLOT)
   )
 endif()
 
+if(PSYCHIMGUI_IMPLOT3D)
+  if(NOT EXISTS ${IMPLOT3D_DIR}/implot3d.cpp)
+    message(FATAL_ERROR
+      "ImPlot3D sources not found at ${IMPLOT3D_DIR}. "
+      "Run bash tools/fetch_third_party.sh or configure with -DPSYCHIMGUI_IMPLOT3D=OFF.")
+  endif()
+  target_sources(imgui_static PRIVATE
+    ${IMPLOT3D_DIR}/implot3d.cpp
+    ${IMPLOT3D_DIR}/implot3d_items.cpp
+    ${IMPLOT3D_DIR}/implot3d_meshes.cpp
+    ${IMPLOT3D_DIR}/implot3d_demo.cpp
+  )
+  target_include_directories(imgui_static PUBLIC ${IMPLOT3D_DIR})
+  target_compile_definitions(imgui_static PUBLIC PSYCHIMGUI_IMPLOT3D)
+endif()
+
+if(PSYCHIMGUI_FILEDIALOG)
+  if(NOT EXISTS ${IGFD_DIR}/ImGuiFileDialog.cpp)
+    message(FATAL_ERROR
+      "ImGuiFileDialog sources not found at ${IGFD_DIR}. "
+      "Run bash tools/fetch_third_party.sh or configure with -DPSYCHIMGUI_FILEDIALOG=OFF.")
+  endif()
+  # igfd_unit.cpp includes ImGuiFileDialog.cpp after the configuration macro,
+  # so the library and the MEX agree on the class layout.
+  target_sources(imgui_static PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/core/igfd_unit.cpp)
+  if(NOT MSVC)
+    # ImGuiFileDialog marks its sections with MSVC's #pragma region.
+    set_source_files_properties(${CMAKE_CURRENT_SOURCE_DIR}/src/core/igfd_unit.cpp
+      PROPERTIES COMPILE_OPTIONS -Wno-unknown-pragmas)
+  endif()
+  target_include_directories(imgui_static PUBLIC ${IGFD_DIR})
+  target_compile_definitions(imgui_static PUBLIC PSYCHIMGUI_FILEDIALOG)
+endif()
+
 if(PSYCHIMGUI_TRACY)
   set(TRACY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/tracy)
   if(NOT EXISTS ${TRACY_DIR}/public/TracyClient.cpp)
-    message(FATAL_ERROR "Tracy sources not found at ${TRACY_DIR}.")
+    message(FATAL_ERROR
+      "PSYCHIMGUI_TRACY is ON but Tracy is missing: ${TRACY_DIR}/public/TracyClient.cpp "
+      "does not exist. Run\n"
+      "  git clone --branch v0.11.1 https://github.com/wolfpld/tracy.git third_party/tracy\n"
+      "or configure with -DPSYCHIMGUI_TRACY=OFF. See third_party/PINS.md.")
   endif()
   target_sources(imgui_static PRIVATE ${TRACY_DIR}/public/TracyClient.cpp)
   target_include_directories(imgui_static PUBLIC ${TRACY_DIR}/public)
-  target_compile_definitions(imgui_static PUBLIC TRACY_ENABLE PSYCHIMGUI_TRACY)
+  # A MEX file lives inside a long-running host, so the profiler starts on the
+  # first call and stops in mexAtExit rather than in static constructors
+  # (DELAYED_INIT, MANUAL_LIFETIME). The host owns crash handling: MATLAB's JVM
+  # raises access violations on purpose and handles them, and Tracy's handler
+  # takes the first one for a crash, suspends every thread, and hangs MATLAB in
+  # Screen('CloseAll'). build.m passes the same definitions to mex.
+  target_compile_definitions(imgui_static PUBLIC
+    TRACY_ENABLE TRACY_DELAYED_INIT TRACY_MANUAL_LIFETIME TRACY_NO_CRASH_HANDLER
+    PSYCHIMGUI_TRACY)
+  if(WIN32)
+    target_link_libraries(imgui_static PUBLIC ws2_32 dbghelp advapi32 user32)
+  elseif(NOT APPLE)
+    find_package(Threads REQUIRED)
+    target_link_libraries(imgui_static PUBLIC Threads::Threads)
+  endif()
 endif()
 
 if(APPLE)

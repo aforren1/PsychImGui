@@ -24,6 +24,15 @@ function test_gl_render()
         fprintf('SKIP test_gl_render: Psychtoolbox is not installed.\n');
         return;
     end
+    % Psychtoolbox on the path is not enough: on Octave for Windows its
+    % Screen.mex can fail to load for a missing DLL. That is a setup problem,
+    % not a binding failure, so skip with the reason.
+    try
+        Screen('Version');
+    catch e
+        fprintf('SKIP test_gl_render: Screen does not load (%s).\n', e.message);
+        return;
+    end
 
     here = fileparts(mfilename('fullpath'));
     root = fileparts(fileparts(here));
