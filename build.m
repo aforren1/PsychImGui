@@ -184,13 +184,6 @@ function build(varargin)
         args{end+1} = 'COMPFLAGS=$COMPFLAGS /std:c++17 /EHsc';
     else
         args{end+1} = 'CXXFLAGS=$CXXFLAGS -std=c++17';
-        % ImGuiFileDialog uses the standard containers, and GCC 11's headers
-        % make every std::vector call std::__throw_bad_array_new_length,
-        % a GLIBCXX_3.4.29 symbol. MATLAB R2021b, the Linux floor, bundles
-        % an older libstdc++ and refuses to load the MEX (CI run 35863090083),
-        % so the MATLAB MEX carries its own copy of the runtime. Octave links
-        % against the system library its own binary uses, and needs nothing.
-        args{end+1} = 'LDFLAGS=$LDFLAGS -static-libstdc++';
     end
 
     sources = { fullfile('src', 'psychimgui.cpp'), ...
@@ -233,6 +226,21 @@ function build(varargin)
         % -ldl for the backend's dlopen based GL loader. Harmless on glibc 2.34
         % and newer, where libdl folded into libc, and required before that.
         gllib = {'-lGL', '-ldl'};
+        if ~is_octave
+            % ImGuiFileDialog uses the standard containers, and GCC 11's
+            % headers make every std::vector refer to
+            % std::__throw_bad_array_new_length, a GLIBCXX_3.4.29 symbol.
+            % MATLAB R2021b, the Linux floor, bundles an older libstdc++ and
+            % refuses to load the MEX (CI runs 35863090083 and 35867662455).
+            % -static-libstdc++ in LDFLAGS did not help: MATLAB's LINKLIBS
+            % template names -lstdc++ explicitly after these libraries, and
+            % an explicit dynamic -lstdc++ wins over the driver flag. The
+            % static archive named here comes first on the link line, so
+            % every std symbol binds to the copy inside the MEX and the
+            % later -lstdc++ adds no versioned reference. Octave links the
+            % system library its own binary uses and needs nothing.
+            gllib = [gllib, {'-Wl,-Bstatic', '-lstdc++', '-Wl,-Bdynamic'}];
+        end
         if ~is_octave && ~isempty(getenv('CI'))
             % The MATLAB floor on Linux is the one place where a MEX that
             % links can still fail to load; the verbose link line shows
