@@ -29,9 +29,12 @@ function run_tests()
     % test the MEX by calling it instead of by its file type.
     try
         v = PsychImGui('Version');
-    catch
+    catch err
+        % The engine's own message says why a built MEX does not load (a
+        % missing symbol, a library version), which a CI log needs.
         error('run_tests:noMEX', ...
-              'The PsychImGui MEX is not built or not callable; run build first.');
+              ['The PsychImGui MEX is not built or not callable; run build first.\n' ...
+               'The engine said: %s'], err.message);
     end
     fprintf('psychimgui %s, Dear ImGui %s (%d), ImPlot %d, build %s\n', ...
             v.psychimgui, v.imgui, v.imguiNum, v.implot, v.build);

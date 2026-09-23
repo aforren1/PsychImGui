@@ -233,6 +233,12 @@ function build(varargin)
         % -ldl for the backend's dlopen based GL loader. Harmless on glibc 2.34
         % and newer, where libdl folded into libc, and required before that.
         gllib = {'-lGL', '-ldl'};
+        if ~is_octave && ~isempty(getenv('CI'))
+            % The MATLAB floor on Linux is the one place where a MEX that
+            % links can still fail to load; the verbose link line shows
+            % which flags and libraries went in.
+            args = [{'-v'}, args];
+        end
     end
 
     if tracy
