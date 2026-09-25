@@ -11,8 +11,9 @@ function test_input()
         t_ok('the input stubs are on the path (run this file through run_tests)', false);
         return;
     end
-    % lastwarn still records a warning that is off, which is how the
-    % one-warning checks below see it without printing it.
+    % NoWheel is off so that the paths without a wheel stay quiet. The
+    % checks that a warning is issued turn it on in local_poll_warn,
+    % because Octave 6.4 does not record a warning that is off in lastwarn.
     ws = warning('off', 'psychimgui:NoKeyboard');
     wsWheel = warning('off', 'psychimgui:NoWheel');
     win = 11;
@@ -197,12 +198,8 @@ function test_input()
     t_eq('the working source is named', kq.wheel, 'buttons');
     t_ok('the reason names the failed mouse', ~isempty(strfind(kq.wheelReason, 'Mouse 6')));
     tf_input_stub('inject', 5, local_clicks(4));
-    lastwarn('');
-    in = PsychImGuiInput('Poll', kq, win);
-    [~, id1] = lastwarn();
-    lastwarn('');
-    PsychImGuiInput('Poll', kq, win);
-    [~, id2] = lastwarn();
+    [in, id1] = local_poll_warn(kq, win);
+    [~, id2] = local_poll_warn(kq, win);
     t_eq('the failed mouse warns on the first Poll', id1, 'psychimgui:NoWheel');
     t_eq('and not on the second', id2, '');
     t_eq('the working mouse still scrolls', in.wheel, [1 0]);
@@ -280,12 +277,8 @@ function test_input()
     t_ok('the reason names both failures', ...
          ~isempty(strfind(kq.wheelReason, 'KbQueueCreate')) && ...
          ~isempty(strfind(kq.wheelReason, 'not supported')));
-    lastwarn('');
-    in = PsychImGuiInput('Poll', kq, win);
-    [~, id1] = lastwarn();
-    lastwarn('');
-    in2 = PsychImGuiInput('Poll', kq, win);
-    [~, id2] = lastwarn();
+    [in, id1] = local_poll_warn(kq, win);
+    [in2, id2] = local_poll_warn(kq, win);
     t_eq('the first Poll warns', id1, 'psychimgui:NoWheel');
     t_eq('the second Poll does not', id2, '');
     t_ok('Poll reports zero wheel', isequal(in.wheel, [0 0]) && isequal(in2.wheel, [0 0]));
@@ -315,7 +308,7 @@ function test_input()
 
     %% Devices
     tf_input_stub('reset');
-    devs = PsychImGuiInput('Devices', struct('InputPlatform', 'linux'));
+    devs = local_devices_quiet(struct('InputPlatform', 'linux'));
     fields = {'index'; 'product'; 'type'; 'xinputName'; 'xinputId'; 'isDefault'};
     t_ok('Devices returns keyboards and mice', ...
          isstruct(devs) && isfield(devs, 'keyboards') && isfield(devs, 'mice'));
@@ -329,7 +322,7 @@ function test_input()
     t_eq('no mouse is a default', [devs.mice.isDefault], [false false false]);
     t_ok('the text fields are char', ischar(devs.mice(1).product) && ...
          ischar(devs.mice(1).type) && ischar(devs.keyboards(1).xinputName));
-    devs = PsychImGuiInput('Devices', struct('InputPlatform', 'windows'));
+    devs = local_devices_quiet(struct('InputPlatform', 'windows'));
     t_ok('other systems have no XInput name', isempty(devs.mice(1).xinputName) && ...
          isnan(devs.mice(1).xinputId));
 
@@ -351,6 +344,28 @@ function test_input()
 
     warning(wsWheel);
     warning(ws);
+end
+
+function [in, id] = local_poll_warn(kq, win)
+    % One Poll with psychimgui:NoWheel on, and the id of the last warning
+    % it issued, or ''. The warning prints in the test log; that is the cost
+    % of an assertion that works on Octave 6.4 too.
+    st = warning('on', 'psychimgui:NoWheel');
+    lastwarn('');
+    try
+        in = PsychImGuiInput('Poll', kq, win);
+    catch err
+        warning(st);
+        rethrow(err);
+    end
+    [~, id] = lastwarn();
+    warning(st);
+end
+
+function devs = local_devices_quiet(opts)
+    % Devices prints its listing. evalc keeps it out of the suite log.
+    devs = [];
+    evalc('devs = PsychImGuiInput(''Devices'', opts);');
 end
 
 function evts = local_clicks(buttons)
