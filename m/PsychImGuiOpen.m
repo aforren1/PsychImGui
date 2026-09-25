@@ -18,9 +18,29 @@ function ig = PsychImGuiOpen(win, opts)
 %
 %   opts is the option struct of PsychImGui('Init'). Fields: renderer
 %   ('auto' by default, 'opengl3', 'opengl2', 'none' for tests),
-%   glslVersion, iniFile, logFile, implot, implot3d. One more field is read
-%   here and not passed on: stereo, true or false, overrides the stereo mode
-%   the helper reads from the window.
+%   glslVersion, iniFile, logFile, implot, implot3d. Init ignores the other
+%   fields, which this helper reads:
+%
+%       stereo         true or false. Overrides the stereo mode the helper
+%                      reads from the window.
+%       KeyboardIndex  PTB device indices of keyboards, as
+%                      GetKeyboardIndices returns them. One queue each; the
+%                      key events arrive merged in time order.
+%       MouseIndex     PTB device indices of mice, as GetMouseIndices
+%                      returns them. One wheel source each; the clicks add
+%                      up. The pointer position comes from the first one.
+%
+%   Each field takes one index or a vector, and no index may occur twice.
+%   [] or a missing field keeps PTB's default: the default keyboard queue,
+%   GetMouse(win), and GetMouseWheel(), which Windows does not support. With
+%   several keyboards or mice, PTB's default is the first one it finds, which
+%   is not always the one on the desk. PsychImGuiInput('Devices') lists the
+%   indices:
+%
+%       PsychImGuiInput('Devices');
+%       ig = PsychImGuiOpen(win, struct('KeyboardIndex', [9 10], 'MouseIndex', 11));
+%
+%   PsychImGuiInput describes how the wheel is read on each system.
 %
 %   Each call makes a new PsychImGui context, one per window, and makes it
 %   current. With two windows, open each one; the other helpers switch to the
@@ -39,7 +59,10 @@ function ig = PsychImGuiOpen(win, opts)
 %
 %       win      the window PsychImGui draws into
 %       rect     Screen('Rect', win) at the time of the call
-%       kq       the keyboard queue descriptor from PsychImGuiInput('Start')
+%       kq       the input descriptor from PsychImGuiInput('Start'). It
+%                holds the device indices in use: kq.keyboardIndex,
+%                kq.mouseIndex, kq.pointerIndex, kq.wheelIndex, and the
+%                wheel source in kq.wheel
 %       opened   GetSecs at the time of the call
 %       opts     the option struct that went to PsychImGui('Init')
 %       in       the last input struct, filled in by PsychImGuiFrame('Begin')
@@ -52,7 +75,8 @@ function ig = PsychImGuiOpen(win, opts)
 %   first and explains what to do when it is missing, rather than letting
 %   Screen fail later with a less direct message.
 %
-%   See also PsychImGuiFrame, PsychImGuiClose, PsychImGuiGL, PsychImGui.
+%   See also PsychImGuiFrame, PsychImGuiClose, PsychImGuiGL, PsychImGui,
+%   PsychImGuiInput.
 
     if nargin < 1 || isempty(win)
         error('psychimgui:Usage', 'PsychImGuiOpen needs a window handle.');
@@ -92,7 +116,7 @@ function ig = PsychImGuiOpen(win, opts)
     ctx = PsychImGui('Init', win, rect, PsychImGuiKeymap(), opts);
     clear glGuard;
 
-    kq = PsychImGuiInput('Start', win);
+    kq = PsychImGuiInput('Start', win, opts);
 
     ig = struct('win', win, ...
                 'rect', rect, ...

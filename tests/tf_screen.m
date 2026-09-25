@@ -23,6 +23,13 @@ function out = tf_screen(cmd, arg)
 %                                  it comes inside an OpenGL region, as
 %                                  Psychtoolbox does.
 %
+%   The folder also holds stubs for the Psychtoolbox input functions that
+%   PsychImGuiInput calls: KbQueueCreate, KbQueueStart, KbQueueStop,
+%   KbQueueRelease, KbEventAvail, KbEventGet, GetMouse, GetMouseWheel,
+%   GetMouseIndices, and GetKeyboardIndices. They forward to
+%   tests/tf_input_stub, which records the device arguments and lets a test
+%   inject queue events. install resets that state.
+%
 %   The stub answers only the subcommands the PsychImGui helpers use. It
 %   is written to a temporary folder rather than committed as a file, so a
 %   stray path entry can never shadow the real Screen outside a test run.
@@ -52,6 +59,7 @@ function out = tf_screen(cmd, arg)
             TF_SCREEN_MODE = 0;
             TF_SCREEN_3D = 1;
             TF_SCREEN_STEREO = 0;
+            tf_input_stub('reset');
             out = TF_SCREEN_DIR;
         case 'cleanup'
             local_cleanup(TF_SCREEN_DIR);
@@ -87,14 +95,17 @@ function dir = local_install()
     % Write every file first, then add the folder. A folder that joins the path
     % with its files already in place needs no cache flush in either engine.
     local_write(fullfile(dir, 'Screen.m'), local_screen_src());
-    local_write(fullfile(dir, 'GetMouse.m'), { ...
-        'function [x, y, buttons] = GetMouse(win) %#ok<INUSD>'
-        '    x = 10; y = 20; buttons = [0 0 0];'
-        'end'});
-    local_write(fullfile(dir, 'GetMouseWheel.m'), { ...
-        'function w = GetMouseWheel(varargin)'
-        '    w = 0;'
-        'end'});
+    % The input functions forward to tests/tf_input_stub, which keeps the
+    % queues and records the device arguments. Each forwarder has the
+    % outputs of the Psychtoolbox function it replaces.
+    fwd = {'KbQueueCreate', ''; 'KbQueueStart', ''; 'KbQueueStop', ''; ...
+           'KbQueueRelease', ''; 'KbEventAvail', 'n'; 'KbEventGet', '[evt, n]'; ...
+           'GetMouse', '[x, y, buttons]'; 'GetMouseWheel', 'w'; ...
+           'GetMouseIndices', '[idx, names, infos]'; ...
+           'GetKeyboardIndices', '[idx, names, infos]'};
+    for i = 1:size(fwd, 1)
+        local_write(fullfile(dir, [fwd{i, 1} '.m']), local_forwarder(fwd{i, 1}, fwd{i, 2}));
+    end
     local_write(fullfile(dir, 'GetSecs.m'), { ...
         'function t = GetSecs()'
         '    persistent tick'
@@ -103,6 +114,18 @@ function dir = local_install()
         '    t = 1000 + tick / 60;'
         'end'});
     addpath(dir, '-begin');
+end
+
+function lines = local_forwarder(name, outs)
+    if isempty(outs)
+        lines = {sprintf('function %s(varargin)', name)
+                 sprintf('    tf_input_stub(''%s'', varargin{:});', name)
+                 'end'};
+    else
+        lines = {sprintf('function %s = %s(varargin)', outs, name)
+                 sprintf('    %s = tf_input_stub(''%s'', varargin{:});', outs, name)
+                 'end'};
+    end
 end
 
 function local_cleanup(dir)

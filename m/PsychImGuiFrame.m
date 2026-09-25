@@ -5,7 +5,10 @@ function out = PsychImGuiFrame(cmd, varargin)
 %       Reads the input devices, enters the userspace OpenGL context, and
 %       starts the frame. The returned struct carries the input of this frame
 %       in ig.in, which the script can read for its own key and mouse
-%       decisions alongside PsychImGui('WantCapture').
+%       decisions alongside PsychImGui('WantCapture'). ig.in.events lists
+%       the key, button, and wheel events of this frame with their device
+%       times, for reaction times; see PsychImGuiInput and
+%       PsychImGuiEvents.
 %
 %   PsychImGuiFrame('End', ig)
 %       Renders the frame and leaves the userspace OpenGL context. When

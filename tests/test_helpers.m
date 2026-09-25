@@ -7,7 +7,7 @@ function test_helpers()
 %   leave it exactly once, leave it even when the wrapped call fails, and skip
 %   the wrapping when a frame has already opened the region.
 %
-%   None of that needs a GPU. The test puts recording stubs for Screen and two
+%   None of that needs a GPU. The test puts recording stubs for Screen and the
 %   input functions on the path ahead of the real ones, runs the helpers with
 %   opts.renderer = 'none', and checks the sequence of Screen calls the helpers
 %   made. tests/gl/test_gl_render covers the same helpers against a real
@@ -23,9 +23,12 @@ function test_helpers()
     end
     t_ok('the Screen stub shadows the real Screen', true);
 
-    % The keyboard queue needs PsychHID, which the stubs do not provide. The
-    % degraded path is the one CI takes as well, so silence its one warning.
+    % The input stubs of tf_screen provide the keyboard queue. The warning
+    % stays off in case a real PsychHID answers first and fails.
     ws = warning('off', 'psychimgui:NoKeyboard');
+    % Without MouseIndex, Windows has no wheel source and says so once per
+    % window. That is the documented default, not what these tests check.
+    wsWheel = warning('off', 'psychimgui:NoWheel');
 
     PsychImGui('Shutdown');            % run_tests opened a context for us
     opts = struct('renderer', 'none', 'iniFile', '');
@@ -164,6 +167,7 @@ function test_helpers()
          {'BeginOpenGL', 'EndOpenGL'});
     t_eq('Frame Begin left 2D mode after an error', tf_screen('mode'), 0);
 
+    warning(wsWheel);
     warning(ws);
 end
 

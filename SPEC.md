@@ -316,9 +316,10 @@ Section 14.10 says why the binding checks this itself.
 | File | Purpose |
 |---|---|
 | `m/PsychImGui.m` | Help text only. The MEX shadows it once built. Generated. |
-| `m/PsychImGuiOpen.m` | `ig = PsychImGuiOpen(win [, opts])`. Checks that 3D graphics are on, runs `Init` inside one OpenGL region, starts the keyboard queue, and returns the handle struct the other three take. Fields: `win`, `rect`, `kq`, `opened`, `opts`, `in`, `ctx` (the handle `Init` returned), `stereo` (from `Screen('GetWindowInfo').StereoMode`, or `opts.stereo`). |
+| `m/PsychImGuiOpen.m` | `ig = PsychImGuiOpen(win [, opts])`. Checks that 3D graphics are on, runs `Init` inside one OpenGL region, starts the keyboard queue and the wheel source on `opts.KeyboardIndex` and `opts.MouseIndex` (6.5), and returns the handle struct the other three take. Fields: `win`, `rect`, `kq`, `opened`, `opts`, `in`, `ctx` (the handle `Init` returned), `stereo` (from `Screen('GetWindowInfo').StereoMode`, or `opts.stereo`). |
 | `m/PsychImGuiFrame.m` | `ig = PsychImGuiFrame('Begin', ig)` and `PsychImGuiFrame('End', ig)`. Poll, `BeginOpenGL`, `SetContext`, `NewFrame`; then `Render`, `EndOpenGL`. With `ig.stereo`, `End` renders eye 0 and submits eye 1 with `RenderAgain`, each in its own region after `SelectStereoDrawBuffer`. The older `('Begin', win, kq)` form still works. |
 | `m/PsychImGuiClose.m` | `PsychImGuiClose(ig)`. `Shutdown` of the handle's context inside one OpenGL region of its window, then stops the queue. Other windows' contexts stay open. Safe to call twice and safe after the window has closed, so it suits an `onCleanup`. |
+| `m/PsychImGuiEvents.m` | `PsychImGuiEvents('decode', E)` and `('filter', E, kind, code)` for the `in.events` matrix (6.5). |
 | `m/PsychImGuiGL.m` | `PsychImGuiGL(ig, 'Subcommand', ...)`. One subcommand inside the OpenGL region, for calls such as `AddFontFromFileTTF` outside a frame, after `SetContext` for a handle from `PsychImGuiOpen`. Calls straight through when a frame already opened the region. |
 | `m/PsychImGuiSetup.m`, `PsychImGuiSetup.m` | Puts `dist/<arch>` ahead of `m/` on the path. `('arch')`, `('distdir')`, and `('nocheck')` for the parts of that. `'save'` runs `savepath` afterwards; `'remove'` shuts down every context, unloads the MEX, then takes `dist/<arch>`, `m/`, and the package root off the path, and `('remove', 'save')` saves that. Two identical copies, one in the package root for a fresh unzip. Section 14.12. |
 | `m/PsychImGuiInput.m` | `Start`, `Poll`, `Stop`, `Empty`. Wraps `KbQueueCreate`, `KbQueueStart`, `KbEventGet`, `GetMouse`, `GetMouseWheel`, `GetSecs`. Returns the input struct of section 6.1. |
@@ -580,14 +581,15 @@ MEX reads them with `mxGetPr` without conversion.
 
 | Field | Shape | Content | Source |
 |---|---|---|---|
-| `mouse` | 1x3 | x, y in window pixels, valid flag (0 when the pointer is outside the window or the window has no focus) | `GetMouse(win)` |
-| `buttons` | 1xB, B <= 5 | Button states, left, right, middle, x1, x2 | `GetMouse(win)` |
-| `wheel` | 1x2 | Vertical and horizontal wheel clicks since the last poll | `GetMouseWheel()`; zeros when unavailable |
-| `keys` | Nx4, N may be 0 | Rows `[keycode pressed cookedKey time]` | `KbEventGet(kq)` drained until empty |
+| `mouse` | 1x3 | x, y in window pixels, valid flag (0 when the pointer is outside the window or the window has no focus) | `GetMouse(win [, kq.pointerIndex])` |
+| `buttons` | 1xB, B <= 5 | Button states, left, right, middle, x1, x2, reordered from the `GetMouse` order of each system (6.5) | `GetMouse(win [, kq.pointerIndex])` |
+| `wheel` | 1x2 | Vertical and horizontal wheel clicks since the last poll. Dear ImGui signs: `wheel(1) > 0` scrolls up, `wheel(2) > 0` scrolls left | The wheel source in `kq.wheel` (6.5); zeros when there is none |
+| `keys` | Nx4, N may be 0 | Rows `[keycode pressed cookedKey time]` | `KbEventGet(kq.keyboardIndex)` drained until empty |
 | `display` | 1x2 | Width and height of the client rectangle in pixels | `Screen('Rect', win)` |
 | `time` | 1x1 | Poll time in seconds | `GetSecs` |
 | `focus` | 1x1 | 1 when the PTB window has focus, default 1 | optional |
 | `fbscale` | 1x1 | Framebuffer scale, default 1 | optional, for macOS Retina |
+| `events` | Nx6, N may be 0 | Device events with their times, `[time device kind code pressed cooked]` (6.5). The MEX ignores it | The keyboard and mouse queues, and the polled state |
 
 `NewFrame` processes the struct in this order: focus, mouse position, buttons,
 wheel, key rows in time order, then computes `DeltaTime` from `time` and clamps
@@ -641,6 +643,131 @@ point.
 buttons. Scripts that share input between the GUI and the experiment call
 `PsychImGui('WantCapture')` after `NewFrame` and ignore experiment input while
 the GUI wants it.
+
+### 6.5 Input devices
+
+`PsychImGuiInput('Start', win, opts)` and `PsychImGuiOpen(win, opts)` take two
+device fields. Each is `[]`, one PTB device index, or a vector of PTB device
+indices. `[]` or a missing field keeps PTB's default. An index that occurs
+twice in a field, or in both fields, raises `psychimgui:Type`, because
+PsychHID keeps one queue per device index and a second `KbQueueCreate` on a
+device replaces the first queue.
+
+| Field | Meaning | Default when `[]` |
+|---|---|---|
+| `opts.KeyboardIndex` | Keyboards, as `GetKeyboardIndices` returns them. Each one gets its own keyboard queue. `Poll` drains every queue and sorts the merged rows by the `Time` of `KbEventGet` (a stable sort, so equal times keep the queue order) | One queue from `KbQueueCreate([])`. On Linux that is the first slave keyboard whose XInput name contains "eyboard" (`PsychHIDGetDefaultKbQueueDevice`, Linux `PsychHIDStandardInterfaces.c`). On Windows it is the first DirectInput keyboard |
+| `opts.MouseIndex` | Mice, as `GetMouseIndices` returns them. Each one gets its own wheel source, and `Poll` adds their clicks. The pointer position comes from the first index only (through its master pointer on Linux, see below) | PTB's defaults only, and no mouse queue: the pointer from `GetMouse(win)`, and the wheel from `GetMouseWheel()` on Linux and macOS. On Windows, the wheel is `'none'` with the reason that `GetMouseWheel` is not supported and that `MouseIndex` enables the mouse queue |
+
+The descriptor that `Start` returns keeps the indices, so `Poll` and
+`PsychImGuiFrame` use them:
+
+| Field | Content |
+|---|---|
+| `keyboardIndex`, `mouseIndex` | The indices as given, as row vectors, `[]` for the default |
+| `keyboardQueues` | A cell array of the keyboard devices whose queue started, `{[]}` for the default keyboard. `Poll` and `Stop` use only these |
+| `pointerIndex` | The index given to `GetMouse`, `[]` for `GetMouse(win)` |
+| `wheels` | One element for each mouse (one element with `index` `[]` for the default), with the fields `index`, `source`, and `reason` |
+| `wheel` | The sources in use, joined with `+`, such as `'buttons'`, or `'none'` |
+| `wheelIndex` | The mice that have a working wheel source |
+| `wheelReason` | The reasons of the mice that have none |
+| `device`, `active` | The fields of version 0.2. `active` is true when at least one keyboard queue started |
+
+`opts.InputPlatform` (`'linux'`, `'windows'`, `'macos'`) overrides the system
+detection. It exists so that the headless tests run every path on one
+machine.
+
+`PsychImGuiInput('Devices')` prints the keyboards and the mice and returns
+`devs.keyboards` and `devs.mice`. These are struct arrays with the fields
+`index`, `product`, `type` (the PsychHID `usageName`, such as
+`'slave pointer'`), `xinputName`, `xinputId`, and `isDefault`. On Linux,
+PsychHID fills `product` with the XInput device name and `interfaceID` with
+the XInput id (`PsychHIDEnumerateHIDInputDevices`, Linux
+`PsychHIDStandardInterfaces.c`), so `xinputName` is the name that
+`xinput list` shows. On other systems, `xinputName` is `''` and `xinputId` is
+`NaN`. For keyboards, `isDefault` marks the device of `KbQueueCreate([])`
+(`PsychHID('Devices', -1)`). For mice it is always false, because without
+`MouseIndex` no mouse queue is made.
+
+Separate queues on separate devices is how PTB records keyboards and mice at
+the same time. The wheel queues never feed `in.keys`.
+
+What each system delivers, and the path that `Start` takes:
+
+| System | Wheel source (`kq.wheel`) | Call | Source read |
+|---|---|---|---|
+| Linux (X11) | `'buttons'`. Each press of X11 button 4 adds +1 to `wheel(1)`, 5 adds -1, 6 adds +1 to `wheel(2)`, 7 adds -1. Releases do not count | `KbQueueCreate(dev, keyList)` with `keyList(4:7) = 1` and no valuators | Linux `PsychHIDStandardInterfaces.c`. `PsychHIDOSKbQueueStart` selects `XI_RawButtonPress` and `XI_RawButtonRelease` for every queue. The event loop subtracts one from the X11 button number to index `keyList`, and reports `Keycode = index + 1`, which is the X11 button number, with `Type` 0. Raw events with the `XIKeyRepeat` flag (the same bit as `XIPointerEmulated`) are dropped only with queue flag 1. The source comment says that this flag "will suppress scroll events (mouse wheel, PowerMate knob etc.)", so without the flag the wheel buttons arrive. `PsychPowerMate.m` sets flag 1 and reads the knob from valuator 3 instead. `numValuators >= 2` would add an `XI_Motion` event for each pointer motion, which the button path does not need |
+| Linux, no queue | `'getmousewheel'` | `GetMouseWheel(MouseIndex)` | `GetMouseWheel.m`. The difference of the "Rel Vert Wheel" or "Rel Vert Scroll" valuator of `GetMouse`, in driver units, not in clicks. Without an index, it uses the first slave pointer that has such a valuator. Sign and scale are not verified |
+| Windows | `'valuator'`. The sum of `Valuators(3)` over the motion events, divided by 120 | `KbQueueCreate(dev, zeros(1, 256), 3, [], 4)` | Windows `PsychHIDStandardInterfaces.c`. A mouse queue reads DirectInput with `c_dfDIMouse2`. Offsets below 12 are the X, Y, and Z axes. They become valuators 1 to 3 of a `Type` 1 event when `numValuators >= 2` and the offset is below `numValuators * 4`; `numValuators` is clamped to 3. Flag 4 stores the change of the axis that the event reports and sets the other valuators to 0. `MouseMotionRecordingDemo.m` prints `Valuators(3)` as the wheel on Windows. The divisor 120 is `WHEEL_DELTA`, the Microsoft value for one notch, not a PTB value. There is no horizontal wheel: `DIMOUSESTATE2` has none |
+| Windows, no queue | `'none'` | None | `GetMouseWheel.m`: "This function is not supported and will fail with an error." `GetMouseIndices.m`: all pointing devices are one mouse |
+| macOS | `'getmousewheel'` | `GetMouseWheel(MouseIndex)` | OSX `PsychHIDStandardInterfaces.c`. `PsychHIDOSKbQueueCreate` raises "Valuators are not supported on macOS" for `numValuators > 0`, and adds only `kHIDPage_KeyboardOrKeypad` and `kHIDPage_Button` elements to a queue, so the wheel never gets into a queue. `GetMouseWheel.m` reads HID reports: 1 is +1, 255 is -1 |
+
+For each mouse in `MouseIndex`, `Start` tries the queue first, then
+`GetMouseWheel(index)`. When both fail, that mouse gets `'none'` and the
+reasons, and the other mice still work. `Poll` never raises for the wheel. A
+mouse with no source, or a source that raises during `Poll`, adds 0, and
+`Poll` gives the warning `psychimgui:NoWheel` once for each descriptor, and
+so for each window, and reason.
+
+On Linux, the pointer position needs a master pointer.
+`Screen('GetMouseHelper')` queries a master pointer with `XIQueryPointer`,
+relative to the window. For a slave pointer, it reads x and y from the axis
+state of the device, with no window offset (`SCREENGetMouseHelper.c`), and
+`GetMouse.m` uses both as window coordinates. Thus, when the first
+`MouseIndex` is a slave pointer, `Start` sets `pointerIndex` to the master
+pointer that the slave is attached to. That is the entry of
+`GetMouseIndices` whose `interfaceID` is equal to the `locationID` of the
+slave; PsychHID puts the XInput attachment in `locationID`. The wheel queues
+stay on the slave pointers, so only the listed mice scroll the GUI. With
+several mice on one master pointer, they move one cursor, so the first index
+gives the position of that cursor. Mice on different master pointers have
+different cursors, and only the cursor of the first one is read.
+
+#### Device events for reaction times
+
+`in.events` is an Nx6 double matrix, one row for each device event of the
+poll, in time order. `PsychImGuiFrame('Begin')` returns it in `ig.in.events`.
+The MEX does not read the field, so the `NewFrame` contract does not change.
+
+| Column | Content |
+|---|---|
+| 1 `time` | The `GetSecs` time of the event from `KbEventGet` (`Time`). For an event that no queue reported, the poll time `in.time` |
+| 2 `device` | The PTB device index. `NaN` for the default keyboard queue and for the polled mouse |
+| 3 `kind` | 1 key, 2 mouse button, 3 wheel |
+| 4 `code` | Key: the keycode. Button: 1 left, 2 middle, 3 right (the PTB numbers of `GetMouse` on Windows and Linux); polled rows also use 8 back and 9 forward. Wheel: 1 vertical, 2 horizontal |
+| 5 `pressed` | 1 press, 0 release. Wheel: the signed clicks of the event, with the sign of `in.wheel` |
+| 6 `cooked` | Key: `CookedKey`. Other kinds: 0 |
+
+Where each kind comes from:
+
+| Kind | Source | Time |
+|---|---|---|
+| Key | The keyboard queues, the same events as `in.keys` | Device |
+| Wheel, queue | One row for each wheel event of the mouse queue: each press of X11 button 4 to 7 on Linux, each Z axis event on Windows. The rows of one axis add up to that component of `in.wheel` | Device |
+| Wheel, `GetMouseWheel` | One row for each axis with a nonzero value in the poll | Poll |
+| Button, queue | With a `MouseIndex` on Linux or Windows, the mouse queue has buttons 1 to 3 in its `keyList`. On Linux the `Keycode` is the X11 button number, which is the PTB number. On Windows, `DIMOUSESTATE2` numbers the buttons 0 left, 1 right, 2 middle and PsychHID adds 1, so `Poll` changes `Keycode` 2 to code 3 and 3 to code 2; that order is from the Microsoft documentation and is not measured here | Device |
+| Button, polled | When no mouse queue started (no `MouseIndex`, macOS, or a failed queue): one row for each change of the `GetMouse` state since the previous `Poll` of the descriptor. The time is only as exact as the frame rate | Poll |
+
+The queued button events go only to `in.events`. `in.keys` and `in.wheel`
+never get them, and Dear ImGui still gets its button state from `GetMouse`,
+so hit testing does not change.
+
+`PsychImGuiEvents('decode', E)` returns a struct array with the fields `time`,
+`device`, `kind` (`'key'`, `'button'`, `'wheel'`), `code`, `name`, `pressed`,
+and `cooked`. `PsychImGuiEvents('filter', E, kind, code)` returns the rows of
+one kind and code; a key code can be a `KbName` name. The two forms follow
+`PsychLVGLEvents` of the sibling binding.
+
+#### Button order
+
+Dear ImGui numbers the buttons left, right, middle, back,
+forward. `GetMouse` returns left, middle, right on Windows
+(`PsychWindowGlue.c`: `VK_LBUTTON`, `VK_MBUTTON`, `VK_RBUTTON`) and from the
+Linux core pointer query (`SCREENGetMouseHelper.c`, mask bits 8 to 10). With a
+device index on Linux, it returns X11 buttons 1 to N and then 32 modifier
+bits. Buttons 4 to 7 are the wheel, and 8 and 9 are back and forward. On
+macOS it returns primary, secondary, tertiary (`GetCurrentButtonState`).
+`Poll` changes each order to the Dear ImGui order and removes the wheel
+buttons.
 
 ## 7. Marshaling rules and the generator
 
@@ -1373,3 +1500,16 @@ Two fixes after the first phase 3 CI run (35863090083):
 | `tests/test_setup.m` gives its scratch copies of `PsychImGuiSetup` names of their own (`pimgui_scratch_setup_root`, `pimgui_scratch_setup_m`), calls them with `feval`, takes the scratch directories from the copy's own `'distdir'` answer, and puts back the current folder and the path it found, with the MEX unloaded first, whatever failed. | CI run 35886966037 failed `test_setup` under Octave 6.4 on Linux and Homebrew Octave on macOS. Octave keeps calling a function it has already loaded from the path, even after `cd` into a folder that holds another file of that name. Measured in WSL with Octave 6.4: a `whoami` loaded from folder `a` still ran after `cd` into folder `b`, and only `clear -f whoami` or an `addpath` made the copy in `b` win. The test had called the real `PsychImGuiSetup` once for `'arch'`, so its `cd` into the scratch package still reached the real copy: no `NotBuilt`, no scratch install, and a `remove` that took the real package off the path, after which `run_tests` failed on `PsychImGui` undefined. MATLAB and Octave 10.1 on Windows resolve again after `cd` and passed. Names that were never loaded take the lookup out of the test, and the drift check keeps the logic identical. The directories come from the copy itself because `tempdir` can sit behind a symbolic link (`/var` to `/private/var` on macOS). The README tells Octave users to use the `cd` form only in a new session for the same reason. |
 | `README.md` is for users: what the binding is, install from a release zip, a first example in 22 lines with the helpers, the demos, the how-to sections, requirements, and where to go next. Build, tests, CI, Tracy, the generator, and the layout moved to `DEV.md` unchanged. | The README opened with build and test material, and the use in an experiment started after 230 lines. Section 10.1 names `README.md` as "how to build and run the demo"; that role is `DEV.md` now. |
 | The build waits out the link second under Octave. `build.m` now ends with `age_mex_file`: under Octave it waits until the second of the MEX file's modification time has passed, at most one second, so no later load can fall inside it. MATLAB has no such check and skips the wait. Reproduced from a core dump in the `gnuoctave/octave:10.1.0` container (gdb hides the timing), and verified there by relinking and testing back to back. | Octave 10.1 rechecks a loaded function when its check time is not later than the last prompt or path stamp, in whole seconds, and `addpath` and `rmpath` set that stamp; it reloads the function when the file's modification time, with sub-second precision, is newer than the parse time truncated to whole seconds (`fcn-info.cc`, `out_of_date_check`). Reloading a MEX function recurses without end, because `remove_all_breakpoints_from_function` looks the function up again, and the process dies of stack exhaustion. So a MEX linked, put on the path and first loaded inside one wall-clock second crashes the first call after any path change. The lock was never the cause; it only made the earlier failures repeatable, because the locked MEX stayed loaded across the path change. The 14.6 rule about path changes in tests stands as practice, but its explanation is superseded by this row. |
+
+### 14.13 Input devices
+
+| Deviation | Reason |
+|---|---|
+| `PsychImGuiInput('Start')` and `PsychImGuiOpen` take `opts.KeyboardIndex` and `opts.MouseIndex`, each one index or a vector of indices. Each keyboard gets its own queue, and `Poll` merges the key rows in time order. Each mouse gets its own wheel source, and `Poll` adds the clicks. The pointer position comes from the first mouse. A duplicate index, or an index in both fields, raises `psychimgui:Type`. The descriptor keeps the indices, and `PsychImGuiInput('Devices')` lists the devices (6.5). Section 6.1 had `GetMouse(win)`, `GetMouseWheel()`, and a queue on the default keyboard only. | Linux lab machines with four keyboards and three mice. The PTB default keyboard is the first slave keyboard whose name contains "eyboard", and `GetMouseWheel()` reads the first slave pointer that has a wheel valuator. Thus the GUI often read a device that nobody used. |
+| With `MouseIndex`, the wheel comes from a `KbQueue` on each mouse, where the PsychHID source shows that such a queue reports the wheel: X11 buttons 4 to 7 on Linux, and the DirectInput Z axis on Windows. `GetMouseWheel(index)` is the fallback for each mouse. macOS, where no queue gets the wheel, always uses it. Without `MouseIndex`, no mouse queue is made: the wheel is `GetMouseWheel()` as in version 0.2, and on Windows `'none'` with a reason. A mouse with no source adds zero, and `Poll` gives one warning for each window and reason. On Linux the wheel has a horizontal component (buttons 6 and 7). | Wheel events did not get to the GUI on Linux, and `GetMouseWheel` is not supported on Windows. On Linux, the queue path counts presses, one for each click, but `GetMouseWheel` returns a valuator difference in driver units. Measured: nothing. On this machine PsychHID does not load (`PsychHID.mexw64` needs `LexActivator.dll`, which is not installed), so no queue could start. No Linux machine and no second mouse were available. The Linux path follows the source lines in 6.5 and must be checked on a lab machine. |
+| The keyboard queue is created with `KbQueueCreate(KeyboardIndex)`, not with `numValuators = 2`. | The old call passed 2 as if it enabled `CookedKey`. `KbQueueCreate.m` documents the third argument as the number of valuators, and each system sets `CookedKey` for every key event. Valuators only add motion events. If a pointer device was given as the keyboard, those events went into `in.keys`. |
+| `in.buttons` is changed from the `GetMouse` order of each system to the Dear ImGui order: left, right, middle, back, forward. | Version 0.2 passed the `GetMouse` order through. On Windows and on Linux that order is left, middle, right, so a right click got to Dear ImGui as the middle button. With a device index on Linux, wheel buttons 4 and 5 got to it as back and forward. Found in `PsychWindowGlue.c` and `SCREENGetMouseHelper.c`. Not measured with a physical click. |
+| On Linux, when the first `MouseIndex` is a slave pointer, the position is read through its master pointer. | `Screen('GetMouseHelper')` reads the position of a slave pointer from the device axes, without the window offset (6.5). For a master pointer, `Poll` calls `GetMouse(win, MouseIndex(1))`. |
+| Without `MouseIndex`, `Start` makes no mouse queue. | A user decision: without configuration, the input stays PTB's default, `GetMouse(win)` and `GetMouseWheel()`, as in version 0.2. |
+| `tests/test_input.m` and `tests/tf_input_stub.m`. The stub folder of `tf_screen` has forwarders for `KbQueueCreate`, `KbQueueStart`, `KbQueueStop`, `KbQueueRelease`, `KbEventAvail`, `KbEventGet`, `GetMouse`, `GetMouseWheel`, `GetMouseIndices`, and `GetKeyboardIndices`. They are written with the other stubs, before the folder goes on the path. | The stubs record the device arguments and accept injected events. Thus the tests check the indices, the wheel sign, the horizontal component, the one-time warning, and the shape of `Devices` without devices. The forwarders keep the single path change of 14.6. Because of the stubs, `test_helpers` now runs with an active keyboard queue, not the degraded path. |
+| `in.events`, an Nx6 matrix of the key, button, and wheel events with their device times, and `m/PsychImGuiEvents.m` to decode and filter it. With a `MouseIndex`, the mouse queue also records buttons 1 to 3. | Scripts need reaction times, and `in.keys`, `in.buttons`, and `in.wheel` lose the device time of buttons and wheel clicks. The matrix follows the event ring of PsychLVGL. The MEX contract does not change: `NewFrame` does not read the field. Without a mouse queue, button rows can only have the poll time, and the help text says so. |

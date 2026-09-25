@@ -274,7 +274,63 @@ sca;
 `opts` is the option struct of `PsychImGui('Init')`: `renderer`,
 `glslVersion`, `iniFile`, `logFile`, `implot`, `implot3d`. `PsychImGuiOpen`
 also reads `opts.stereo`, which overrides the stereo mode it reads from the
-window.
+window, and `opts.KeyboardIndex` and `opts.MouseIndex`, which select the input
+devices.
+
+### Choose the keyboard and the mouse
+
+With one keyboard and one mouse, you can usually do nothing. With several,
+the Psychtoolbox default is the first device it finds, which is not always
+the one on the desk. List the devices, then give the indices to
+`PsychImGuiOpen`:
+
+```matlab
+PsychImGuiInput('Devices');     % prints the index, type, and name of each
+opts = struct('KeyboardIndex', [9 10], 'MouseIndex', 11);
+ig = PsychImGuiOpen(win, opts);
+```
+
+`KeyboardIndex` takes indices from `GetKeyboardIndices`, and `MouseIndex`
+takes indices from `GetMouseIndices`. Each field takes one index or a vector.
+Each keyboard gets its own queue, and the key events of all of them arrive in
+time order. Each mouse gets its own wheel queue, and the clicks of all of them
+add up. The pointer position comes from the first mouse in the list. Do not
+give an index twice, or in both fields. On Linux, `Devices` also shows the
+XInput name and id, as `xinput list` shows them. Give slave pointers (one
+physical mouse each), so that only those mice scroll the GUI.
+
+Without `MouseIndex`, the input is the Psychtoolbox default: `GetMouse(win)`
+for the pointer and `GetMouseWheel()` for the wheel. `GetMouseWheel` is not
+supported on Windows, so set `MouseIndex` there to use the wheel. On macOS the
+wheel always comes from `GetMouseWheel`. `ig.kq.wheel` names the source in
+use. When a mouse has none, the first frame gives the warning
+`psychimgui:NoWheel` with the reason. `SPEC.md` section 6.5 has the details
+for each system.
+
+Each frame also lists its device events with their times, for reaction
+times. `ig.in.events` has one row per event, in time order:
+`[time device kind code pressed cooked]`. `kind` is 1 for a key, 2 for a mouse
+button, and 3 for the wheel. Key and wheel times are the device times from the
+keyboard queue. Button times are device times only with a `MouseIndex`;
+without one, a button row has the time of the frame that saw the change.
+`PsychImGuiEvents` decodes and filters the rows. The time from a stimulus
+onset to the first press of the space bar:
+
+```matlab
+tOn = Screen('Flip', win);          % the stimulus is on the screen
+rt = [];
+while isempty(rt)
+    ig = PsychImGuiFrame('Begin', ig);
+    % ... widgets ...
+    PsychImGuiFrame('End', ig);
+    Screen('Flip', win);
+    R = PsychImGuiEvents('filter', ig.in.events, 'key', 'space');
+    R = R(R(:, 5) == 1 & R(:, 1) >= tOn, :);   % presses after the onset
+    if ~isempty(R)
+        rt = R(1, 1) - tOn;
+    end
+end
+```
 
 The handle carries the context of its window in `ig.ctx` and whether the
 window is stereo in `ig.stereo`. Each helper makes the handle's context

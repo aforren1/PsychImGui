@@ -13,6 +13,9 @@ function test_helpers_p3()
         return;
     end
     ws = warning('off', 'psychimgui:NoKeyboard');
+    % Without MouseIndex, Windows has no wheel source and says so once per
+    % window. That is the documented default, not what these tests check.
+    wsWheel = warning('off', 'psychimgui:NoWheel');
     PsychImGui('Shutdown', 'all');
     opts = struct('renderer', 'none', 'iniFile', '');
 
@@ -82,5 +85,6 @@ function test_helpers_p3()
     PsychImGuiClose(igO);
     tf_screen('setstereo', 0);
 
+    warning(wsWheel);
     warning(ws);
 end

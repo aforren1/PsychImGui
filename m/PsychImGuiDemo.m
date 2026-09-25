@@ -11,6 +11,11 @@ function PsychImGuiDemo(nFrames, opts)
 %                      with Screen('GetImage') before the flip.
 %       opts.animate   true to move the contrast along a slow sine, so the
 %                      trace shows a signal without a hand on the slider.
+%       opts.KeyboardIndex, opts.MouseIndex
+%                      PTB device indices of keyboards and mice, one index
+%                      or a vector each, passed on to PsychImGuiOpen. []
+%                      keeps PTB's default.
+%                      PsychImGuiInput('Devices') lists them.
 %
 %   tools/CaptureReadmeScreenshot uses both to make the README image.
 %
@@ -91,7 +96,15 @@ function PsychImGuiDemo(nFrames, opts)
         sigH = min(400, max(300, round(0.46 * H)));
         logH = min(220, max(140, round(0.26 * H)));
 
-        ig = PsychImGuiOpen(win);
+        % Only the device fields go on: the demo's own fields mean nothing
+        % to PsychImGui('Init').
+        igOpts = struct();
+        for f = {'KeyboardIndex', 'MouseIndex'}
+            if isfield(opts, f{1})
+                igOpts.(f{1}) = opts.(f{1});
+            end
+        end
+        ig = PsychImGuiOpen(win, igOpts);
         PsychImGuiGL(ig, 'StyleColorsDark');
         PsychImGuiGL(ig, 'SetGlobalScale', 1.25);
 

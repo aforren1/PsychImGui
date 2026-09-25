@@ -148,6 +148,7 @@ texture support.
 | `test_stereo.m` | When `RenderAgain` is legal, and that it builds no second frame |
 | `test_filedialog.m` | `FileDialog.` argument rules, the open and close cycle, a path outside ASCII |
 | `test_helpers_p3.m` | The helpers with two windows and with a stereo window, against the `Screen` stub |
+| `test_input.m` | `PsychImGuiInput` device indices, the wheel path of each system, the wheel sign, `in.events` rows and times, `PsychImGuiEvents`, `Devices`, against the input stubs in `tf_input_stub.m` |
 | `test_setup.m` | The two `PsychImGuiSetup` copies are identical; install, `remove` with the MEX locked, and a second `remove`, against a scratch package in `tempdir` |
 
 ### Tests that need a GPU
