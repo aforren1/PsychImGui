@@ -319,7 +319,7 @@ Section 14.10 says why the binding checks this itself.
 | `m/PsychImGuiOpen.m` | `ig = PsychImGuiOpen(win [, opts])`. Checks that 3D graphics are on, runs `Init` inside one OpenGL region, starts the keyboard queue and the wheel source on `opts.KeyboardIndex` and `opts.MouseIndex` (6.5), and returns the handle struct the other three take. Fields: `win`, `rect`, `kq`, `opened`, `opts`, `in`, `ctx` (the handle `Init` returned), `stereo` (from `Screen('GetWindowInfo').StereoMode`, or `opts.stereo`). |
 | `m/PsychImGuiFrame.m` | `ig = PsychImGuiFrame('Begin', ig)` and `PsychImGuiFrame('End', ig)`. Poll, `BeginOpenGL`, `SetContext`, `NewFrame`; then `Render`, `EndOpenGL`. With `ig.stereo`, `End` renders eye 0 and submits eye 1 with `RenderAgain`, each in its own region after `SelectStereoDrawBuffer`. The older `('Begin', win, kq)` form still works. |
 | `m/PsychImGuiClose.m` | `PsychImGuiClose(ig)`. `Shutdown` of the handle's context inside one OpenGL region of its window, then stops the queue. Other windows' contexts stay open. Safe to call twice and safe after the window has closed, so it suits an `onCleanup`. |
-| `m/PsychImGuiEvents.m` | `PsychImGuiEvents('decode', E)` and `('filter', E, kind, code)` for the `in.events` matrix (6.5). |
+| `m/PsychImGuiEvents.m` | `PsychImGuiEvents('filter', E, kind, code)` for the `in.events` struct array (6.5). |
 | `m/PsychImGuiGL.m` | `PsychImGuiGL(ig, 'Subcommand', ...)`. One subcommand inside the OpenGL region, for calls such as `AddFontFromFileTTF` outside a frame, after `SetContext` for a handle from `PsychImGuiOpen`. Calls straight through when a frame already opened the region. |
 | `m/PsychImGuiSetup.m`, `PsychImGuiSetup.m` | Puts `dist/<arch>` ahead of `m/` on the path. `('arch')`, `('distdir')`, and `('nocheck')` for the parts of that. `'save'` runs `savepath` afterwards; `'remove'` shuts down every context, unloads the MEX, then takes `dist/<arch>`, `m/`, and the package root off the path, and `('remove', 'save')` saves that. Two identical copies, one in the package root for a fresh unzip. Section 14.12. |
 | `m/PsychImGuiInput.m` | `Start`, `Poll`, `Stop`, `Empty`. Wraps `KbQueueCreate`, `KbQueueStart`, `KbEventGet`, `GetMouse`, `GetMouseWheel`, `GetSecs`. Returns the input struct of section 6.1. |
@@ -589,7 +589,7 @@ MEX reads them with `mxGetPr` without conversion.
 | `time` | 1x1 | Poll time in seconds | `GetSecs` |
 | `focus` | 1x1 | 1 when the PTB window has focus, default 1 | optional |
 | `fbscale` | 1x1 | Framebuffer scale, default 1 | optional, for macOS Retina |
-| `events` | Nx6, N may be 0 | Device events with their times, `[time device kind code pressed cooked]` (6.5). The MEX ignores it | The keyboard and mouse queues, and the polled state |
+| `events` | Nx1 struct array, N may be 0 | Device events with their times; fields `time`, `device`, `kind`, `code`, `name`, `pressed`, `cooked` (6.5). The MEX ignores it | The keyboard and mouse queues, and the polled state |
 
 `NewFrame` processes the struct in this order: focus, mouse position, buttons,
 wheel, key rows in time order, then computes `DeltaTime` from `time` and clamps
@@ -724,38 +724,46 @@ different cursors, and only the cursor of the first one is read.
 
 #### Device events for reaction times
 
-`in.events` is an Nx6 double matrix, one row for each device event of the
+`in.events` is an Nx1 struct array, one element for each device event of the
 poll, in time order. `PsychImGuiFrame('Begin')` returns it in `ig.in.events`.
 The MEX does not read the field, so the `NewFrame` contract does not change.
+When there are no events it is a 0x1 struct array with the same fields, so
+`[in.events.time]` and `numel(in.events)` always work. The fields, in this
+order:
 
-| Column | Content |
-|---|---|
-| 1 `time` | The `GetSecs` time of the event from `KbEventGet` (`Time`). For an event that no queue reported, the poll time `in.time` |
-| 2 `device` | The PTB device index. `NaN` for the default keyboard queue and for the polled mouse |
-| 3 `kind` | 1 key, 2 mouse button, 3 wheel |
-| 4 `code` | Key: the keycode. Button: 1 left, 2 middle, 3 right (the PTB numbers of `GetMouse` on Windows and Linux); polled rows also use 8 back and 9 forward. Wheel: 1 vertical, 2 horizontal |
-| 5 `pressed` | 1 press, 0 release. Wheel: the signed clicks of the event, with the sign of `in.wheel` |
-| 6 `cooked` | Key: `CookedKey`. Other kinds: 0 |
+| Field | Class | Content |
+|---|---|---|
+| `time` | double | The `GetSecs` time of the event from `KbEventGet` (`Time`). For an event that no queue reported, the poll time `in.time` |
+| `device` | double | The PTB device index. `NaN` for the default keyboard queue and for the polled mouse |
+| `kind` | char | `'key'`, `'button'`, or `'wheel'` |
+| `code` | double | Key: the keycode. Button: 1 left, 2 middle, 3 right (the PTB numbers of `GetMouse` on Windows and Linux); polled events also use 8 back and 9 forward. Wheel: 1 vertical, 2 horizontal |
+| `name` | char | Key: `KbName(code)` when Psychtoolbox is present, else `''`. Button: `'left'`, `'middle'`, `'right'`, `'back'`, `'forward'`. Wheel: `'vertical'`, `'horizontal'`. Otherwise `''` |
+| `pressed` | double | 1 press, 0 release. Wheel: the signed clicks of the event, with the sign of `in.wheel` |
+| `cooked` | double | Key: `CookedKey`. Other kinds: 0 |
+
+`Poll` collects the events as numeric rows and makes the struct array with one
+`struct` call on Nx1 cell arrays, not by growing it in a loop, because it runs
+every frame. `in.keys` stays the Nx4 matrix that the MEX reads.
 
 Where each kind comes from:
 
 | Kind | Source | Time |
 |---|---|---|
 | Key | The keyboard queues, the same events as `in.keys` | Device |
-| Wheel, queue | One row for each wheel event of the mouse queue: each press of X11 button 4 to 7 on Linux, each Z axis event on Windows. The rows of one axis add up to that component of `in.wheel` | Device |
-| Wheel, `GetMouseWheel` | One row for each axis with a nonzero value in the poll | Poll |
+| Wheel, queue | One element for each wheel event of the mouse queue: each press of X11 button 4 to 7 on Linux, each Z axis event on Windows. The `pressed` values of one axis add up to that component of `in.wheel` | Device |
+| Wheel, `GetMouseWheel` | One element for each axis with a nonzero value in the poll | Poll |
 | Button, queue | With a `MouseIndex` on Linux or Windows, the mouse queue has buttons 1 to 3 in its `keyList`. On Linux the `Keycode` is the X11 button number, which is the PTB number. On Windows, `DIMOUSESTATE2` numbers the buttons 0 left, 1 right, 2 middle and PsychHID adds 1, so `Poll` changes `Keycode` 2 to code 3 and 3 to code 2; that order is from the Microsoft documentation and is not measured here | Device |
-| Button, polled | When no mouse queue started (no `MouseIndex`, macOS, or a failed queue): one row for each change of the `GetMouse` state since the previous `Poll` of the descriptor. The time is only as exact as the frame rate | Poll |
+| Button, polled | When no mouse queue started (no `MouseIndex`, macOS, or a failed queue): one element for each change of the `GetMouse` state since the previous `Poll` of the descriptor. The time is only as exact as the frame rate | Poll |
 
 The queued button events go only to `in.events`. `in.keys` and `in.wheel`
 never get them, and Dear ImGui still gets its button state from `GetMouse`,
 so hit testing does not change.
 
-`PsychImGuiEvents('decode', E)` returns a struct array with the fields `time`,
-`device`, `kind` (`'key'`, `'button'`, `'wheel'`), `code`, `name`, `pressed`,
-and `cooked`. `PsychImGuiEvents('filter', E, kind, code)` returns the rows of
-one kind and code; a key code can be a `KbName` name. The two forms follow
-`PsychLVGLEvents` of the sibling binding.
+`PsychImGuiEvents('filter', E, kind, code)` returns the events of one kind
+(`'key'`, `'button'`, `'wheel'`) and code, as an Mx1 struct array; a key code
+can be a `KbName` name, and `[]` leaves either one open. An empty `E` gives an
+empty result. It follows `PsychLVGLEvents('filter')` of the sibling binding.
+There is no `decode`: the struct array already has the names.
 
 #### Button order
 
@@ -1512,4 +1520,4 @@ Two fixes after the first phase 3 CI run (35863090083):
 | On Linux, when the first `MouseIndex` is a slave pointer, the position is read through its master pointer. | `Screen('GetMouseHelper')` reads the position of a slave pointer from the device axes, without the window offset (6.5). For a master pointer, `Poll` calls `GetMouse(win, MouseIndex(1))`. |
 | Without `MouseIndex`, `Start` makes no mouse queue. | A user decision: without configuration, the input stays PTB's default, `GetMouse(win)` and `GetMouseWheel()`, as in version 0.2. |
 | `tests/test_input.m` and `tests/tf_input_stub.m`. The stub folder of `tf_screen` has forwarders for `KbQueueCreate`, `KbQueueStart`, `KbQueueStop`, `KbQueueRelease`, `KbEventAvail`, `KbEventGet`, `GetMouse`, `GetMouseWheel`, `GetMouseIndices`, and `GetKeyboardIndices`. They are written with the other stubs, before the folder goes on the path. | The stubs record the device arguments and accept injected events. Thus the tests check the indices, the wheel sign, the horizontal component, the one-time warning, and the shape of `Devices` without devices. The forwarders keep the single path change of 14.6. Because of the stubs, `test_helpers` now runs with an active keyboard queue, not the degraded path. |
-| `in.events`, an Nx6 matrix of the key, button, and wheel events with their device times, and `m/PsychImGuiEvents.m` to decode and filter it. With a `MouseIndex`, the mouse queue also records buttons 1 to 3. | Scripts need reaction times, and `in.keys`, `in.buttons`, and `in.wheel` lose the device time of buttons and wheel clicks. The matrix follows the event ring of PsychLVGL. The MEX contract does not change: `NewFrame` does not read the field. Without a mouse queue, button rows can only have the poll time, and the help text says so. |
+| `in.events`, an Nx1 struct array of the key, button, and wheel events with their device times, and `m/PsychImGuiEvents.m` to filter it. With a `MouseIndex`, the mouse queue also records buttons 1 to 3. | Scripts need reaction times, and `in.keys`, `in.buttons`, and `in.wheel` lose the device time of buttons and wheel clicks. A struct array, not an Nx6 matrix as first built, so that nobody has to remember which column is which (a user decision); it is built with one `struct` call per frame. `filter` follows PsychLVGL. The MEX contract does not change: `NewFrame` does not read the field. Without a mouse queue, button events can only have the poll time, and the help text says so. |

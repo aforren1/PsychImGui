@@ -308,29 +308,34 @@ use. When a mouse has none, the first frame gives the warning
 for each system.
 
 Each frame also lists its device events with their times, for reaction
-times. `ig.in.events` has one row per event, in time order:
-`[time device kind code pressed cooked]`. `kind` is 1 for a key, 2 for a mouse
-button, and 3 for the wheel. Key and wheel times are the device times from the
-keyboard queue. Button times are device times only with a `MouseIndex`;
-without one, a button row has the time of the frame that saw the change.
-`PsychImGuiEvents` decodes and filters the rows. The time from a stimulus
-onset to the first press of the space bar:
+times. `ig.in.events` is a struct array with one element per event, in time
+order, and the fields `time`, `device`, `kind` (`'key'`, `'button'`,
+`'wheel'`), `code`, `name`, `pressed`, and `cooked`. Key and wheel times are
+the device times from the queues. Button times are device times only with a
+`MouseIndex`; without one, a button event has the time of the frame that saw
+the change. With no events the array is empty, and `[in.events.time]` still
+works. The time from a stimulus onset to the first press of the space bar:
 
 ```matlab
 tOn = Screen('Flip', win);          % the stimulus is on the screen
+space = KbName('space');
 rt = [];
 while isempty(rt)
     ig = PsychImGuiFrame('Begin', ig);
     % ... widgets ...
     PsychImGuiFrame('End', ig);
     Screen('Flip', win);
-    R = PsychImGuiEvents('filter', ig.in.events, 'key', 'space');
-    R = R(R(:, 5) == 1 & R(:, 1) >= tOn, :);   % presses after the onset
-    if ~isempty(R)
-        rt = R(1, 1) - tOn;
+    e = ig.in.events;
+    t = [e(strcmp({e.kind}, 'key') & [e.code] == space & [e.pressed] == 1).time];
+    t = t(t >= tOn);                % presses after the onset
+    if ~isempty(t)
+        rt = t(1) - tOn;
     end
 end
 ```
+
+`PsychImGuiEvents('filter', ig.in.events, 'key', 'space')` selects the same
+events by kind and code.
 
 The handle carries the context of its window in `ig.ctx` and whether the
 window is stereo in `ig.stereo`. Each helper makes the handle's context

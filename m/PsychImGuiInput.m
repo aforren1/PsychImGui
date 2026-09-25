@@ -50,32 +50,42 @@ function out = PsychImGuiInput(cmd, varargin)
 %       clock. It never raises for a missing wheel: that wheel adds 0.
 %
 %       in.events holds the device events of this poll with their times,
-%       for reaction times. It is an Nx6 double matrix in time order, one
-%       row per event, with the columns
-%
-%           [time device kind code pressed cooked]
+%       for reaction times. It is an Nx1 struct array in time order, one
+%       element per event, with these fields:
 %
 %       time     the GetSecs time of the event from KbEventGet, or in.time
 %                for an event that no queue reported (see below)
 %       device   the PTB device index, NaN for the default keyboard queue
 %                and for the polled mouse
-%       kind     1 key, 2 mouse button, 3 wheel
-%       code     key: the keycode (KbName). Button: 1 left, 2 middle,
-%                3 right, the PTB numbers; 8 back and 9 forward in polled
-%                rows. Wheel: 1 vertical, 2 horizontal
+%       kind     'key', 'button', or 'wheel'
+%       code     key: the keycode. Button: 1 left, 2 middle, 3 right, the
+%                PTB numbers; 8 back and 9 forward in polled events.
+%                Wheel: 1 vertical, 2 horizontal
+%       name     key: KbName(code) when Psychtoolbox is present, else ''.
+%                Button: 'left', 'middle', 'right', 'back', 'forward'.
+%                Wheel: 'vertical', 'horizontal'
 %       pressed  1 press, 0 release. Wheel: the signed clicks of the event,
 %                with the sign of in.wheel
 %       cooked   the CookedKey of a key, 0 for the other kinds
 %
-%       Keys come from the keyboard queues. Each wheel event is one row, and
-%       the rows of an axis add up to in.wheel. With a MouseIndex on Linux
-%       or Windows, the mouse queue also records buttons 1 to 3, so button
-%       rows have the time of the device event. Dear ImGui still gets the
-%       buttons from GetMouse. Without a mouse queue (no MouseIndex, macOS,
-%       or a queue that did not start), button rows come from the change of
-%       the GetMouse state since the previous Poll and carry the poll time,
-%       so they are only as exact as the frame rate. GetMouseWheel rows also
-%       carry the poll time. PsychImGuiEvents decodes and filters the rows.
+%       With no events it is a 0x1 struct array with the same fields, so
+%       [in.events.time] and numel(in.events) always work. The time of
+%       each press of the space bar in this frame:
+%
+%           e = in.events;
+%           t = [e(strcmp({e.kind}, 'key') & [e.code] == KbName('space') & ...
+%                  [e.pressed] == 1).time];
+%
+%       Keys come from the keyboard queues. Each wheel event is one
+%       element, and the pressed values of an axis add up to in.wheel. With
+%       a MouseIndex on Linux or Windows, the mouse queue also records
+%       buttons 1 to 3, so button events have the time of the device event.
+%       Dear ImGui still gets the buttons from GetMouse. Without a mouse
+%       queue (no MouseIndex, macOS, or a queue that did not start), button
+%       events come from the change of the GetMouse state since the previous
+%       Poll and carry the poll time, so they are only as exact as the frame
+%       rate. GetMouseWheel events also carry the poll time.
+%       PsychImGuiEvents('filter') selects events by kind and code.
 %
 %   PsychImGuiInput('Stop', kq)
 %       Stops and releases every queue of kq.
@@ -413,12 +423,13 @@ function in = local_empty(rect)
     end
     in = struct('mouse', [0 0 0], 'buttons', [0 0 0 0 0], 'wheel', [0 0], ...
                 'keys', zeros(0, 4), 'display', [rect(3) - rect(1), rect(4) - rect(2)], ...
-                'time', 0, 'focus', 1, 'fbscale', 1, 'events', zeros(0, 6));
+                'time', 0, 'focus', 1, 'fbscale', 1, 'events', local_events(zeros(0, 6)));
 end
 
 function in = local_poll(kq, win)
-    % in.events columns: [time device kind code pressed cooked]. kind is
-    % 1 key, 2 mouse button, 3 wheel. The MEX ignores the field.
+    % Events are collected as rows [time device kind code pressed cooked],
+    % kind 1 key, 2 button, 3 wheel, and become one struct array at the
+    % end. The MEX ignores the field.
     rect = Screen('Rect', win);
     in = local_empty(rect);
     in.time = GetSecs();
@@ -467,7 +478,51 @@ function in = local_poll(kq, win)
     % sortrows is stable, so equal times keep the queue order.
     keyRows = sortrows(keyRows, 1);
     in.keys = keyRows(:, [4 5 6 1]);
-    in.events = sortrows([keyRows; mouseRows], 1);
+    in.events = local_events(sortrows([keyRows; mouseRows], 1));
+end
+
+function ev = local_events(rows)
+    % One struct() call with Nx1 cell arrays, rather than a struct array
+    % grown in a loop, because Poll runs every frame.
+    n = size(rows, 1);
+    kinds = {'key'; 'button'; 'wheel'};
+    kind = cell(n, 1);
+    name = cell(n, 1);
+    for i = 1:n
+        kind{i} = kinds{rows(i, 3)};
+        name{i} = local_event_name(rows(i, 3), rows(i, 4));
+    end
+    ev = struct('time', num2cell(rows(:, 1)), 'device', num2cell(rows(:, 2)), ...
+                'kind', kind, 'code', num2cell(rows(:, 4)), 'name', name, ...
+                'pressed', num2cell(rows(:, 5)), 'cooked', num2cell(rows(:, 6)));
+end
+
+function name = local_event_name(kind, code)
+    name = '';
+    switch kind
+        case 1
+            try
+                name = KbName(code);
+            catch
+                % Without Psychtoolbox the keycode is all there is.
+            end
+            if ~ischar(name)
+                name = '';
+            end
+        case 2
+            codes = [1 2 3 8 9];
+            names = {'left', 'middle', 'right', 'back', 'forward'};
+            k = find(codes == code, 1);
+            if ~isempty(k)
+                name = names{k};
+            end
+        case 3
+            if code == 1
+                name = 'vertical';
+            elseif code == 2
+                name = 'horizontal';
+            end
+    end
 end
 
 function rows = local_drain_keys(dev)

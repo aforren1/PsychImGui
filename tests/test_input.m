@@ -59,18 +59,25 @@ function test_input()
     tf_input_stub('inject', 5, local_clicks([4 6 6 7]));
     in = PsychImGuiInput('Poll', kq, win);
     t_eq('button 4 is up, 6 left, 7 right', in.wheel, [1 1]);
-    ev = in.events(in.events(:, 3) == 3, :);
+    ev = local_rows(in.events);
+    ev = ev(ev(:, 3) == 3, :);
     t_eq('one wheel row per click', size(ev, 1), 4);
     t_eq('the wheel rows add up to in.wheel', ...
          [sum(ev(ev(:, 4) == 1, 5)), sum(ev(ev(:, 4) == 2, 5))], in.wheel);
     t_ok('wheel rows name the mouse', all(ev(:, 2) == 5));
+    e = in.events;
+    t_eq('in.events is an Nx1 struct array', size(e), [4 1]);
+    t_eq('wheel events have kind and axis names', {e.kind; e.name}, ...
+         {'wheel', 'wheel', 'wheel', 'wheel'; 'vertical', 'horizontal', 'horizontal', 'horizontal'});
+    t_ok('the text fields are char', all(cellfun(@ischar, {e.kind, e.name})));
 
     % Buttons through the mouse queue: device times, not the poll time.
     tf_input_stub('inject', 5, struct('Keycode', {1, 1, 3}, 'Pressed', {1, 0, 1}, ...
                                       'Time', {5.5, 5.6, 5.7}));
     in = PsychImGuiInput('Poll', kq, win);
-    t_eq('button rows carry the device times', in.events, ...
+    t_eq('button rows carry the device times', local_rows(in.events), ...
          [5.5 5 2 1 1 0; 5.6 5 2 1 0 0; 5.7 5 2 3 1 0]);
+    t_eq('button events name the buttons', {in.events.name}, {'left', 'left', 'right'});
     t_ok('queued buttons do not reach in.keys', isempty(in.keys));
     t_eq('queued buttons do not reach the wheel', in.wheel, [0 0]);
     t_eq('ImGui still gets GetMouse buttons', in.buttons, [0 0 0 0 0]);
@@ -121,34 +128,43 @@ function test_input()
     tf_input_stub('inject', [], struct('Keycode', 44, 'Time', 0.5, 'CookedKey', 32));
     tf_input_stub('set', 'mouse', [10 20 1 0 0]);   % PTB: left, middle, right
     in = PsychImGuiInput('Poll', kq, win);
-    t_eq('the default keyboard is device NaN', in.events(1, :), [0.5 NaN 1 44 1 32]);
-    t_eq('a polled press has the poll time', in.events(2, :), [in.time NaN 2 1 1 0]);
+    r = local_rows(in.events);
+    t_eq('the default keyboard is device NaN', r(1, :), [0.5 NaN 1 44 1 32]);
+    t_eq('a polled press has the poll time', r(2, :), [in.time NaN 2 1 1 0]);
+    t_ok('a key event has a char name', ischar(in.events(1).name));
     tf_input_stub('set', 'mouse', [10 20 0 0 1]);
     in = PsychImGuiInput('Poll', kq, win);
-    t_eq('a polled change gives a release and a press', in.events(:, [1 4 5]), ...
+    r = local_rows(in.events);
+    t_eq('a polled change gives a release and a press', r(:, [1 4 5]), ...
          [in.time 1 0; in.time 3 1]);
     in = PsychImGuiInput('Poll', kq, win);
-    t_ok('no change, no row', isempty(in.events));
+    t_eq('no events is a 0x1 struct array', size(in.events), [0 1]);
+    t_eq('the empty array has the fields', fieldnames(in.events), local_fields());
+    t_ok('field lists work on the empty array', isempty([in.events.time]) && ...
+         numel(in.events) == 0);
     tf_input_stub('set', 'mouse', [10 20 0 0 0]);
     PsychImGuiInput('Stop', kq);
 
-    %% PsychImGuiEvents
-    E = [1 7 1 44 1 32; 2 5 2 3 1 0; 3 5 3 1 -1 0; 4 5 3 2 1 0];
-    S = PsychImGuiEvents('decode', E);
-    t_eq('decode gives one element per row', size(S), [4 1]);
-    t_eq('decode has the documented fields', fieldnames(S), ...
-         {'time'; 'device'; 'kind'; 'code'; 'name'; 'pressed'; 'cooked'});
-    t_eq('decode names the kinds', {S.kind}, {'key', 'button', 'wheel', 'wheel'});
-    t_eq('decode names buttons and axes', {S(2:4).name}, {'right', 'vertical', 'horizontal'});
-    t_eq('decode keeps the numbers', [S.pressed], [1 1 -1 1]);
-    t_eq('decode of no rows is empty', numel(PsychImGuiEvents('decode', zeros(0, 6))), 0);
-    t_eq('filter by kind', PsychImGuiEvents('filter', E, 'wheel'), E(3:4, :));
-    t_eq('filter by kind and code', PsychImGuiEvents('filter', E, 3, 2), E(4, :));
-    t_eq('filter by key code', PsychImGuiEvents('filter', E, 'key', 44), E(1, :));
+    %% the event struct and PsychImGuiEvents
+    in = PsychImGuiInput('Empty');
+    t_eq('Empty has a 0x1 event array', size(in.events), [0 1]);
+    t_eq('the event fields in order', fieldnames(in.events), local_fields());
+    E = struct('time', {1; 2; 3; 4}, 'device', {7; 5; 5; 5}, ...
+               'kind', {'key'; 'button'; 'wheel'; 'wheel'}, 'code', {44; 3; 1; 2}, ...
+               'name', {''; 'right'; 'vertical'; 'horizontal'}, ...
+               'pressed', {1; 1; -1; 1}, 'cooked', {32; 0; 0; 0});
+    t_eq('filter by kind', PsychImGuiEvents('filter', E, 'wheel'), E(3:4));
+    t_eq('filter by kind and code', PsychImGuiEvents('filter', E, 'wheel', 2), E(4));
+    t_eq('filter by key code', PsychImGuiEvents('filter', E, 'key', 44), E(1));
+    t_eq('filter keeps a column', size(PsychImGuiEvents('filter', E, [], [1 3])), [2 1]);
+    R = PsychImGuiEvents('filter', E([]), 'key', 44);
+    t_ok('filter of no events is empty', isempty(R) && isstruct(R));
     t_throws('filter rejects an unknown kind', 'psychimgui:Usage', ...
              @() PsychImGuiEvents('filter', E, 'touch'));
-    t_throws('decode rejects a matrix of the wrong width', 'psychimgui:Type', ...
-             @() PsychImGuiEvents('decode', zeros(2, 4)));
+    t_throws('decode is gone', 'psychimgui:Usage', ...
+             @() PsychImGuiEvents('decode', E));
+    t_throws('filter rejects a matrix', 'psychimgui:Type', ...
+             @() PsychImGuiEvents('filter', zeros(2, 6), 'key'));
 
     %% several keyboards: one queue each, events merged in time order
     tf_input_stub('reset');
@@ -162,7 +178,8 @@ function test_input()
     in = PsychImGuiInput('Poll', kq, win);
     t_eq('interleaved keyboards merge in time order', in.keys(:, [1 4]), ...
          [10 1; 20 2; 11 3; 21 4]);
-    t_eq('key rows in time order with their devices', in.events(:, 1:5), ...
+    r = local_rows(in.events);
+    t_eq('key rows in time order with their devices', r(:, 1:5), ...
          [1 7 1 10 1; 2 8 1 20 1; 3 7 1 11 1; 4 8 1 21 1]);
     PsychImGuiInput('Stop', kq);
     r = tf_input_stub('calls', 'KbQueueRelease');
@@ -180,7 +197,8 @@ function test_input()
     tf_input_stub('inject', 6, local_clicks([4 6]));
     in = PsychImGuiInput('Poll', kq, win);
     t_eq('clicks of two mice add up', in.wheel, [-1 1]);
-    ev = in.events(in.events(:, 3) == 3, :);
+    ev = local_rows(in.events);
+    ev = ev(ev(:, 3) == 3, :);
     t_eq('the wheel rows of both mice add up to in.wheel', ...
          [sum(ev(ev(:, 4) == 1, 5)), sum(ev(ev(:, 4) == 2, 5))], in.wheel);
     t_eq('each wheel row names its mouse', sort(ev(:, 2))', [5 5 6 6]);
@@ -239,12 +257,14 @@ function test_input()
     tf_input_stub('inject', 3, struct('Type', 1, 'Valuators', [0 0 -60]));
     in = PsychImGuiInput('Poll', kq, win);
     t_eq('a half notch down is -0.5', in.wheel, [-0.5 0]);
-    t_eq('the wheel row carries the fraction', in.events(:, 3:5), [3 1 -0.5]);
+    r = local_rows(in.events);
+    t_eq('the wheel row carries the fraction', r(:, 3:5), [3 1 -0.5]);
     % DIMOUSESTATE2 numbers buttons left, right, middle; PsychHID adds 1.
     tf_input_stub('inject', 3, struct('Keycode', {2, 3}, 'Pressed', {1, 1}, ...
                                       'Time', {7, 8}));
     in = PsychImGuiInput('Poll', kq, win);
-    t_eq('DirectInput right and middle get PTB codes 3 and 2', in.events(:, [1 3 4]), ...
+    r = local_rows(in.events);
+    t_eq('DirectInput right and middle get PTB codes 3 and 2', r(:, [1 3 4]), ...
          [7 2 3; 8 2 2]);
     PsychImGuiInput('Stop', kq);
 
@@ -366,6 +386,21 @@ function devs = local_devices_quiet(opts)
     % Devices prints its listing. evalc keeps it out of the suite log.
     devs = [];
     evalc('devs = PsychImGuiInput(''Devices'', opts);');
+end
+
+function f = local_fields()
+    f = {'time'; 'device'; 'kind'; 'code'; 'name'; 'pressed'; 'cooked'};
+end
+
+function r = local_rows(e)
+    % The events as rows [time device kind code pressed cooked], kind 1 key,
+    % 2 button, 3 wheel, so one t_eq compares several events.
+    kinds = {'key', 'button', 'wheel'};
+    r = zeros(numel(e), 6);
+    for i = 1:numel(e)
+        r(i, :) = [e(i).time, e(i).device, find(strcmp(kinds, e(i).kind)), ...
+                   e(i).code, e(i).pressed, e(i).cooked];
+    end
 end
 
 function evts = local_clicks(buttons)
