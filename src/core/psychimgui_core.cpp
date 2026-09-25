@@ -42,7 +42,7 @@
 #  include <time.h>
 #endif
 
-#define PSYCHIMGUI_VERSION_STR "0.2.0"
+#define PSYCHIMGUI_VERSION_STR "0.3.0"
 
 #ifndef PSYCHIMGUI_BUILD_STR
 #  define PSYCHIMGUI_BUILD_STR "unknown build"
