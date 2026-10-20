@@ -12,6 +12,7 @@
 // is the live value divided by the scale.
 
 #include <float.h>
+#include <math.h>
 
 #include "imgui_psych.h"
 
@@ -32,8 +33,60 @@ float scale_size(float v, float s) {
     return (v > 0.0f && v != FLT_MAX) ? ImTrunc(v * s) : v;
 }
 
-float unscale_size(float live, float base, float s) {
-    return live == scale_size(base, s) ? base : live / s;
+// The live value of one scaled size. Two members have minimums that Dear
+// ImGui asserts on at every NewFrame, and a small scale truncates below them.
+float live_size(uint32_t offset, float base, float s) {
+    float v = scale_size(base, s);
+    if (offset == offsetof(ImGuiStyle, WindowMinSize) ||
+        offset == offsetof(ImGuiStyle, WindowMinSize) + sizeof(float) ||
+        offset == offsetof(ImGuiStyle, WindowBorderHoverPadding))
+        v = ImMax(v, 1.0f);
+    return v;
+}
+
+// The base of a live value that no longer matches it, as after an edit in
+// ShowStyleEditor. live / s can truncate to live - 1 when scaled again, so
+// take the smallest float above it that scales back to live.
+float unscale_size(uint32_t offset, float live, float base, float s) {
+    if (live == live_size(offset, base, s)) return base;
+    float b = live / s;
+    for (int i = 0; i < 8 && live_size(offset, b, s) < live; ++i) b = nextafterf(b, FLT_MAX);
+    return b;
+}
+
+// The settings Dear ImGui asserts on at every NewFrame
+// (ErrorCheckNewFrameSanityChecks), plus the alignments, which ImPlot reads
+// unclamped as colormap positions. A bad value would fail every later frame.
+bool style_valid(const ImGuiStyle& st) {
+    const char* bad = nullptr;
+    if (!(st.CurveTessellationMaxError > 0.0f)) bad = "CurveTessellationMaxError must be above 0";
+    else if (!(st.CircleTessellationMaxError > 0.0f))
+        bad = "CircleTessellationMaxError must be above 0";
+    else if (!(st.Alpha >= 0.0f && st.Alpha <= 1.0f)) bad = "Alpha must be in [0, 1]";
+    else if (!(st.WindowMinSize.x >= 1.0f && st.WindowMinSize.y >= 1.0f))
+        bad = "WindowMinSize must be at least [1 1]";
+    else if (!(st.WindowBorderHoverPadding > 0.0f)) bad = "WindowBorderHoverPadding must be above 0";
+    else if (st.WindowMenuButtonPosition != ImGuiDir_None &&
+             st.WindowMenuButtonPosition != ImGuiDir_Left &&
+             st.WindowMenuButtonPosition != ImGuiDir_Right)
+        bad = "WindowMenuButtonPosition must be ImGuiDir_None, ImGuiDir_Left, or ImGuiDir_Right";
+    else if (st.ColorButtonPosition != ImGuiDir_Left && st.ColorButtonPosition != ImGuiDir_Right)
+        bad = "ColorButtonPosition must be ImGuiDir_Left or ImGuiDir_Right";
+    else if (st.TreeLinesFlags != ImGuiTreeNodeFlags_DrawLinesNone &&
+             st.TreeLinesFlags != ImGuiTreeNodeFlags_DrawLinesFull &&
+             st.TreeLinesFlags != ImGuiTreeNodeFlags_DrawLinesToNodes)
+        bad = "TreeLinesFlags must be one ImGuiTreeNodeFlags_DrawLines value";
+    if (!bad) {
+        const ImVec2* align[] = {&st.WindowTitleAlign, &st.ButtonTextAlign,
+                                 &st.SelectableTextAlign, &st.SeparatorTextAlign,
+                                 &st.TableAngledHeadersTextAlign};
+        for (const ImVec2* a : align)
+            if (!(a->x >= 0.0f && a->x <= 1.0f && a->y >= 0.0f && a->y <= 1.0f))
+                bad = "the *Align fields must be in [0, 1]";
+    }
+    if (!bad) return true;
+    mrs::fail("psychimgui:Range", "SetStyle: %s.", bad);
+    return false;
 }
 
 size_t field_size(uint8_t kind) {
@@ -51,11 +104,16 @@ size_t field_size(uint8_t kind) {
 // pop, so these calls wait for the stacks to empty. NewFrame pushes the
 // default font, so one font entry is the empty state inside a frame.
 bool stacks_empty(const char* cmd) {
+    // BeginDisabled changes Alpha without a stack entry and restores it at
+    // EndDisabled, so it counts as a push.
     ImGuiContext& g = *GImGui;
-    if (g.StyleVarStack.Size == 0 && g.ColorStack.Size == 0 && g.FontStack.Size <= 1)
+    if (g.StyleVarStack.Size == 0 && g.ColorStack.Size == 0 && g.FontStack.Size <= 1 &&
+        g.DisabledStackSize == 0)
         return true;
     mrs::fail("psychimgui:Usage",
-              "%s: pop every PushStyleVar, PushStyleColor, and PushFont first.", cmd);
+              "%s: pop every PushStyleVar, PushStyleColor, and PushFont, and end every "
+              "BeginDisabled, first.",
+              cmd);
     return false;
 }
 
@@ -73,7 +131,8 @@ void sync() {
         float* bp = (float*)(b + f.offset);
         const float* lp = (const float*)(l + f.offset);
         int n = f.kind == kStyleVec2 ? 2 : 1;
-        for (int k = 0; k < n; ++k) bp[k] = unscale_size(lp[k], bp[k], s);
+        for (int k = 0; k < n; ++k)
+            bp[k] = unscale_size(f.offset + k * sizeof(float), lp[k], bp[k], s);
     }
     memcpy(b + d.colorsOffset, l + d.colorsOffset, sizeof(ImGuiStyle::Colors));
 }
@@ -93,7 +152,7 @@ void apply() {
         const float* bp = (const float*)(b + f.offset);
         float* lp = (float*)(l + f.offset);
         int n = f.kind == kStyleVec2 ? 2 : 1;
-        for (int k = 0; k < n; ++k) lp[k] = scale_size(bp[k], s);
+        for (int k = 0; k < n; ++k) lp[k] = live_size(f.offset + k * sizeof(float), bp[k], s);
     }
     memcpy(l + d.colorsOffset, b + d.colorsOffset, sizeof(ImGuiStyle::Colors));
     live.FontScaleMain = s;
@@ -126,7 +185,7 @@ void bi_SetStyle(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
     if (!stacks_empty("SetStyle")) return;
     sync();
     ImGuiStyle next = *styleBase();
-    if (!styleFromStruct(kImGuiStyleDesc, args[0], &next)) return;
+    if (!styleFromStruct(kImGuiStyleDesc, args[0], &next) || !style_valid(next)) return;
     *styleBase() = next;
     apply();
 }

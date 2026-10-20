@@ -14,6 +14,7 @@
 
 #include <string.h>
 
+#include <cmath>
 #include <type_traits>
 
 #include "implot.h"
@@ -262,6 +263,7 @@ void bi_ImPlotPlotBarGroups(int nlhs, mxArray** plhs, int nargin, const mxArray*
         using T = elem_t<decltype(tag)>;
         ImPlotSpec spec;
         mrs::getSpec(args, nargin, specAt, spec, sizeof(T));
+        mrs::specNoStride(spec, kCmd);
         if (mrs::failed()) return;
         ImPlot::PlotBarGroups(labels, (const T*)mxGetData(args[1]), items, groups, groupSize,
                               shift, spec);
@@ -305,7 +307,21 @@ void bi_ImPlotPlotPieChart(int nlhs, mxArray** plhs, int nargin, const mxArray**
         using T = elem_t<decltype(tag)>;
         ImPlotSpec spec;
         mrs::getSpec(args, nargin, specAt, spec, sizeof(T));
+        mrs::specNoStride(spec, kCmd);
         if (mrs::failed()) return;
+        // ImPlot draws a slice as a fixed buffer of 52 points per half turn.
+        // A negative value lets another slice exceed a full turn, and a
+        // non-finite one an undefined angle; both overflow the buffer.
+        const T* v = (const T*)mxGetData(args[1]);
+        for (int i = 0; i < count; ++i) {
+            double d = (double)v[i];
+            if (!(d >= 0.0) || !std::isfinite(d)) {
+                mrs::fail("psychimgui:Range",
+                          "%s: values must be finite and not negative; value %d is %g.", kCmd,
+                          i + 1, d);
+                return;
+            }
+        }
         // ImPlot's string form hands a NULL format to snprintf. No labels
         // is the formatter form with no formatter.
         if (fmt)
@@ -348,6 +364,7 @@ void bi_ImPlotPlotImage(int nlhs, mxArray** plhs, int nargin, const mxArray** ar
     if (specAt > 6 && !mxIsEmpty(args[6])) mrs::getVec(args[6], "tintCol", tint, 4);
     ImPlotSpec spec;
     mrs::getSpec(args, nargin, specAt, spec, sizeof(double));
+    mrs::specNoStride(spec, kCmd);
     if (mrs::failed()) return;
 
     ImVec2 tl, tr, br, bl;

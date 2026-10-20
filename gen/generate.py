@@ -415,6 +415,41 @@ CALL_HOOKS = {
                                "mrs::fail(\"psychimgui:Usage\", \"TableAngledHeadersRow "
                                "needs an open table: call it between BeginTable and "
                                "EndTable.\"); return; }"], []),
+    # ImPlot and ImPlot3D assert on these and then index the colormap tables
+    # anyway (SPEC.md 14.18). Keyed by the full name: the two libraries share
+    # the subcommand names.
+    "ImPlot.ColormapSlider": ([
+        "if (v_t != v_t) { mrs::fail(\"psychimgui:Range\", \"ImPlot.ColormapSlider: t must "
+        "not be NaN.\"); return; }"], []),
+    # ColormapButton samples the colormap at style.ButtonTextAlign.x unclamped.
+    "ImPlot.ColormapButton": ([
+        "{ float a = ImGui::GetStyle().ButtonTextAlign.x; if (!(a >= 0.0f && a <= 1.0f)) { "
+        "mrs::fail(\"psychimgui:Usage\", \"ImPlot.ColormapButton needs ButtonTextAlign.x in "
+        "[0, 1], got %g.\", (double)a); return; } }"], []),
+    "ImPlot.SampleColormap": ([
+        "if (v_t != v_t) { mrs::fail(\"psychimgui:Range\", \"ImPlot.SampleColormap: t must not "
+        "be NaN.\"); return; }",
+        "v_t = v_t < 0.0f ? 0.0f : (v_t > 1.0f ? 1.0f : v_t);"], []),
+    "ImPlot.AddColormap": ([
+        "if (cv_cols.n < 2) { mrs::fail(\"psychimgui:Usage\", \"ImPlot.AddColormap needs at "
+        "least 2 colors, got %d.\", cv_cols.n); return; }",
+        "if (ImPlot::GetColormapIndex(v_name) != -1) { mrs::fail(\"psychimgui:Usage\", "
+        "\"ImPlot.AddColormap: a colormap named '%s' exists already.\", v_name); return; }"], []),
+    "ImPlot.PushColormap": ([
+        "if (ImPlot::GetColormapIndex(v_name) == -1) { mrs::fail(\"psychimgui:Usage\", "
+        "\"ImPlot.PushColormap: no colormap named '%s'.\", v_name); return; }"], []),
+    "ImPlot3D.SampleColormap": ([
+        "if (v_t != v_t) { mrs::fail(\"psychimgui:Range\", \"ImPlot3D.SampleColormap: t must not "
+        "be NaN.\"); return; }",
+        "v_t = v_t < 0.0f ? 0.0f : (v_t > 1.0f ? 1.0f : v_t);"], []),
+    "ImPlot3D.AddColormap": ([
+        "if (cv_cols.n < 2) { mrs::fail(\"psychimgui:Usage\", \"ImPlot3D.AddColormap needs at "
+        "least 2 colors, got %d.\", cv_cols.n); return; }",
+        "if (ImPlot3D::GetColormapIndex(v_name) != -1) { mrs::fail(\"psychimgui:Usage\", "
+        "\"ImPlot3D.AddColormap: a colormap named '%s' exists already.\", v_name); return; }"], []),
+    "ImPlot3D.PushColormap": ([
+        "if (ImPlot3D::GetColormapIndex(v_name) == -1) { mrs::fail(\"psychimgui:Usage\", "
+        "\"ImPlot3D.PushColormap: no colormap named '%s'.\", v_name); return; }"], []),
     # ImPlot dereferences the current subplot after an assert in both.
     "EndSubplots": (["if (!pig::implotSubplotOpen()) { mrs::fail(\"psychimgui:Usage\", "
                      "\"ImPlot.EndSubplots without an open ImPlot.BeginSubplots. Call it "
@@ -476,6 +511,10 @@ def plot_guard(ns, mat):
     return [f"if (!{fn}) {{ mrs::fail(\"psychimgui:Usage\", \"{ns}.{mat} needs an "
             f"open plot: call it between {ns}.BeginPlot and {ns}.EndPlot.\"); return; }}"]
 
+
+# Families that look up a colormap color from every data value. NaN and
+# infinite values index the colormap table out of bounds (SPEC.md 14.18).
+FINITE_FAMILIES = {"ImPlot.PlotHeatmap", "ImPlot3D.PlotSurface"}
 
 # Data argument names of a family whose arrays are not the generic xs and ys,
 # keyed by (full name, number of data arrays).
@@ -567,7 +606,7 @@ _PLOT_FRAME_FREE = {
 }
 IMPLOT_FRAME_FREE = _PLOT_FRAME_FREE | {
     "SetNextAxisLimits", "SetNextAxesLimits", "SetNextAxisToFit", "SetNextAxesToFit",
-    "HideNextItem", "BustColorCache", "GetLastItemColor", "MapInputDefault",
+    "HideNextItem", "GetLastItemColor", "MapInputDefault",
     "MapInputReverse",
 }
 IMPLOT3D_FRAME_FREE = set(_PLOT_FRAME_FREE)
@@ -859,12 +898,14 @@ def mat_default(a: Arg) -> str:
     return d
 
 
-def emit_handler(mat_name, d, args, exposed, sig_const, linkage="static", guard=()):
+def emit_handler(mat_name, d, args, exposed, sig_const, linkage="static", guard=(),
+                 full_name=None):
     fn = "h_" + mat_name.replace(".", "_")
     call = f"{d.get('namespace', 'ImGui')}::{d['funcname']}"
     if any(a.kind == "drawlist" for a in args):
         call = f"v_self->{d['funcname']}"
-    hook_pre, hook_post = CALL_HOOKS.get(mat_name, ([], []))
+    hook_pre, hook_post = CALL_HOOKS.get(full_name or mat_name,
+                                         CALL_HOOKS.get(mat_name, ([], [])))
     hook_pre = list(guard) + list(hook_pre)
     req = sum(1 for a in exposed if a.default is None)
     tot = len(exposed)
@@ -1298,7 +1339,17 @@ def emit_implot_group(mat_name, overloads, enum_types, sig_const, ns="ImPlot"):
         T.append("    (void)nlhs; (void)plhs;")
         T.append(f"    {conf['spec_t']} v_spec;")
         T.append("    mrs::getSpec(args, nargin, specAt, v_spec, sizeof(T_));")
+        if "count" in roles and not has_faces:
+            T.append("    count = mrs::specCount(v_spec, count, sizeof(T_));")
+        else:
+            T.append(f'    mrs::specNoStride(v_spec, "{prefix}{mat_name}");')
         T.append("    if (mrs::failed()) return;")
+        if prefix + mat_name in FINITE_FAMILIES:
+            for i in range(n_data):
+                T.append(f"    if (!mrs::allFinite((const T_*)mxGetData(args[{1 + i}]), "
+                         f"mxGetNumberOfElements(args[{1 + i}]))) {{ mrs::fail("
+                         f'"psychimgui:Range", "{prefix}{mat_name}: the data must be finite. '
+                         f'Replace NaN and Inf first, for example with fillmissing."); return; }}')
         if has_rows:
             T.append("    // MATLAB stores a matrix column major, so let ImPlot read it")
             T.append("    // that way instead of transposing a copy.")
@@ -1674,7 +1725,8 @@ def build_section(entries_in, by_ov, enum_types, prefix, linkage="static", cpp_n
                                      set(suppress), enum_types)
             sig_const = "kSig_" + hmat.replace(".", "_")
             guard = plot_guard(plot_ns, mat) if prefix in ("ImPlot.", "ImPlot3D.") else []
-            src, nouts, ret = emit_handler(hmat, d, args, exposed, sig_const, linkage, guard)
+            src, nouts, ret = emit_handler(hmat, d, args, exposed, sig_const, linkage, guard,
+                                           full_name=prefix + mat)
         except Refused as e:
             refused.append((ov, str(e)))
             continue

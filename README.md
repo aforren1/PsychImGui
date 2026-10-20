@@ -103,8 +103,8 @@ The output is a struct. `psychimgui` is the version of the binding, and
 libraries. For example:
 
 ```
-                imgui: '1.92.9b'
-             imguiNum: 19291
+                imgui: '1.93.0'
+             imguiNum: 19300
            psychimgui: '0.1.0'
              renderer: 'none'
                   ...
@@ -521,7 +521,13 @@ The trailing name-value pairs set the `ImPlotSpec` of the item: `LineColor`,
 `MarkerLineColor`, `MarkerFillColor`, `Size`, `Offset`, `Stride`, and `Flags`.
 A struct with the same field names works too. Colors are a 1x4 double in 0 to
 1 or the word `'Auto'`; `Marker` takes a name such as `'Circle'`; `Flags` takes
-a number, a name, or a cellstr of names.
+a number, a name, or a cellstr of names. `Stride` is in elements: `'Stride', 2`
+plots every second element. `Offset` starts at that element and wraps around.
+
+NaN in the data leaves a gap in a line or a scatter plot. A heat map and a 3D
+surface need finite data, because each value picks a colormap color; replace
+NaN first, for example with `fillmissing`. A pie chart needs values that are
+finite and not negative.
 
 ### Plot against a second y axis
 
@@ -735,6 +741,12 @@ The `DrawList.` shape subcommands are `AddLine`, `AddRect`, `AddRectFilled`,
 `AddConcavePolyFilled`. `PushClipRect` and `PopClipRect` limit the drawing to
 a rectangle.
 
+The outline subcommands take an optional `flags` last: a corner such as
+`'ImDrawFlags_RoundTop'`, or a stroke position such as
+`'ImDrawFlags_StrokeCenter'`. Since Dear ImGui 1.93 an outline lies inside the
+shape by default, and `AddLine` no longer adds half a pixel to its ends; pass
+`'ImDrawFlags_StrokeLegacy'` for the 1.92 look.
+
 For a shape made of lines and arcs, build a path, then stroke or fill it. Start
 with `PathLineTo`, add `PathLineTo`, `PathArcTo`, `PathEllipticalArcTo`,
 `PathBezierCubicCurveTo`, `PathBezierQuadraticCurveTo`, or `PathRect`, and end
@@ -815,6 +827,11 @@ PsychImGui('SetStyle', jsondecode(fileread('theme.json')));
 To make a theme interactively, show `PsychImGui('ShowStyleEditor')` in a
 frame, change the style with the mouse, then save `GetStyle`.
 
+A theme saved with Dear ImGui 1.92 (PsychImGui 0.3) that has
+`CurveTessellationTol`, `AntiAliasedLinesUseTex`, or a `Docking` field does
+not load: remove those fields. `CurveTessellationMaxError` is
+`sqrt(CurveTessellationTol)`.
+
 The sizes in the struct do not include the global scale, so a theme saved at
 scale 2 loads the same at scale 1. A field or color name that this version of
 Dear ImGui does not have raises `psychimgui:Usage`, so a misspelled name
@@ -824,8 +841,11 @@ cannot be lost without notice.
 `ImPlot3D.SetStyle` do the same for the plots. The global scale does not apply
 to them.
 
+`SetStyle` refuses a value that Dear ImGui cannot draw with, such as `Alpha`
+above 1 or a `WindowMenuButtonPosition` of Up; the error names the field.
+
 Call these subcommands when no `PushStyleVar`, `PushStyleColor`, or
-`PushFont` is active, of the library in question. Otherwise they raise
+`PushFont` is active, of the library in question, and outside `BeginDisabled`. Otherwise they raise
 `psychimgui:Usage`: a pushed value is temporary, and saving it would make it
 permanent.
 
@@ -843,7 +863,8 @@ widget per element: `[~, xy] = PsychImGui('DragDouble', 'position', xy, 0.001)`.
 
 A `format` argument, such as `'%.2f ms'`, may hold text and one conversion for
 the value: `%d` for an integer widget such as `SliderInt`, `%f`, `%g`, or `%e`
-for the others. Any other conversion raises `psychimgui:Usage`.
+for the others. Any other conversion, or one with more than 3 digits in its width or
+precision, raises `psychimgui:Usage`.
 
 Most subcommands work only between `NewFrame` and `Render`. Outside a frame
 they raise `psychimgui:Usage`. These work at any time after `Init`: the input

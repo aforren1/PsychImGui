@@ -20,7 +20,7 @@ function test_drawlist()
     PsychImGui('DrawList.AddLine', w, [10 10], [100 100], red);
     PsychImGui('DrawList.AddLine', w, [10 10], [100 100], red, 3);
     PsychImGui('DrawList.AddRect', w, [10 10], [60 40], red, 4, 2, ...
-               'ImDrawFlags_RoundCornersTop');
+               'ImDrawFlags_RoundTop');
     PsychImGui('DrawList.AddRectFilled', b, [0 0], [640 480], [0.1 0.1 0.1 1]);
     PsychImGui('DrawList.AddCircle', f, [320 240], 50, red, 32, 2);
     PsychImGui('DrawList.AddCircleFilled', f, [320 240], 20, [0 1 0 0.5]);

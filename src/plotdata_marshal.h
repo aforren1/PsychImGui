@@ -6,6 +6,10 @@
 // the other.
 #pragma once
 
+#include <math.h>
+
+#include <type_traits>
+
 #include "marshal.h"
 
 namespace mrs {
@@ -75,6 +79,46 @@ inline mxClassID checkData(const mxArray** args, int first, int n, const char* c
     }
     *count = (int)mxGetNumberOfElements(args[first]);
     return mxGetClassID(args[first]);
+}
+
+// True when no element is NaN or infinite. The heat map and the surface look
+// up a colormap color from each value, and ImPlot turns NaN into the index
+// INT_MIN there; an infinite value does the same through the automatic scale.
+template <typename T>
+inline bool allFinite(const T* p, size_t n) {
+    if constexpr (std::is_floating_point<T>::value) {
+        for (size_t i = 0; i < n; ++i)
+            if (!isfinite(p[i])) return false;
+    }
+    (void)p;
+    (void)n;
+    return true;
+}
+
+// The element count an item may read with the spec's Stride and Offset.
+// The handlers pass the whole array, so a stride of k elements may read only
+// every k-th element: (count - 1) / k + 1 of them. ImPlot reads element
+// (Offset + i) % count, which is negative for a negative Offset, so Offset is
+// moved into [0, count). Stride is in bytes here (specField converts it), and
+// -1 is IMPLOT_AUTO and IMPLOT3D_AUTO, one element.
+template <typename S>
+inline int specCount(S& spec, int count, size_t elemSize) {
+    if (failed() || count <= 0) return count;
+    if (spec.Stride != -1 && spec.Stride != (int)elemSize) {
+        int k = spec.Stride / (int)elemSize;
+        count = (count - 1) / k + 1;
+    }
+    spec.Offset = ((spec.Offset % count) + count) % count;
+    return count;
+}
+
+// For the items whose data has a shape, a grid or faces, that a stride or an
+// offset would break.
+template <typename S>
+inline void specNoStride(const S& spec, const char* cmd) {
+    if (failed()) return;
+    if (spec.Stride != -1 || spec.Offset != 0)
+        fail("psychimgui:Usage", "%s does not take the Stride and Offset spec fields.", cmd);
 }
 
 }  // namespace mrs

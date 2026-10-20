@@ -5711,7 +5711,7 @@ function test_gen_marshal()
     %% DrawList.AddLine (full)
     tf_begin();
     try
-        PsychImGui('DrawList.AddLine', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [1 0 0 1], 0);
+        PsychImGui('DrawList.AddLine', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [1 0 0 1], 0, 0);
         t_ok('DrawList.AddLine full', true);
     catch e
         t_ok('DrawList.AddLine full', false);
@@ -5777,7 +5777,7 @@ function test_gen_marshal()
     %% DrawList.AddCircle (full)
     tf_begin();
     try
-        PsychImGui('DrawList.AddCircle', PsychImGui('GetWindowDrawList'), [0 0], 0, [1 0 0 1], 0, 0);
+        PsychImGui('DrawList.AddCircle', PsychImGui('GetWindowDrawList'), [0 0], 0, [1 0 0 1], 0, 0, 0);
         t_ok('DrawList.AddCircle full', true);
     catch e
         t_ok('DrawList.AddCircle full', false);
@@ -5821,7 +5821,7 @@ function test_gen_marshal()
     %% DrawList.AddTriangle (full)
     tf_begin();
     try
-        PsychImGui('DrawList.AddTriangle', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [0 0], [1 0 0 1], 0);
+        PsychImGui('DrawList.AddTriangle', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [0 0], [1 0 0 1], 0, 0);
         t_ok('DrawList.AddTriangle full', true);
     catch e
         t_ok('DrawList.AddTriangle full', false);
@@ -5909,7 +5909,7 @@ function test_gen_marshal()
     %% DrawList.AddConvexPolyFilled (full)
     tf_begin();
     try
-        PsychImGui('DrawList.AddConvexPolyFilled', PsychImGui('GetWindowDrawList'), [0 0; 10 10; 20 0], [1 0 0 1]);
+        PsychImGui('DrawList.AddConvexPolyFilled', PsychImGui('GetWindowDrawList'), [0 0; 10 10; 20 0], [1 0 0 1], 0);
         t_ok('DrawList.AddConvexPolyFilled full', true);
     catch e
         t_ok('DrawList.AddConvexPolyFilled full', false);
@@ -5956,7 +5956,7 @@ function test_gen_marshal()
     %% DrawList.AddQuad (full)
     tf_begin();
     try
-        PsychImGui('DrawList.AddQuad', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [0 0], [0 0], [1 0 0 1], 0);
+        PsychImGui('DrawList.AddQuad', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [0 0], [0 0], [1 0 0 1], 0, 0);
         t_ok('DrawList.AddQuad full', true);
     catch e
         t_ok('DrawList.AddQuad full', false);
@@ -6000,7 +6000,7 @@ function test_gen_marshal()
     %% DrawList.AddNgon (full)
     tf_begin();
     try
-        PsychImGui('DrawList.AddNgon', PsychImGui('GetWindowDrawList'), [0 0], 0, [1 0 0 1], 0, 0);
+        PsychImGui('DrawList.AddNgon', PsychImGui('GetWindowDrawList'), [0 0], 0, [1 0 0 1], 0, 0, 0);
         t_ok('DrawList.AddNgon full', true);
     catch e
         t_ok('DrawList.AddNgon full', false);
@@ -6044,7 +6044,7 @@ function test_gen_marshal()
     %% DrawList.AddEllipse (full)
     tf_begin();
     try
-        PsychImGui('DrawList.AddEllipse', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [1 0 0 1], 0, 0, 0);
+        PsychImGui('DrawList.AddEllipse', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [1 0 0 1], 0, 0, 0, 0);
         t_ok('DrawList.AddEllipse full', true);
     catch e
         t_ok('DrawList.AddEllipse full', false);
@@ -6088,7 +6088,7 @@ function test_gen_marshal()
     %% DrawList.AddBezierCubic (full)
     tf_begin();
     try
-        PsychImGui('DrawList.AddBezierCubic', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [0 0], [0 0], [1 0 0 1], 0, 0);
+        PsychImGui('DrawList.AddBezierCubic', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [0 0], [0 0], [1 0 0 1], 0, 0, 0);
         t_ok('DrawList.AddBezierCubic full', true);
     catch e
         t_ok('DrawList.AddBezierCubic full', false);
@@ -6110,7 +6110,7 @@ function test_gen_marshal()
     %% DrawList.AddBezierQuadratic (full)
     tf_begin();
     try
-        PsychImGui('DrawList.AddBezierQuadratic', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [0 0], [1 0 0 1], 0, 0);
+        PsychImGui('DrawList.AddBezierQuadratic', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [0 0], [1 0 0 1], 0, 0, 0);
         t_ok('DrawList.AddBezierQuadratic full', true);
     catch e
         t_ok('DrawList.AddBezierQuadratic full', false);
@@ -6382,7 +6382,7 @@ function test_gen_marshal()
     %% DrawList.PathFillConvex (full)
     tf_begin();
     try
-        PsychImGui('DrawList.PathFillConvex', PsychImGui('GetWindowDrawList'), [1 0 0 1]);
+        PsychImGui('DrawList.PathFillConvex', PsychImGui('GetWindowDrawList'), [1 0 0 1], 0);
         t_ok('DrawList.PathFillConvex full', true);
     catch e
         t_ok('DrawList.PathFillConvex full', false);

@@ -137,7 +137,8 @@ inline void specField(ImPlotSpec& spec, const char* name, const mxArray* v,
     else if (strcmp(name, "Marker") == 0) spec.Marker = (ImPlotMarker)specMarker(v);
     else if (strcmp(name, "Offset") == 0) spec.Offset = getInt(v, "Offset");
     else if (strcmp(name, "Stride") == 0)
-        spec.Stride = (int)(getInt(v, "Stride") * (int)elemSize);
+        // In elements, at least one; the bound keeps the bytes in an int.
+        spec.Stride = (int)getIntRanged(v, "Stride", 1, 2147483647.0 / 8) * (int)elemSize;
     else if (strcmp(name, "Flags") == 0)
         spec.Flags = (ImPlotItemFlags)getFlags(v, "Flags");
     else

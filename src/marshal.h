@@ -291,7 +291,7 @@ inline double getFlags(const mxArray* a, const char* argname) {
 }
 
 // A printf format for one number: text with at most one conversion, with
-// optional flags, width, and precision and no length modifier. Dear ImGui and
+// optional flags, width, and precision, short ones, and no length modifier. Dear ImGui and
 // ImPlot pass the format and the value straight to snprintf, so '%s' would
 // read the number as a pointer and crash the host. A double takes e, f, g, or
 // a; an int takes d, i, u, x, or o.
@@ -306,11 +306,22 @@ inline bool checkNumberFormat(const char* fmt, const char* argname, bool integer
             continue;
         }
         ++p;
-        while (*p && strchr("-+ #0'", *p)) ++p;
-        while (*p >= '0' && *p <= '9') ++p;
+        // Dear ImGui copies one conversion into a 32 byte buffer to round
+        // the value, and the copy is unbounded once its assert returns. At
+        // most 5 flags and 3 digits each keep a conversion at 14 characters.
+        int nFlags = 0, nWidth = 0, nPrec = 0;
+        while (*p && strchr("-+ #0'", *p)) ++p, ++nFlags;
+        while (*p >= '0' && *p <= '9') ++p, ++nWidth;
         if (*p == '.') {
             ++p;
-            while (*p >= '0' && *p <= '9') ++p;
+            while (*p >= '0' && *p <= '9') ++p, ++nPrec;
+        }
+        if (nFlags > 5 || nWidth > 3 || nPrec > 3) {
+            fail("psychimgui:Usage",
+                 "Argument '%s' ('%s'): a conversion takes at most 5 flags and 3 digits each "
+                 "for its width and precision.",
+                 argname, fmt);
+            return false;
         }
         if (!*p || !strchr(convs, *p) || ++conversions > 1) {
             fail("psychimgui:Usage",

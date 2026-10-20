@@ -119,6 +119,10 @@ inline bool styleFromStruct(const StyleDesc& d, const mxArray* s, void* style) {
                 double t[4] = {0, 0, 0, 1};
                 mrs::getVec(mxGetFieldByNumber(v, 0, j), cn, t, 4);
                 if (mrs::failed()) return false;
+                if (t[0] != t[0] || t[1] != t[1] || t[2] != t[2] || t[3] != t[3]) {
+                    mrs::fail("psychimgui:Range", "%s: color %s must not be NaN.", d.cmd, cn);
+                    return false;
+                }
                 col[k] = ImVec4((float)t[0], (float)t[1], (float)t[2], (float)t[3]);
             }
             continue;

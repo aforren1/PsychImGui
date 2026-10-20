@@ -62,6 +62,7 @@ void bi_ImPlot3DPlotImage(int nlhs, mxArray** plhs, int nargin, const mxArray** 
     if (specAt > 3 && !mxIsEmpty(args[3])) mrs::getVec(args[3], "tintCol", tint, 4);
     ImPlot3DSpec spec;
     mrs::getSpec(args, nargin, specAt, spec, sizeof(double));
+    mrs::specNoStride(spec, kCmd);
     if (mrs::failed()) return;
     // ImPlot3D flips v of every corner (v = 1 - v), its convention for an
     // image with v = 0 at the bottom. Flipping here first cancels that, so

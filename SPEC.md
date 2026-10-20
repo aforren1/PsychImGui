@@ -57,8 +57,8 @@ readouts, calibration tools, and debugging overlays.
 
 | Dependency | Version | Location | Reason |
 |---|---|---|---|
-| cimgui | commit tracking Dear ImGui v1.92.9b | `third_party/cimgui` (git submodule) | Provides `generator/output/definitions.json` and `structs_and_enums.json` as machine-readable API metadata. The submodule also contains Dear ImGui as a nested submodule, so the two stay version-matched. cimgui C sources are not compiled. |
-| Dear ImGui | v1.92.9b (through cimgui) | `third_party/cimgui/imgui` | Core library plus `backends/imgui_impl_opengl3.*`. |
+| cimgui | commit tracking Dear ImGui v1.93.0 | `third_party/cimgui` (git submodule) | Provides `generator/output/definitions.json` and `structs_and_enums.json` as machine-readable API metadata. The submodule also contains Dear ImGui as a nested submodule, so the two stay version-matched. cimgui C sources are not compiled. |
+| Dear ImGui | v1.93.0 (through cimgui) | `third_party/cimgui/imgui` | Core library plus `backends/imgui_impl_opengl3.*`. |
 | cimplot | commit from the same date as the cimgui pin | `third_party/cimplot` (git submodule) | Provides `generator/output/definitions.json` for ImPlot and contains ImPlot as a nested submodule. The cimgui project updates cimgui and cimplot together, so pins from the same day match. cimplot C sources are not compiled. |
 | ImPlot | v1.x (through cimplot) | `third_party/cimplot/implot` | `implot.cpp`, `implot_items.cpp`, `implot_demo.cpp`. Compiled with `PSYCHIMGUI_IMPLOT=ON` (default). |
 | cimplot3d | commit from the same day as the cimplot pin | `third_party/cimplot3d` (plain clone, phase 3) | `definitions.json` for ImPlot3D, and ImPlot3D as a nested submodule. |
@@ -1231,7 +1231,7 @@ implemented.
 | Deviation | Reason |
 |---|---|
 | `third_party/cimgui` and `third_party/cimplot` are git submodules, pinned at the commits in `third_party/PINS.md`. They started as plain clones while phase 1 was written and were registered as submodules at the same paths and commits on 2026-09-22. | The repository did not exist while phase 1 was written. |
-| The cimplot pin is not from the same day as the cimgui pin. | cimgui is pinned at 2026-09-14 (Dear ImGui 1.92.9b) and cimplot at 2026-08-13 (ImPlot 1.1 WIP), which is the newest cimplot commit. ImPlot 1.1 compiles and links against Dear ImGui 1.92.9b unchanged, and the whole ImPlot test suite passes. |
+| The cimplot pin is not from the same day as the cimgui pin. | Section 14.17: cimgui is pinned at 2026-10-18 (Dear ImGui 1.93.0) and cimplot at 2026-10-17, its regeneration against 1.93. ImPlot compiles and links against Dear ImGui 1.93.0 unchanged, and the whole ImPlot test suite passes. |
 | `third_party/tracy` is not cloned. Phase 3 clones it for profiling builds, 14.11. | Tracy is optional. See 14.5. |
 
 ### 14.2 Build
@@ -1570,7 +1570,7 @@ otherwise.
 
 | Deviation | Reason |
 |---|---|
-| A generated ImGui, ImPlot, or ImPlot3D subcommand raises `psychimgui:Usage` outside `NewFrame` to `Render` (dispatch flag `kEntryNeedsFrame`). The exceptions work at any time after `Init`: the input queries (`IsKeyDown`, `IsMouseClicked`, `GetMousePos`, and the like), `SetNextWindow*`, `SetNextItemOpen`, `SetNextItemWidth`, the style and colormap stacks, the font and frame height queries, `TableGetRowIndex`, `TableGetHoveredColumn`, the ini settings calls, and ImPlot's `SetNextAxis*`, `HideNextItem`, `BustColorCache`, `GetLastItemColor`, and `MapInput*`. `IMGUI_FRAME_FREE`, `IMPLOT_FRAME_FREE`, and `IMPLOT3D_FRAME_FREE` in `gen/generate.py` list them. `DrawList.*` needs no flag, because a draw list handle already expires at `Render` (section 5.6). | Outside a frame Dear ImGui has no current window. `Button` and `GetWindowPos` dereferenced the null window and crashed the host. Before this change only the three draw list getters checked for a frame, through call hooks that the flag replaces. |
+| A generated ImGui, ImPlot, or ImPlot3D subcommand raises `psychimgui:Usage` outside `NewFrame` to `Render` (dispatch flag `kEntryNeedsFrame`). The exceptions work at any time after `Init`: the input queries (`IsKeyDown`, `IsMouseClicked`, `GetMousePos`, and the like), `SetNextWindow*`, `SetNextItemOpen`, `SetNextItemWidth`, the style and colormap stacks, the font and frame height queries, `TableGetRowIndex`, `TableGetHoveredColumn`, the ini settings calls, and ImPlot's `SetNextAxis*`, `HideNextItem`, `GetLastItemColor`, and `MapInput*` (section 14.18 removed `BustColorCache`). `IMGUI_FRAME_FREE`, `IMPLOT_FRAME_FREE`, and `IMPLOT3D_FRAME_FREE` in `gen/generate.py` list them. `DrawList.*` needs no flag, because a draw list handle already expires at `Render` (section 5.6). | Outside a frame Dear ImGui has no current window. `Button` and `GetWindowPos` dereferenced the null window and crashed the host. Before this change only the three draw list getters checked for a frame, through call hooks that the flag replaces. |
 | An enum argument that the libraries use as an array index raises `psychimgui:Range` when it is out of range. The generator takes the range from the enum data: `[min, <Type>_COUNT - 1]` for each enum with a `_COUNT` member, plus `ImPlotScale` and `ImPlot3DScale`. Where the C default is `IMPLOT_AUTO`, `-1` is accepted too. `ImGuiKey` must be a named key or one `ImGuiMod_` modifier. An `ImGuiKeyChord` must be a named key with optional modifiers, or one modifier alone. A colormap index must be below `GetColormapCount`, and `-1` is accepted only where it is the C default. `GetColormapColor` refuses a negative `idx`. | Dear ImGui and ImPlot check these with `IM_ASSERT`, which returns (section 8.3), and then index an array with the value. For example, `ImAxis` 6 would index past `ImPlotPlot::Axes`, and a negative `idx` stays negative after `idx % size`. Colormaps are checked at run time because `AddColormap` changes the count. |
 | `ImPlot.EndPlot` and `ImPlot3D.EndPlot` raise `psychimgui:Usage` when no plot is open. Section 14.15 adds the same check to `ImPlot.EndSubplots`. | Both libraries dereference the current plot after an assert. A call after `BeginPlot` returned false, a common mistake, crashed the host. |
 | `TableGetColumnFlags`, `TableGetColumnName`, and `TableSetColumnEnabled` raise `psychimgui:Usage` outside a table. They raise `psychimgui:Range` for a column that is not in the table, and for `-1` before the first cell. `TableAngledHeadersRow` raises `psychimgui:Usage` outside a table. | Dear ImGui indexes its column array with the column after an assert, or dereferences the table without one. |
@@ -1621,8 +1621,9 @@ is a double scalar, an `ImVec2` a 1x2 double, a bool a logical, and an enum,
 flags, or colormap member a double. `SetStyle` accepts any subset of the
 fields, and an enum or flags field by name as well. It raises
 `psychimgui:Usage` for an unknown field or color name, `psychimgui:Range` for
-NaN, an enum out of range, or a colormap index at or past `GetColormapCount`,
-and changes nothing when it raises. The file format is left to MATLAB:
+NaN, an enum out of range, a colormap index at or past `GetColormapCount`, or a
+value that Dear ImGui asserts on at every frame (section 14.18), and changes
+nothing when it raises. The file format is left to MATLAB:
 `jsonencode` and `jsondecode` round trip a style exactly.
 
 The field tables are generated into `src/gen_style_imgui.h`,
@@ -1640,3 +1641,40 @@ generator leaves out `FontScaleMain`, which `SetGlobalScale` owns,
 | `GetStyle`, `SetStyle`, and `SetGlobalScale` raise `psychimgui:Usage` while a `PushStyleVar`, `PushStyleColor`, or `PushFont` is active. The ImPlot and ImPlot3D pairs do the same for their style, color, and colormap pushes. | A pop restores the value saved at the push. Reading a pushed value into the base would make it permanent, and a rebuild under a push would be undone by the pop. |
 | `ImPlot.SetStyle` calls `ImPlot::BustColorCache`. | Items keep the colormap colors they got at first use; a new theme recolors them. |
 | `ImPlot3DStyle.Marker` is an `int` in the metadata and is checked as an `ImPlot3DMarker`. | `STYLE_FIELD_ENUMS` in the generator. |
+
+### 14.17 Dear ImGui 1.93.0
+
+The binding builds against Dear ImGui 1.93.0, ImPlot 1.1 WIP, and ImPlot3D
+0.5 WIP at the commits in `third_party/PINS.md`.
+
+| Deviation | Reason |
+|---|---|
+| Dear ImGui is the `master` flavor, without docking. The docking enum names (`ImGuiWindowFlags_NoDocking`, `ImGuiConfigFlags_DockingEnable`, `ImGuiCol_DockingPreview`, and the others), the style variable `ImGuiStyleVar_DockingSeparatorSize`, and the style fields `DockingSeparatorSize` and `DockingNodeHasCloseButton` are gone. | No cimgui commit bundles the `v1.93.0-docking` tag, and the binding never enables docking. Section 1 keeps docking out of scope. |
+| `ImDrawFlags_RoundCorners*` is now `ImDrawFlags_Round*`, and the `ImDrawListFlags_*` names are now `ImDrawFlags_*`. The old names are not accepted. | Dear ImGui keeps them only as obsolete redirections, which `IMGUI_DISABLE_OBSOLETE_FUNCTIONS` removes. Accepting them would need an alias table outside the metadata. |
+| `DrawList.AddLine`, `AddCircle`, `AddTriangle`, `AddQuad`, `AddNgon`, `AddEllipse`, `AddBezierCubic`, `AddBezierQuadratic`, `AddConvexPolyFilled`, and `PathFillConvex` take an optional trailing `flags`. | Dear ImGui 1.93 added the argument. Outlines now lie inside the shape by default, and `AddLine` and `AddCircle` lost a half pixel offset; `ImDrawFlags_StrokeLegacy` restores the 1.92 rendering. |
+| `GetBackgroundDrawList` and `GetForegroundDrawList` bind the overloads without a viewport (`_Nil`). | The viewport overload of the master flavor has no default for its viewport. The MATLAB signatures do not change. |
+| The style fields `CurveTessellationTol` and `AntiAliasedLinesUseTex` are gone, and `CurveTessellationMaxError` and `AntiAliasedLineEnds` are new. A theme saved with 0.3 that has a removed field raises `psychimgui:Usage` in `SetStyle`. | Section 14.16 refuses unknown names on purpose. `CurveTessellationMaxError` is `sqrt(CurveTessellationTol)`. |
+| `StyleColorsDark` and `StyleColorsLight` have new colors. | Upstream refreshed both presets in 1.93. |
+
+### 14.18 Review fixes
+
+A review of sections 14.14 to 14.16 found inputs that still crashed the host.
+Each one reached an `IM_ASSERT` that returns (section 8.3) and then an out of
+bounds access inside the library. `tests/test_safety.m` calls every input
+below and checks for the error instead.
+
+| Deviation | Reason |
+|---|---|
+| `ImPlot.PlotPieChart` raises `psychimgui:Range` for a negative, NaN, or infinite value. | ImPlot draws a slice into a stack buffer of 52 points per half turn. A negative value lets another slice exceed a full turn, so `[3 -2.5]` wrote past the buffer. |
+| `ImPlot.PlotHeatmap` and `ImPlot3D.PlotSurface` raise `psychimgui:Range` when the data has NaN or Inf (`FINITE_FAMILIES` in the generator). | Both look up a colormap color from every value. NaN becomes the index `INT_MIN`; Inf does the same through the automatic scale. The other plot items accept NaN, as a probe of every item confirmed. |
+| The spec field `Stride` is a whole number of elements from 1 up. An item with a stride of k plots every k-th element, `(n - 1) / k + 1` of them, and `Offset` is taken modulo that count. Heat maps, surfaces, meshes, bar groups, pie charts, and images raise `psychimgui:Usage` for `Stride` or `Offset`. | The handlers pass the whole array as the count, so any stride above one element read past its end, and ImPlot takes `(Offset + i) % count`, which is negative for a negative `Offset`. Items whose data has a shape cannot skip elements. |
+| `ImPlot.AddColormap` and `ImPlot3D.AddColormap` raise `psychimgui:Usage` for fewer than 2 colors or a name in use. | ImPlot asserts on both and adds the colormap anyway; an empty one made every later item divide by zero. |
+| `ImPlot.PushColormap` and `ImPlot3D.PushColormap` raise `psychimgui:Usage` for an unknown name. | ImPlot pushes the index -1 after its assert, and the next item reads the colormap table at -1. |
+| `ImPlot.SampleColormap` and `ImPlot3D.SampleColormap` raise `psychimgui:Range` for a NaN `t` and clamp `t` into [0, 1]. `ImPlot.ColormapSlider` raises `psychimgui:Range` for a NaN `t`. | Both sample the colormap table at `t` without a clamp, and ImPlot's own clamp keeps NaN. |
+| `ImPlot.ColormapButton` raises `psychimgui:Usage` when `style.ButtonTextAlign.x` is outside [0, 1], as a `PushStyleVar` can make it. `SetStyle` refuses such an alignment. | ColormapButton samples the colormap at that value without a clamp. |
+| `ImPlot.BustColorCache` needs an open frame. It left `IMPLOT_FRAME_FREE`. | With a title it reads the current window, which is null outside a frame. Section 14.14 listed it as safe by mistake. |
+| A numeric format may have at most 5 flags and 3 digits each in its width and precision. | Dear ImGui copies the conversion into a 32 byte buffer to round a dragged value, and the copy is unbounded once its assert returns. |
+| `SetStyle` raises `psychimgui:Range` for the values that Dear ImGui's `ErrorCheckNewFrameSanityChecks` asserts on: `Alpha` outside [0, 1], `CurveTessellationMaxError` or `CircleTessellationMaxError` not above 0, `WindowMinSize` below 1, `WindowBorderHoverPadding` not above 0, `WindowMenuButtonPosition` other than None, Left, or Right, `ColorButtonPosition` other than Left or Right, and `TreeLinesFlags` other than one DrawLines value. It also refuses an `*Align` field outside [0, 1] and a NaN color. | Each one failed every later `NewFrame`. The generated enum range of section 14.16 allows Up and Down, which Dear ImGui does not. |
+| `SetGlobalScale` keeps `WindowMinSize` and `WindowBorderHoverPadding` at 1 or more after scaling. | A scale such as 0.2 truncated `WindowBorderHoverPadding` to 0, which failed every later `NewFrame`. |
+| A size edited in `ShowStyleEditor` is folded into the base as the smallest value that scales back to the edited size. | `live / scale` scaled and truncated again could give one pixel less: at scale 1.3 an edited 3 became 2. Only the editor writes the live style, so no test can drive this path. |
+| `GetStyle`, `SetStyle`, and `SetGlobalScale` raise `psychimgui:Usage` inside `BeginDisabled`. | `BeginDisabled` changes `Alpha` without a stack entry and restores it at `EndDisabled`. |
