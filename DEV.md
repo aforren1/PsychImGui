@@ -7,7 +7,7 @@ subcommand. [README.md](README.md) is for users of a release.
 the release checklist.
 
 Status: phases 1, 1.5, 2, and 3 complete. 230 Dear ImGui subcommands, 33 draw
-list subcommands, 98 ImPlot subcommands, 52 ImPlot3D subcommands, and 43
+list subcommands, 98 ImPlot subcommands, 52 ImPlot3D subcommands, and 49
 hand-written subcommands, against Dear ImGui 1.92.9b, ImPlot 1.1, ImPlot3D
 0.4, and ImGuiFileDialog 0.6.9. Phase 2 added tables, draw lists, and images
 from Psychtoolbox textures. Phase 3 added one context per window, both eyes
@@ -150,6 +150,7 @@ texture support.
 | `test_helpers_p3.m` | The helpers with two windows and with a stereo window, against the `Screen` stub |
 | `test_input.m` | `PsychImGuiInput` device indices, the wheel path of each system, the wheel sign, `in.events` fields and times, `PsychImGuiEvents('filter')`, `Devices`, against the input stubs in `tf_input_stub.m` |
 | `test_extras.m` | The hand-written widget and plot subcommands: double sliders, sort specs, bar groups, pie charts, plot images, subplots, and axis links |
+| `test_style.m` | `GetStyle`, `SetStyle`, and `SetGlobalScale`: unscaled values, no compounding, JSON round trip, push guards, and the ImPlot and ImPlot3D styles |
 | `test_setup.m` | The two `PsychImGuiSetup` copies are identical; install, `remove` with the MEX locked, and a second `remove`, against a scratch package in `tempdir` |
 
 ### Tests that need a GPU

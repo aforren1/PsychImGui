@@ -776,6 +776,59 @@ so `uv0` and `uv1` select a part of the image as you see it, from the top
 left. `PsychImGuiImage(ig, ptbTex, 'nearest')` shows the pixels without
 smoothing.
 
+## Change the look
+
+Start from a preset, then scale it for the display:
+
+```matlab
+PsychImGui('StyleColorsLight');          % or StyleColorsDark, StyleColorsClassic
+PsychImGui('SetGlobalScale', 1.5);       % fonts and sizes, for a high resolution display
+```
+
+`SetGlobalScale` sets the scale, it does not multiply by it: calling it twice
+with 1.5 gives 1.5, not 2.25.
+
+### Save and load a theme
+
+`GetStyle` returns the style as a struct, with the fields of Dear ImGui's
+`ImGuiStyle` and a `Colors` struct of `[r g b a]` colors by name. `SetStyle`
+takes the struct back, or a struct with only the fields to change:
+
+```matlab
+s = PsychImGui('GetStyle');
+s.WindowRounding = 6;
+s.Colors.WindowBg = [0.10 0.10 0.12 0.95];
+PsychImGui('SetStyle', s);
+PsychImGui('SetStyle', struct('FrameRounding', 4));   % one field
+```
+
+Save the struct as a file in any format MATLAB writes, for example JSON:
+
+```matlab
+fid = fopen('theme.json', 'w');
+fprintf(fid, '%s', jsonencode(PsychImGui('GetStyle'), 'PrettyPrint', true));
+fclose(fid);
+
+PsychImGui('SetStyle', jsondecode(fileread('theme.json')));
+```
+
+To make a theme interactively, show `PsychImGui('ShowStyleEditor')` in a
+frame, change the style with the mouse, then save `GetStyle`.
+
+The sizes in the struct do not include the global scale, so a theme saved at
+scale 2 loads the same at scale 1. A field or color name that this version of
+Dear ImGui does not have raises `psychimgui:Usage`, so a misspelled name
+cannot be lost without notice.
+
+`ImPlot.GetStyle`, `ImPlot.SetStyle`, `ImPlot3D.GetStyle`, and
+`ImPlot3D.SetStyle` do the same for the plots. The global scale does not apply
+to them.
+
+Call these subcommands when no `PushStyleVar`, `PushStyleColor`, or
+`PushFont` is active, of the library in question. Otherwise they raise
+`psychimgui:Usage`: a pushed value is temporary, and saving it would make it
+permanent.
+
 ## Find a subcommand
 
 ```matlab

@@ -99,6 +99,11 @@ struct State {
     char gpuName[32];
     bool frameOpen;
     bool rendered;          // render ran since the last newFrame
+    // The style without the global scale (SPEC.md 14.16). Raw bytes, because
+    // init clears State with memset; filled from the live style on first use.
+    alignas(ImGuiStyle) unsigned char styleBase[sizeof(ImGuiStyle)];
+    bool styleBaseSet;
+    float styleScale;       // 0 until SetGlobalScale, which means 1
 };
 
 State g_slots[kMaxContexts];
@@ -913,11 +918,21 @@ bool pushFont(int idx, double sizePx, Error& err) {
 
 void popFont() { ImGui::PopFont(); }
 
-void setGlobalScale(double s) {
-    ImGuiStyle& st = ImGui::GetStyle();
-    st.FontScaleMain = (float)s;
-    st.ScaleAllSizes((float)s);
+ImGuiStyle* styleBase() {
+    State& g = cur();
+    if (!g.styleBaseSet) {
+        memcpy(g.styleBase, &ImGui::GetStyle(), sizeof(ImGuiStyle));
+        g.styleBaseSet = true;
+    }
+    return (ImGuiStyle*)g.styleBase;
 }
+
+float styleScale() {
+    float s = cur().styleScale;
+    return s > 0.0f ? s : 1.0f;
+}
+
+void setStyleScale(float s) { cur().styleScale = s; }
 
 void styleColors(int which) {
     if (which == 1) ImGui::StyleColorsLight();

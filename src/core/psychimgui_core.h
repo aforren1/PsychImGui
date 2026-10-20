@@ -11,6 +11,7 @@
 struct ImDrawList;
 struct ImFont;
 struct ImGuiContext;
+struct ImGuiStyle;
 
 namespace pig {
 
@@ -169,7 +170,12 @@ bool pushFont(int idx, double sizePx, Error& err);
 void popFont();
 int fontCount();
 
-void setGlobalScale(double s);
+// The style of the current context without the global scale, and the scale
+// (SPEC.md 14.16). style.cpp keeps the live style equal to the base with the
+// sizes scaled; these only store the two.
+ImGuiStyle* styleBase();
+float styleScale();
+void setStyleScale(float s);
 void styleColors(int which);  // 0 dark, 1 light, 2 classic
 
 void versionInfo(VersionInfo& out);

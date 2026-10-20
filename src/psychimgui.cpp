@@ -681,22 +681,6 @@ void bi_PopFont(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
     popFont();
 }
 
-void bi_SetGlobalScale(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
-    (void)nlhs;
-    (void)plhs;
-    if (nargin != 1) {
-        mrs::fail("psychimgui:Usage", "PsychImGui('SetGlobalScale', s)");
-        return;
-    }
-    double s = mrs::getScalar(args[0], "s");
-    if (mrs::failed()) return;
-    if (!(s > 0.0)) {
-        mrs::fail("psychimgui:Range", "SetGlobalScale needs a positive scale, got %g.", s);
-        return;
-    }
-    setGlobalScale(s);
-}
-
 void bi_Image(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
     (void)nlhs;
     (void)plhs;

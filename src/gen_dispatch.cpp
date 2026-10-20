@@ -16,6 +16,12 @@ void bi_AddFontFromFileTTF(int nlhs, mxArray** plhs, int nargin, const mxArray**
 void bi_EndFrame(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_Image(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_ImageButton(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+void bi_GetStyle(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+void bi_SetStyle(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+void bi_ImPlotGetStyle(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+void bi_ImPlotSetStyle(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+void bi_ImPlot3DGetStyle(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+void bi_ImPlot3DSetStyle(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_SliderDouble(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_DragDouble(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_TableGetSortSpecs(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
@@ -5624,6 +5630,12 @@ static const char kSigBi_AddFontFromFileTTF[] = "idx = PsychImGui('AddFontFromFi
 static const char kSigBi_EndFrame[] = "PsychImGui('EndFrame')";
 static const char kSigBi_Image[] = "PsychImGui('Image', tex, size [, uv0=[0 0]] [, uv1=[1 1]] [, bgCol=[0 0 0 0]] [, tintCol=[1 1 1 1]])";
 static const char kSigBi_ImageButton[] = "pressed = PsychImGui('ImageButton', strId, tex, size [, uv0=[0 0]] [, uv1=[1 1]] [, bgCol=[0 0 0 0]] [, tintCol=[1 1 1 1]])";
+static const char kSigBi_GetStyle[] = "s = PsychImGui('GetStyle')";
+static const char kSigBi_SetStyle[] = "PsychImGui('SetStyle', s)";
+static const char kSigBi_ImPlot_GetStyle[] = "s = PsychImGui('ImPlot.GetStyle')";
+static const char kSigBi_ImPlot_SetStyle[] = "PsychImGui('ImPlot.SetStyle', s)";
+static const char kSigBi_ImPlot3D_GetStyle[] = "s = PsychImGui('ImPlot3D.GetStyle')";
+static const char kSigBi_ImPlot3D_SetStyle[] = "PsychImGui('ImPlot3D.SetStyle', s)";
 static const char kSigBi_SliderDouble[] = "[changed, v] = PsychImGui('SliderDouble', label, v, vMin, vMax [, format='%.3f'] [, flags=0])";
 static const char kSigBi_DragDouble[] = "[changed, v] = PsychImGui('DragDouble', label, v [, vSpeed=1.0] [, vMin=0.0] [, vMax=0.0] [, format='%.3f'] [, flags=0])";
 static const char kSigBi_TableGetSortSpecs[] = "[specs, dirty] = PsychImGui('TableGetSortSpecs')";
@@ -5805,6 +5817,7 @@ const Entry kTable[] = {
     {"GetScrollMaxY", h_GetScrollMaxY, kSig_GetScrollMaxY, kEntryNeedsInit | kEntryNeedsFrame},
     {"GetScrollX", h_GetScrollX, kSig_GetScrollX, kEntryNeedsInit | kEntryNeedsFrame},
     {"GetScrollY", h_GetScrollY, kSig_GetScrollY, kEntryNeedsInit | kEntryNeedsFrame},
+    {"GetStyle", bi_GetStyle, kSigBi_GetStyle, kEntryNeedsInit},
     {"GetTextLineHeight", h_GetTextLineHeight, kSig_GetTextLineHeight, kEntryNeedsInit},
     {"GetTextLineHeightWithSpacing", h_GetTextLineHeightWithSpacing, kSig_GetTextLineHeightWithSpacing, kEntryNeedsInit},
     {"GetTime", h_GetTime, kSig_GetTime, kEntryNeedsInit},
@@ -5846,6 +5859,7 @@ const Entry kTable[] = {
     {"ImPlot.GetPlotPos", PIG_IMPLOT_FN(pig_implot::h_GetPlotPos), pig_implot::kSig_GetPlotPos, kEntryNeedsInit | kEntryNeedsFrame},
     {"ImPlot.GetPlotSelection", PIG_IMPLOT_FN(pig_implot::h_GetPlotSelection), pig_implot::kSig_GetPlotSelection, kEntryNeedsInit | kEntryNeedsFrame},
     {"ImPlot.GetPlotSize", PIG_IMPLOT_FN(pig_implot::h_GetPlotSize), pig_implot::kSig_GetPlotSize, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.GetStyle", PIG_IMPLOT_FN(bi_ImPlotGetStyle), kSigBi_ImPlot_GetStyle, kEntryNeedsInit},
     {"ImPlot.HideNextItem", PIG_IMPLOT_FN(pig_implot::h_HideNextItem), pig_implot::kSig_HideNextItem, kEntryNeedsInit},
     {"ImPlot.IsAxisHovered", PIG_IMPLOT_FN(pig_implot::h_IsAxisHovered), pig_implot::kSig_IsAxisHovered, kEntryNeedsInit | kEntryNeedsFrame},
     {"ImPlot.IsLegendEntryHovered", PIG_IMPLOT_FN(pig_implot::h_IsLegendEntryHovered), pig_implot::kSig_IsLegendEntryHovered, kEntryNeedsInit | kEntryNeedsFrame},
@@ -5893,6 +5907,7 @@ const Entry kTable[] = {
     {"ImPlot.SetNextAxisLimits", PIG_IMPLOT_FN(pig_implot::h_SetNextAxisLimits), pig_implot::kSig_SetNextAxisLimits, kEntryNeedsInit},
     {"ImPlot.SetNextAxisLinks", PIG_IMPLOT_FN(bi_ImPlotSetNextAxisLinks), kSigBi_ImPlot_SetNextAxisLinks, kEntryNeedsInit},
     {"ImPlot.SetNextAxisToFit", PIG_IMPLOT_FN(pig_implot::h_SetNextAxisToFit), pig_implot::kSig_SetNextAxisToFit, kEntryNeedsInit},
+    {"ImPlot.SetStyle", PIG_IMPLOT_FN(bi_ImPlotSetStyle), kSigBi_ImPlot_SetStyle, kEntryNeedsInit},
     {"ImPlot.SetupAxes", PIG_IMPLOT_FN(pig_implot::h_SetupAxes), pig_implot::kSig_SetupAxes, kEntryNeedsInit | kEntryNeedsFrame},
     {"ImPlot.SetupAxesLimits", PIG_IMPLOT_FN(pig_implot::h_SetupAxesLimits), pig_implot::kSig_SetupAxesLimits, kEntryNeedsInit | kEntryNeedsFrame},
     {"ImPlot.SetupAxis", PIG_IMPLOT_FN(pig_implot::h_SetupAxis), pig_implot::kSig_SetupAxis, kEntryNeedsInit | kEntryNeedsFrame},
@@ -5928,6 +5943,7 @@ const Entry kTable[] = {
     {"ImPlot3D.GetPlotDrawList", PIG_IMPLOT3D_FN(pig_implot3d::h_GetPlotDrawList), pig_implot3d::kSig_GetPlotDrawList, kEntryNeedsInit | kEntryNeedsFrame},
     {"ImPlot3D.GetPlotRectPos", PIG_IMPLOT3D_FN(pig_implot3d::h_GetPlotRectPos), pig_implot3d::kSig_GetPlotRectPos, kEntryNeedsInit | kEntryNeedsFrame},
     {"ImPlot3D.GetPlotRectSize", PIG_IMPLOT3D_FN(pig_implot3d::h_GetPlotRectSize), pig_implot3d::kSig_GetPlotRectSize, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.GetStyle", PIG_IMPLOT3D_FN(bi_ImPlot3DGetStyle), kSigBi_ImPlot3D_GetStyle, kEntryNeedsInit},
     {"ImPlot3D.NextColormapColor", PIG_IMPLOT3D_FN(pig_implot3d::h_NextColormapColor), pig_implot3d::kSig_NextColormapColor, kEntryNeedsInit | kEntryNeedsFrame},
     {"ImPlot3D.PixelsToPlotPlane", PIG_IMPLOT3D_FN(pig_implot3d::h_PixelsToPlotPlane), pig_implot3d::kSig_PixelsToPlotPlane, kEntryNeedsInit | kEntryNeedsFrame},
     {"ImPlot3D.PixelsToPlotRay", PIG_IMPLOT3D_FN(pig_implot3d::h_PixelsToPlotRay), pig_implot3d::kSig_PixelsToPlotRay, kEntryNeedsInit | kEntryNeedsFrame},
@@ -5951,6 +5967,7 @@ const Entry kTable[] = {
     {"ImPlot3D.PushStyleVarInt", PIG_IMPLOT3D_FN(pig_implot3d::h_PushStyleVarInt), pig_implot3d::kSig_PushStyleVarInt, kEntryNeedsInit},
     {"ImPlot3D.PushStyleVarVec2", PIG_IMPLOT3D_FN(pig_implot3d::h_PushStyleVarVec2), pig_implot3d::kSig_PushStyleVarVec2, kEntryNeedsInit},
     {"ImPlot3D.SampleColormap", PIG_IMPLOT3D_FN(pig_implot3d::h_SampleColormap), pig_implot3d::kSig_SampleColormap, kEntryNeedsInit},
+    {"ImPlot3D.SetStyle", PIG_IMPLOT3D_FN(bi_ImPlot3DSetStyle), kSigBi_ImPlot3D_SetStyle, kEntryNeedsInit},
     {"ImPlot3D.SetupAxes", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupAxes), pig_implot3d::kSig_SetupAxes, kEntryNeedsInit | kEntryNeedsFrame},
     {"ImPlot3D.SetupAxesLimits", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupAxesLimits), pig_implot3d::kSig_SetupAxesLimits, kEntryNeedsInit | kEntryNeedsFrame},
     {"ImPlot3D.SetupAxis", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupAxis), pig_implot3d::kSig_SetupAxis, kEntryNeedsInit | kEntryNeedsFrame},
@@ -6077,6 +6094,7 @@ const Entry kTable[] = {
     {"SetScrollHereY", h_SetScrollHereY, kSig_SetScrollHereY, kEntryNeedsInit | kEntryNeedsFrame},
     {"SetScrollX", h_SetScrollX, kSig_SetScrollX, kEntryNeedsInit | kEntryNeedsFrame},
     {"SetScrollY", h_SetScrollY, kSig_SetScrollY, kEntryNeedsInit | kEntryNeedsFrame},
+    {"SetStyle", bi_SetStyle, kSigBi_SetStyle, kEntryNeedsInit},
     {"SetTextureFilter", bi_SetTextureFilter, kSigBi_SetTextureFilter, kEntryNeedsInit | kEntryNeedsGL},
     {"SetTooltip", h_SetTooltip, kSig_SetTooltip, kEntryNeedsInit | kEntryNeedsFrame},
     {"Shortcut", h_Shortcut, kSig_Shortcut, kEntryNeedsInit | kEntryNeedsFrame},
@@ -6134,6 +6152,6 @@ const Entry kTable[] = {
     {"Version", bi_Version, kSigBi_Version, 0},
     {"WantCapture", bi_WantCapture, kSigBi_WantCapture, kEntryNeedsInit},
 };
-const int kTableCount = 456;
+const int kTableCount = 462;
 }  // namespace pig
 

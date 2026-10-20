@@ -49,6 +49,15 @@ BUILTINS = [
     # void pointer data, struct results, label arrays, MEX-owned link storage,
     # and transposed textures, which the generator rules cannot express.
     # SPEC.md 14.15. BUILTIN_EXTRA below gives their frame and namespace.
+    # Themes: the style as a struct, without the global scale (SPEC.md 14.16).
+    ("GetStyle", "bi_GetStyle", True, False, "s = PsychImGui('GetStyle')"),
+    ("SetStyle", "bi_SetStyle", True, False, "PsychImGui('SetStyle', s)"),
+    ("ImPlot.GetStyle", "bi_ImPlotGetStyle", True, False, "s = PsychImGui('ImPlot.GetStyle')"),
+    ("ImPlot.SetStyle", "bi_ImPlotSetStyle", True, False, "PsychImGui('ImPlot.SetStyle', s)"),
+    ("ImPlot3D.GetStyle", "bi_ImPlot3DGetStyle", True, False,
+     "s = PsychImGui('ImPlot3D.GetStyle')"),
+    ("ImPlot3D.SetStyle", "bi_ImPlot3DSetStyle", True, False,
+     "PsychImGui('ImPlot3D.SetStyle', s)"),
     ("SliderDouble", "bi_SliderDouble", True, False,
      "[changed, v] = PsychImGui('SliderDouble', label, v, vMin, vMax [, format='%.3f'] "
      "[, flags=0])"),
@@ -128,6 +137,12 @@ BUILTINS = [
 # Dispatch details of the hand-written subcommands that are not lifecycle
 # calls: whether they need an open frame, and which build option compiles them.
 BUILTIN_EXTRA = {
+    "GetStyle": {"frame": False},
+    "SetStyle": {"frame": False},
+    "ImPlot.GetStyle": {"frame": False, "macro": "PIG_IMPLOT_FN"},
+    "ImPlot.SetStyle": {"frame": False, "macro": "PIG_IMPLOT_FN"},
+    "ImPlot3D.GetStyle": {"frame": False, "macro": "PIG_IMPLOT3D_FN"},
+    "ImPlot3D.SetStyle": {"frame": False, "macro": "PIG_IMPLOT3D_FN"},
     "SliderDouble": {"frame": True},
     "DragDouble": {"frame": True},
     "TableGetSortSpecs": {"frame": True},
@@ -1493,6 +1508,90 @@ def collect_igfd_enums(header: Path):
     return out
 
 
+# --------------------------------------------------------------------------
+# Style field tables (SPEC.md 14.16). One table per style struct, from the
+# struct members of the metadata, for GetStyle and SetStyle.
+# --------------------------------------------------------------------------
+
+# Members that are not part of a theme: the global scale, which SetGlobalScale
+# owns, the DPI factor, and Dear ImGui's private bookkeeping.
+STYLE_SKIP = {"FontScaleMain", "FontScaleDpi"}
+
+# An int member that holds an enum, for the range check.
+STYLE_FIELD_ENUMS = {("ImPlot3DStyle", "Marker"): "ImPlot3DMarker"}
+
+
+def scaled_style_fields(imgui_cpp: Path):
+    """The ImGuiStyle members that ScaleAllSizes multiplies, from its body."""
+    text = imgui_cpp.read_text("utf-8", errors="ignore")
+    m = re.search(r"void ImGuiStyle::ScaleAllSizes\(float scale_factor\)\s*\{(.*?)\n\}", text, re.S)
+    if not m:
+        raise SystemExit("ImGuiStyle::ScaleAllSizes not found in imgui.cpp")
+    return set(re.findall(r"^\s*(\w+) = .*\b\1 \* scale_factor", m.group(1), re.M))
+
+
+def style_table(se, struct, color_enum, cmd, colormap_count=None, scaled=frozenset()):
+    """C++ for one StyleDesc: the field table, the color names, the descriptor."""
+    rows, colors_member = [], None
+    for m in se["structs"][struct]:
+        name, t = m["name"], m["type"]
+        if name.startswith("Colors["):
+            colors_member = name.split("[")[0]
+            continue
+        if name.startswith("_") or name in STYLE_SKIP:
+            continue
+        lo = hi = 0
+        enum_t = STYLE_FIELD_ENUMS.get((struct, name), t)
+        if t == "float":
+            kind = "kStyleFloat"
+        elif t == "ImVec2":
+            kind = "kStyleVec2"
+        elif t == "bool":
+            kind = "kStyleBool"
+        elif t.endswith("Colormap"):
+            kind = "kStyleColormap"
+        elif enum_t in ENUM_RANGES:
+            kind = "kStyleEnum"
+            lo, hi = ENUM_RANGES[enum_t]
+        elif t.endswith("Flags"):
+            kind = "kStyleFlags"
+        elif t == "int":
+            kind = "kStyleInt"
+        else:
+            raise SystemExit(f"{struct}.{name}: style member type {t} has no rule")
+        sc = 1 if name in scaled else 0
+        rows.append(f'    {{"{name}", (uint32_t)offsetof({struct}, {name}), {kind}, {sc}, '
+                    f"{lo}, {hi}}},")
+    if colors_member is None:
+        raise SystemExit(f"{struct} has no Colors member")
+    prefix = color_enum + "_"
+    entries = se["enums"].get(prefix) or se["enums"][color_enum]
+    cols = sorted((int(e["calc_value"]), e["name"][len(prefix):]) for e in entries
+                  if e["name"] != prefix + "COUNT")
+    names = ", ".join(f'"{n}"' for _, n in cols)
+    ident = struct
+    cm = colormap_count or "nullptr"
+    return "\n".join([
+        f"static const StyleField k{ident}Fields[] = {{",
+        *rows,
+        "};",
+        f"static const char* const k{ident}Colors[] = {{{names}}};",
+        f"static_assert(sizeof((({struct}*)nullptr)->Colors) / sizeof(ImVec4) == {len(cols)},",
+        f'              "{struct}: the color count of the metadata and the header differ");',
+        f"static const StyleDesc k{ident}Desc = {{",
+        f'    "{cmd}", k{ident}Fields, {len(rows)}, (uint32_t)offsetof({struct}, Colors),',
+        f"    k{ident}Colors, {len(cols)}, {cm}}};",
+    ])
+
+
+def write_style_header(root, filename, includes, body, imgui_ver):
+    out = [GEN_BANNER.format(imgui=imgui_ver, implot=""), "#pragma once", ""]
+    out += [f'#include "{h}"' for h in includes]
+    out += ['#include "style_marshal.h"', "", "namespace pig {", "", body, "", "}  // namespace pig", ""]
+    (root / "src" / filename).write_text("\n".join(out), encoding="utf-8")
+
+
+
 def collect_enum_ranges(se):
     for ename, entries in se.get("enums", {}).items():
         t = ename.rstrip("_")
@@ -2178,6 +2277,20 @@ def main():
                                     "ImGuiFileDialog.h"))
 
     sections = parse_allowlist(root / "gen" / "allowlist.txt")
+
+    write_style_header(root, "gen_style_imgui.h", ["imgui_psych.h"],
+                       style_table(se, "ImGuiStyle", "ImGuiCol", "SetStyle",
+                                   scaled=scaled_style_fields(cimgui / "imgui" / "imgui.cpp")),
+                       imgui_ver)
+    if pdefs:
+        write_style_header(root, "gen_style_implot.h", ["imgui_psych.h", "implot.h"],
+                           style_table(pse, "ImPlotStyle", "ImPlotCol", "ImPlot.SetStyle",
+                                       "ImPlot::GetColormapCount"), imgui_ver)
+    if p3defs:
+        write_style_header(root, "gen_style_implot3d.h", ["imgui_psych.h", "implot3d.h"],
+                           style_table(p3se, "ImPlot3DStyle", "ImPlot3DCol",
+                                       "ImPlot3D.SetStyle", "ImPlot3D::GetColormapCount"),
+                           imgui_ver)
 
     ig = build_section(sections.get("ImGui", []), by_ov, enum_types, "")
     dl = build_section(sections.get("DrawList", []), by_ov, enum_types, "DrawList.",

@@ -47,6 +47,12 @@ function varargout = PsychImGui(varargin)
 %
 %   Hand-written widget and plot subcommands
 %   ----------------------------------------
+%     s = PsychImGui('GetStyle')
+%     PsychImGui('SetStyle', s)
+%     s = PsychImGui('ImPlot.GetStyle')
+%     PsychImGui('ImPlot.SetStyle', s)
+%     s = PsychImGui('ImPlot3D.GetStyle')
+%     PsychImGui('ImPlot3D.SetStyle', s)
 %     [changed, v] = PsychImGui('SliderDouble', label, v, vMin, vMax [, format='%.3f'] [, flags=0])
 %     [changed, v] = PsychImGui('DragDouble', label, v [, vSpeed=1.0] [, vMin=0.0] [, vMax=0.0] [, format='%.3f'] [, flags=0])
 %     [specs, dirty] = PsychImGui('TableGetSortSpecs')

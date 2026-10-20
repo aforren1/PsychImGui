@@ -22,6 +22,7 @@
 #include "implot_marshal.h"
 #include "marshal.h"
 #include "mex.h"
+#include "gen_style_implot.h"
 #include "texture_marshal.h"
 
 namespace pig {
@@ -111,6 +112,56 @@ AxisLink* get_link(const mxArray* a, const char* cmd, double lo, double hi) {
     l->range[1] = hi;
     return l;
 }
+
+// ----------------------------------------------------------------- style --
+
+// A pushed style variable, color, or colormap is in the live style until its
+// pop restores the saved value, which would undo or freeze part of a theme.
+bool implot_stacks_empty(const char* cmd) {
+    if (GImPlot->StyleModifiers.Size == 0 && GImPlot->ColorModifiers.Size == 0 &&
+        GImPlot->ColormapModifiers.Size == 0)
+        return true;
+    mrs::fail("psychimgui:Usage",
+              "%s: pop every ImPlot.PushStyleVar, PushStyleColor, and PushColormap first.", cmd);
+    return false;
+}
+
+}  // namespace
+
+void bi_ImPlotGetStyle(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    (void)args;
+    if (nargin != 0) {
+        mrs::usage("ImPlot.GetStyle", "s = PsychImGui('ImPlot.GetStyle')");
+        return;
+    }
+    if (!GImPlot) {
+        mrs::fail("psychimgui:Usage", "ImPlot.GetStyle: ImPlot is off for this context.");
+        return;
+    }
+    if (!implot_stacks_empty("ImPlot.GetStyle")) return;
+    if (nlhs > 0) plhs[0] = styleToStruct(kImPlotStyleDesc, &ImPlot::GetStyle());
+}
+
+void bi_ImPlotSetStyle(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    (void)nlhs;
+    (void)plhs;
+    if (nargin != 1) {
+        mrs::usage("ImPlot.SetStyle", "PsychImGui('ImPlot.SetStyle', s)");
+        return;
+    }
+    if (!GImPlot) {
+        mrs::fail("psychimgui:Usage", "ImPlot.SetStyle: ImPlot is off for this context.");
+        return;
+    }
+    if (!implot_stacks_empty("ImPlot.SetStyle")) return;
+    ImPlotStyle next = ImPlot::GetStyle();
+    if (!styleFromStruct(kImPlotStyleDesc, args[0], &next)) return;
+    ImPlot::GetStyle() = next;
+    // Items keep the colormap colors they were given; a new theme recolors them.
+    ImPlot::BustColorCache();
+}
+
+namespace {
 
 }  // namespace
 

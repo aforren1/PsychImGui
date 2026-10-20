@@ -2,13 +2,20 @@
 
 #ifdef PSYCHIMGUI_IMPLOT3D
 
+// implot3d_internal.h, for the push stacks, wants IMGUI_DEFINE_MATH_OPERATORS
+// before the first imgui.h of the unit.
+#ifndef IMGUI_DEFINE_MATH_OPERATORS
+#  define IMGUI_DEFINE_MATH_OPERATORS
+#endif
 #include "imgui_psych.h"
 
 #include "implot3d.h"
+#include "implot3d_internal.h"
 
 #include "implot3d_marshal.h"
 #include "marshal.h"
 #include "mex.h"
+#include "gen_style_implot3d.h"
 #include "texture_marshal.h"
 
 namespace pig {
@@ -69,6 +76,51 @@ void bi_ImPlot3DPlotImage(int nlhs, mxArray** plhs, int nargin, const mxArray** 
                         uv[3], ImVec4((float)tint[0], (float)tint[1], (float)tint[2],
                                       (float)tint[3]),
                         spec);
+}
+
+namespace {
+
+bool implot3d_stacks_empty(const char* cmd) {
+    if (ImPlot3D::GImPlot3D->StyleModifiers.Size == 0 && ImPlot3D::GImPlot3D->ColorModifiers.Size == 0 &&
+        ImPlot3D::GImPlot3D->ColormapModifiers.Size == 0)
+        return true;
+    mrs::fail("psychimgui:Usage",
+              "%s: pop every ImPlot3D.PushStyleVar, PushStyleColor, and PushColormap first.",
+              cmd);
+    return false;
+}
+
+}  // namespace
+
+void bi_ImPlot3DGetStyle(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    (void)args;
+    if (nargin != 0) {
+        mrs::usage("ImPlot3D.GetStyle", "s = PsychImGui('ImPlot3D.GetStyle')");
+        return;
+    }
+    if (!ImPlot3D::GImPlot3D) {
+        mrs::fail("psychimgui:Usage", "ImPlot3D.GetStyle: ImPlot3D is off for this context.");
+        return;
+    }
+    if (!implot3d_stacks_empty("ImPlot3D.GetStyle")) return;
+    if (nlhs > 0) plhs[0] = styleToStruct(kImPlot3DStyleDesc, &ImPlot3D::GetStyle());
+}
+
+void bi_ImPlot3DSetStyle(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    (void)nlhs;
+    (void)plhs;
+    if (nargin != 1) {
+        mrs::usage("ImPlot3D.SetStyle", "PsychImGui('ImPlot3D.SetStyle', s)");
+        return;
+    }
+    if (!ImPlot3D::GImPlot3D) {
+        mrs::fail("psychimgui:Usage", "ImPlot3D.SetStyle: ImPlot3D is off for this context.");
+        return;
+    }
+    if (!implot3d_stacks_empty("ImPlot3D.SetStyle")) return;
+    ImPlot3DStyle next = ImPlot3D::GetStyle();
+    if (!styleFromStruct(kImPlot3DStyleDesc, args[0], &next)) return;
+    ImPlot3D::GetStyle() = next;
 }
 
 }  // namespace pig

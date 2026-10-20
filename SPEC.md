@@ -240,7 +240,7 @@ opcode (section 9.1). Names are case sensitive and match Dear ImGui names.
 | AddFontFromFileTTF | `idx = PsychImGui('AddFontFromFileTTF', path, sizePx [, glyphRanges])` | Returns a font index. Index 0 is the default font. |
 | PushFont / PopFont | `PsychImGui('PushFont', idx [, sizePx])` | Uses the font index table. |
 | StyleColorsDark / StyleColorsLight / StyleColorsClassic | `PsychImGui('StyleColorsDark')` | Direct calls. |
-| SetGlobalScale | `PsychImGui('SetGlobalScale', s)` | Sets `style.FontScaleMain` and `style.ScaleAllSizes(s)`. Call after `Init` and before the first `NewFrame`, or between frames. |
+| SetGlobalScale | `PsychImGui('SetGlobalScale', s)` | Sets the scale of fonts and sizes to `s`, from the unscaled style of section 14.16. Not cumulative. |
 | ShowDemoWindow / ShowMetricsWindow | `[open] = PsychImGui('ShowDemoWindow' [, open])` | Diagnostic windows. |
 
 ### 5.2 Generated widget subcommands
@@ -1026,6 +1026,8 @@ PsychImGui/
     extras.cpp            hand-written ImGui subcommands (14.15)
     implot_extras.cpp, implot3d_extras.cpp  hand-written plot subcommands (14.15)
     texture_marshal.h     texture arguments of Image and PlotImage (14.15)
+    style.cpp, style_marshal.h  GetStyle, SetStyle, SetGlobalScale (14.16)
+    gen_style_imgui.h, gen_style_implot.h, gen_style_implot3d.h  generated style field tables (14.16)
     igfd_psych.h, igfd_config_psych.h  ImGuiFileDialog configuration (phase 3)
     plotdata_marshal.h, implot3d_marshal.h  plot data and ImPlot3D rules (phase 3)
     core/gpu_timer.cpp    GL_TIMESTAMP queries and the Tracy GPU zone (phase 3)
@@ -1602,3 +1604,39 @@ the generated subcommands.
 | Every numeric format argument is checked: `format`, `formatMax`, and `labelFmt` of the generated subcommands, the `fmt` of `ImPlot.SetupAxisFormat`, and the formats of the hand-written ones. It may hold text and at most one conversion, with flags, width, and precision but no length modifier. An integer widget (`DragInt*`, `SliderInt*`, `VSliderInt`) takes `d`, `i`, `u`, `x`, or `o`; every other one `e`, `f`, `g`, or `a`. Anything else raises `psychimgui:Usage`. | Dear ImGui and ImPlot pass the format and the value to `snprintf`. `SliderFloat` with `'%s'` read the float as a char pointer and crashed the host. `IMGUI_DISABLE_OBSOLETE_FUNCTIONS` also removes Dear ImGui's rewrite of a float format for an integer widget. |
 | The texture helpers moved from `psychimgui.cpp` to `src/texture_marshal.h`. | The PlotImage subcommands share them with `Image`. |
 | `tests/test_extras.m` covers the subcommands above headless. `tests/gl/test_gl_plotimage.m` reads back the four quadrants of a transposed and an upright texture through `ImPlot.PlotImage`, and of a transposed one through `ImPlot3D.PlotImage`. | A transposed or mirrored image cannot be seen without a GPU. |
+
+### 14.16 Themes
+
+| Subcommand | Signature |
+|---|---|
+| GetStyle | `s = PsychImGui('GetStyle')` |
+| SetStyle | `PsychImGui('SetStyle', s)` |
+| ImPlot.GetStyle, ImPlot.SetStyle | The same for `ImPlotStyle` |
+| ImPlot3D.GetStyle, ImPlot3D.SetStyle | The same for `ImPlot3DStyle` |
+
+The struct has one field per member of the style struct, with the member's
+name, and a `Colors` struct with one 1x4 `[r g b a]` per color, named as the
+color enum without its prefix (`WindowBg` for `ImGuiCol_WindowBg`). A float
+is a double scalar, an `ImVec2` a 1x2 double, a bool a logical, and an enum,
+flags, or colormap member a double. `SetStyle` accepts any subset of the
+fields, and an enum or flags field by name as well. It raises
+`psychimgui:Usage` for an unknown field or color name, `psychimgui:Range` for
+NaN, an enum out of range, or a colormap index at or past `GetColormapCount`,
+and changes nothing when it raises. The file format is left to MATLAB:
+`jsonencode` and `jsondecode` round trip a style exactly.
+
+The field tables are generated into `src/gen_style_imgui.h`,
+`gen_style_implot.h`, and `gen_style_implot3d.h` from the struct members of
+the metadata, so the binding follows a member added or renamed upstream. The
+generator leaves out `FontScaleMain`, which `SetGlobalScale` owns,
+`FontScaleDpi`, and the private members.
+
+| Deviation | Reason |
+|---|---|
+| Each context keeps an unscaled base `ImGuiStyle` and the global scale. The live style is the base with the members that `ImGuiStyle::ScaleAllSizes` scales multiplied by the scale and truncated, as `ScaleAllSizes` does. The generator reads that list of 50 members from the body of `ScaleAllSizes` in `imgui.cpp`. `GetStyle` returns the base. | A theme saved at one scale loads the same at another. `ScaleAllSizes` truncates, so dividing the live value back by the scale is not exact: 3 at scale 1.25 is 3.75, truncated to 3, and 3 / 1.25 is 2.4. |
+| `SetGlobalScale` rebuilds the live sizes from the base instead of calling `ScaleAllSizes` on the live style. | The old form set `FontScaleMain` to `s` but multiplied the sizes by `s`, so two calls compounded the sizes and not the fonts. |
+| An edit of the live style outside `SetStyle`, as `ShowStyleEditor` and the `StyleColors*` presets make, is folded into the base before every `GetStyle`, `SetStyle`, and `SetGlobalScale`. A scaled member whose live value is no longer the base value scaled takes the live value divided by the scale. Every other member and the colors take the live value. | The style editor writes the live style directly. |
+| `SetStyle` writes `FontSizeBase` to `_NextFrameFontSizeBase` as well. | Dear ImGui sets `FontSizeBase` from the current font whenever the font changes inside a frame, and takes `_NextFrameFontSizeBase` at the next `NewFrame`. |
+| `GetStyle`, `SetStyle`, and `SetGlobalScale` raise `psychimgui:Usage` while a `PushStyleVar`, `PushStyleColor`, or `PushFont` is active. The ImPlot and ImPlot3D pairs do the same for their style, color, and colormap pushes. | A pop restores the value saved at the push. Reading a pushed value into the base would make it permanent, and a rebuild under a push would be undone by the pop. |
+| `ImPlot.SetStyle` calls `ImPlot::BustColorCache`. | Items keep the colormap colors they got at first use; a new theme recolors them. |
+| `ImPlot3DStyle.Marker` is an `int` in the metadata and is checked as an `ImPlot3DMarker`. | `STYLE_FIELD_ENUMS` in the generator. |
