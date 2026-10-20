@@ -69,18 +69,20 @@ function test_style()
     dark = PsychImGui('GetStyle').Colors.WindowBg;
     t_ok('a preset shows in GetStyle', mean(light(1:3)) > mean(dark(1:3)));
 
-    %% a theme file
+    %% a theme file (jsonencode arrived in Octave 7)
     PsychImGui('SetStyle', struct('WindowRounding', 5, 'Alpha', 0.9));
     s = PsychImGui('GetStyle');
-    f = [tempname '.json'];
-    fid = fopen(f, 'w');
-    fprintf(fid, '%s', jsonencode(s));
-    fclose(fid);
-    PsychImGui('StyleColorsLight');
-    PsychImGui('SetStyle', struct('WindowRounding', 0, 'Alpha', 1));
-    PsychImGui('SetStyle', jsondecode(fileread(f)));
-    delete(f);
-    t_ok('a JSON theme round trips exactly', isequal(PsychImGui('GetStyle'), s));
+    if exist('jsonencode') ~= 0 %#ok<EXIST>
+        f = [tempname '.json'];
+        fid = fopen(f, 'w');
+        fprintf(fid, '%s', jsonencode(s));
+        fclose(fid);
+        PsychImGui('StyleColorsLight');
+        PsychImGui('SetStyle', struct('WindowRounding', 0, 'Alpha', 1));
+        PsychImGui('SetStyle', jsondecode(fileread(f)));
+        delete(f);
+        t_ok('a JSON theme round trips exactly', isequal(PsychImGui('GetStyle'), s));
+    end
 
     %% pushes block the calls that would freeze or lose them
     PsychImGui('NewFrame', tf_input());

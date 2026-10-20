@@ -824,6 +824,8 @@ fclose(fid);
 PsychImGui('SetStyle', jsondecode(fileread('theme.json')));
 ```
 
+Octave 6 has no `jsonencode`; use `save` and `load` there.
+
 To make a theme interactively, show `PsychImGui('ShowStyleEditor')` in a
 frame, change the style with the mouse, then save `GetStyle`.
 
