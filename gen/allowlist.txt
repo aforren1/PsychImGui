@@ -36,6 +36,13 @@ igGetWindowSize
 igGetContentRegionAvail
 igIsWindowHovered
 igIsWindowFocused
+igGetWindowWidth
+igGetWindowHeight
+igIsWindowAppearing
+igIsWindowCollapsed
+igSetNextWindowContentSize
+# The resize callback keeps its NULL default.
+igSetNextWindowSizeConstraints
 
 # --- Layout ---
 igSeparator
@@ -56,6 +63,22 @@ igPopItemWidth
 igCalcTextSize              CalcTextSize        -text_end
 igGetItemRectMin
 igGetItemRectMax
+igAlignTextToFramePadding
+igGetCursorPos
+igSetCursorPosX
+igSetCursorPosY
+igSetCursorScreenPos
+igGetFrameHeight
+igGetFrameHeightWithSpacing
+igGetTextLineHeight
+igGetTextLineHeightWithSpacing
+igGetFontSize
+igCalcItemWidth
+igPushTextWrapPos
+igPopTextWrapPos
+igPushItemFlag
+igPopItemFlag
+igGetItemRectSize
 
 # --- ID stack ---
 # Two names because the string and the integer form take different classes and
@@ -71,6 +94,7 @@ igTextDisabled
 igTextWrapped
 igLabelText
 igBulletText
+igTextLink
 
 # --- Buttons ---
 igButton
@@ -105,6 +129,16 @@ igSliderInt
 igSliderAngle
 igVSliderFloat
 igVSliderInt
+igDragFloat4
+igDragInt2
+igDragInt3
+igDragInt4
+igDragFloatRange2
+igDragIntRange2
+igSliderFloat4
+igSliderInt2
+igSliderInt3
+igSliderInt4
 
 # --- Input ---
 igInputText
@@ -113,17 +147,29 @@ igInputTextWithHint
 igInputFloat
 igInputInt
 igInputDouble
+igInputFloat2
+igInputFloat3
+igInputFloat4
+igInputInt2
+igInputInt3
+igInputInt4
 
 # --- Color ---
 igColorEdit3
 igColorEdit4
 igColorButton
+igColorPicker3
+# ref_col is a pointer to a second color for comparison; it keeps NULL.
+igColorPicker4              ColorPicker4        -ref_col
 
 # --- Trees ---
 igTreeNode_Str              TreeNode
 igTreePop
 igCollapsingHeader_TreeNodeFlags    CollapsingHeader
 igSetNextItemOpen
+igTreeNodeEx_Str            TreeNodeEx
+# The bool* form adds a close button and returns whether it is still visible.
+igCollapsingHeader_BoolPtr  CollapsingHeaderClosable
 
 # --- Plots ---
 igPlotLines_FloatPtr        PlotLines       -values_offset -stride
@@ -135,6 +181,8 @@ igEndMenuBar
 igBeginMenu
 igEndMenu
 igMenuItem_Bool             MenuItem
+igBeginMainMenuBar
+igEndMainMenuBar
 
 # --- Tooltips and popups ---
 igBeginTooltip
@@ -146,12 +194,19 @@ igBeginPopupModal
 igEndPopup
 igOpenPopup_Str             OpenPopup
 igCloseCurrentPopup
+igBeginItemTooltip
+igBeginPopupContextItem
+igBeginPopupContextWindow
+igBeginPopupContextVoid
+igOpenPopupOnItemClick
+igIsPopupOpen_Str           IsPopupOpen
 
 # --- Tabs ---
 igBeginTabBar
 igEndTabBar
 igBeginTabItem
 igEndTabItem
+igTabItemButton
 
 # --- Item queries ---
 igIsItemHovered
@@ -160,6 +215,12 @@ igIsItemClicked
 igIsItemEdited
 igIsItemDeactivatedAfterEdit
 igIsAnyItemActive
+igIsItemActivated
+igIsItemDeactivated
+igIsItemFocused
+igIsItemVisible
+igIsItemToggledOpen
+igIsAnyItemHovered
 
 # --- Input queries ---
 igIsMouseClicked_Bool       IsMouseClicked
@@ -167,6 +228,16 @@ igIsMouseDown_Nil           IsMouseDown
 igIsKeyPressed_Bool         IsKeyPressed
 igIsKeyDown_Nil             IsKeyDown
 igGetMousePos
+igIsMouseReleased_Nil       IsMouseReleased
+igIsMouseDoubleClicked_Nil  IsMouseDoubleClicked
+igIsMouseDragging
+igGetMouseDragDelta
+igResetMouseDragDelta
+igGetMouseClickedCount
+igIsKeyReleased_Nil         IsKeyReleased
+igIsKeyChordPressed_Nil     IsKeyChordPressed
+igShortcut_Nil              Shortcut
+igGetKeyName
 
 # --- Style ---
 igPushStyleColor_Vec4       PushStyleColor
@@ -176,15 +247,34 @@ igPushStyleVar_Vec2         PushStyleVarVec2
 igPopStyleVar
 igBeginDisabled
 igEndDisabled
+igPushStyleVarX
+igPushStyleVarY
 
 # --- Focus and scroll ---
 igSetKeyboardFocusHere
 igSetScrollHereY
 igSetItemDefaultFocus
+igGetScrollX
+igGetScrollY
+igSetScrollX_Float          SetScrollX
+igSetScrollY_Float          SetScrollY
+igGetScrollMaxX
+igGetScrollMaxY
+igSetScrollHereX
+igSetScrollFromPosX_Float   SetScrollFromPosX
+igSetScrollFromPosY_Float   SetScrollFromPosY
 
 # --- Misc ---
 igGetFrameCount
 igGetTime
+# The size arguments are for non-terminated buffers; MATLAB char is
+# converted to a terminated string, so they keep their defaults.
+igSaveIniSettingsToMemory   SaveIniSettingsToMemory     -out_ini_size
+igLoadIniSettingsFromMemory LoadIniSettingsFromMemory   -ini_size
+# The style argument keeps its NULL default, which edits the live style.
+igShowStyleEditor
+igShowIDStackToolWindow
+igShowDebugLogWindow
 
 # --- Tables (phase 2) ---
 # All thirteen signatures fit the section 7.3 rules as they are. The ImU32 of
@@ -203,6 +293,12 @@ igTableHeader
 igTableGetColumnCount
 igTableGetColumnIndex
 igTableSetBgColor
+igTableGetRowIndex
+igTableGetHoveredColumn
+igTableGetColumnFlags
+igTableGetColumnName_Int    TableGetColumnName
+igTableSetColumnEnabled
+igTableAngledHeadersRow
 
 # --- Draw lists (phase 2) ---
 # These return a draw list handle, not a pointer. See SPEC.md section 5.6.
@@ -228,6 +324,28 @@ ImDrawList_AddPolyline      AddPolyline
 ImDrawList_AddConvexPolyFilled  AddConvexPolyFilled
 ImDrawList_PushClipRect     PushClipRect
 ImDrawList_PopClipRect      PopClipRect
+ImDrawList_AddQuad          AddQuad
+ImDrawList_AddQuadFilled    AddQuadFilled
+ImDrawList_AddNgon          AddNgon
+ImDrawList_AddNgonFilled    AddNgonFilled
+ImDrawList_AddEllipse       AddEllipse
+ImDrawList_AddEllipseFilled AddEllipseFilled
+ImDrawList_AddBezierCubic   AddBezierCubic
+ImDrawList_AddBezierQuadratic  AddBezierQuadratic
+ImDrawList_AddConcavePolyFilled    AddConcavePolyFilled
+ImDrawList_AddRectFilledMultiColor AddRectFilledMultiColor
+# The path API: build a path with the Path*To calls, then stroke or fill it.
+ImDrawList_PathClear        PathClear
+ImDrawList_PathLineTo       PathLineTo
+ImDrawList_PathLineToMergeDuplicate    PathLineToMergeDuplicate
+ImDrawList_PathArcTo        PathArcTo
+ImDrawList_PathEllipticalArcTo PathEllipticalArcTo
+ImDrawList_PathBezierCubicCurveTo      PathBezierCubicCurveTo
+ImDrawList_PathBezierQuadraticCurveTo  PathBezierQuadraticCurveTo
+ImDrawList_PathRect         PathRect
+ImDrawList_PathStroke       PathStroke
+ImDrawList_PathFillConvex   PathFillConvex
+ImDrawList_PathFillConcave  PathFillConcave
 
 [ImPlot]
 
@@ -238,6 +356,10 @@ ImPlot_EndPlot              EndPlot
 # marshal; they keep their NULL default, which means equal shares.
 ImPlot_BeginSubplots        BeginSubplots   -row_ratios -col_ratios
 ImPlot_EndSubplots          EndSubplots
+ImPlot_IsSubplotsHovered    IsSubplotsHovered
+# Lines up the axis widths of the plots between them.
+ImPlot_BeginAlignedPlots    BeginAlignedPlots
+ImPlot_EndAlignedPlots      EndAlignedPlots
 
 # --- Setup ---
 ImPlot_SetupAxis            SetupAxis
@@ -246,12 +368,23 @@ ImPlot_SetupAxisLimits      SetupAxisLimits
 ImPlot_SetupAxesLimits      SetupAxesLimits
 ImPlot_SetupAxisFormat_Str  SetupAxisFormat
 ImPlot_SetupAxisTicks_doublePtr     SetupAxisTicks
+ImPlot_SetupAxisScale_PlotScale     SetupAxisScale
+ImPlot_SetupAxisLimitsConstraints   SetupAxisLimitsConstraints
+ImPlot_SetupAxisZoomConstraints     SetupAxisZoomConstraints
 ImPlot_SetupLegend          SetupLegend
 ImPlot_SetupMouseText       SetupMouseText
 ImPlot_SetupFinish          SetupFinish
 ImPlot_SetNextAxisLimits    SetNextAxisLimits
 ImPlot_SetNextAxesLimits    SetNextAxesLimits
+ImPlot_SetNextAxisToFit     SetNextAxisToFit
 ImPlot_SetNextAxesToFit     SetNextAxesToFit
+
+# --- Plot axes ---
+# Select which axes the next items plot against, for Y2/Y3 and X2/X3 after
+# SetupAxis enables them.
+ImPlot_SetAxis              SetAxis
+ImPlot_SetAxes              SetAxes
+ImPlot_HideNextItem         HideNextItem
 
 # --- Items ---
 # The T* overloads are grouped under one name and dispatched on the class of
@@ -270,6 +403,8 @@ ImPlot_PlotHeatmap          PlotHeatmap
 ImPlot_PlotDigital          PlotDigital
 ImPlot_PlotText             PlotText
 ImPlot_PlotDummy            PlotDummy
+ImPlot_PlotPolygon          PlotPolygon
+ImPlot_PlotBubbles          PlotBubbles
 
 # --- Tools ---
 ImPlot_DragPoint            DragPoint
@@ -279,6 +414,13 @@ ImPlot_DragRect             DragRect
 ImPlot_Annotation_Str       Annotation
 ImPlot_TagX_Str             TagX
 ImPlot_TagY_Str             TagY
+ImPlot_GetPlotSelection     GetPlotSelection
+ImPlot_IsPlotSelected       IsPlotSelected
+ImPlot_CancelPlotSelection  CancelPlotSelection
+ImPlot_BeginLegendPopup     BeginLegendPopup
+ImPlot_EndLegendPopup       EndLegendPopup
+# A draw list handle for custom drawing; combine with PlotToPixels.
+ImPlot_GetPlotDrawList      GetPlotDrawList
 
 # --- Queries ---
 ImPlot_IsPlotHovered        IsPlotHovered
@@ -300,6 +442,16 @@ ImPlot_ColormapScale        ColormapScale
 ImPlot_SampleColormap       SampleColormap
 ImPlot_GetColormapCount     GetColormapCount
 ImPlot_GetColormapName      GetColormapName
+ImPlot_GetColormapIndex     GetColormapIndex
+ImPlot_GetColormapSize      GetColormapSize
+ImPlot_GetColormapColor     GetColormapColor
+ImPlot_NextColormapColor    NextColormapColor
+ImPlot_GetLastItemColor     GetLastItemColor
+ImPlot_BustColorCache       BustColorCache
+ImPlot_ColormapIcon         ColormapIcon
+ImPlot_ColormapButton       ColormapButton
+# The ImVec4* output keeps its NULL default; SampleColormap gives the color.
+ImPlot_ColormapSlider       ColormapSlider
 
 # --- Style ---
 ImPlot_StyleColorsAuto      StyleColorsAuto
@@ -312,10 +464,16 @@ ImPlot_PushStyleVar_Float   PushStyleVar
 ImPlot_PushStyleVar_Int     PushStyleVarInt
 ImPlot_PushStyleVar_Vec2    PushStyleVarVec2
 ImPlot_PopStyleVar          PopStyleVar
+# The input map argument keeps its NULL default, which edits the live map.
+ImPlot_MapInputDefault      MapInputDefault
+ImPlot_MapInputReverse      MapInputReverse
 
 # --- Diagnostics ---
 ImPlot_ShowDemoWindow       ShowDemoWindow
 ImPlot_ShowMetricsWindow    ShowMetricsWindow
+ImPlot_ShowStyleEditor      ShowStyleEditor
+ImPlot_ShowColormapSelector ShowColormapSelector
+ImPlot_ShowUserGuide        ShowUserGuide
 
 [ImPlot3D]
 
@@ -336,6 +494,10 @@ ImPlot3D_SetupAxisTicks_doublePtr   SetupAxisTicks
 ImPlot3D_SetupBoxRotation_double    SetupBoxRotation
 ImPlot3D_SetupBoxScale              SetupBoxScale
 ImPlot3D_SetupLegend                SetupLegend
+ImPlot3D_SetupAxisScale_Plot3DScale    SetupAxisScale
+ImPlot3D_SetupAxisLimitsConstraints    SetupAxisLimitsConstraints
+ImPlot3D_SetupAxisZoomConstraints      SetupAxisZoomConstraints
+ImPlot3D_SetupBoxInitialRotation_double    SetupBoxInitialRotation
 
 # --- Items ---
 # PlotSurface takes X, Y, and Z as same-size matrices, as meshgrid makes them;
@@ -348,11 +510,15 @@ ImPlot3D_PlotQuad                   PlotQuad
 ImPlot3D_PlotSurface                PlotSurface
 ImPlot3D_PlotMesh                   PlotMesh
 ImPlot3D_PlotText                   PlotText
+ImPlot3D_PlotDummy                  PlotDummy
 
 # --- Queries ---
 ImPlot3D_PlotToPixels_double        PlotToPixels
 ImPlot3D_GetPlotRectPos             GetPlotRectPos
 ImPlot3D_GetPlotRectSize            GetPlotRectSize
+ImPlot3D_PixelsToPlotRay_double     PixelsToPlotRay
+ImPlot3D_PixelsToPlotPlane_double   PixelsToPlotPlane
+ImPlot3D_GetPlotDrawList            GetPlotDrawList
 
 # --- Colormaps ---
 ImPlot3D_PushColormap_Str           PushColormap
@@ -361,6 +527,11 @@ ImPlot3D_PopColormap                PopColormap
 ImPlot3D_GetColormapCount           GetColormapCount
 ImPlot3D_GetColormapName            GetColormapName
 ImPlot3D_SampleColormap             SampleColormap
+ImPlot3D_AddColormap_Vec4Ptr        AddColormap
+ImPlot3D_GetColormapIndex           GetColormapIndex
+ImPlot3D_GetColormapSize            GetColormapSize
+ImPlot3D_GetColormapColor           GetColormapColor
+ImPlot3D_NextColormapColor          NextColormapColor
 
 # --- Style ---
 ImPlot3D_StyleColorsAuto            StyleColorsAuto
@@ -372,7 +543,9 @@ ImPlot3D_PopStyleColor              PopStyleColor
 ImPlot3D_PushStyleVar_Float         PushStyleVar
 ImPlot3D_PushStyleVar_Vec2          PushStyleVarVec2
 ImPlot3D_PopStyleVar                PopStyleVar
+ImPlot3D_PushStyleVar_Int           PushStyleVarInt
 
 # --- Diagnostics ---
 ImPlot3D_ShowDemoWindow             ShowDemoWindow
 ImPlot3D_ShowMetricsWindow          ShowMetricsWindow
+ImPlot3D_ShowStyleEditor            ShowStyleEditor

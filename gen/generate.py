@@ -45,6 +45,36 @@ BUILTINS = [
     ("ImageButton", "bi_ImageButton", True, False,
      "pressed = PsychImGui('ImageButton', strId, tex, size [, uv0=[0 0]] [, uv1=[1 1]] "
      "[, bgCol=[0 0 0 0]] [, tintCol=[1 1 1 1]])"),
+    # Hand-written in extras.cpp, implot_extras.cpp, and implot3d_extras.cpp:
+    # void pointer data, struct results, label arrays, MEX-owned link storage,
+    # and transposed textures, which the generator rules cannot express.
+    # SPEC.md 14.15. BUILTIN_EXTRA below gives their frame and namespace.
+    ("SliderDouble", "bi_SliderDouble", True, False,
+     "[changed, v] = PsychImGui('SliderDouble', label, v, vMin, vMax [, format='%.3f'] "
+     "[, flags=0])"),
+    ("DragDouble", "bi_DragDouble", True, False,
+     "[changed, v] = PsychImGui('DragDouble', label, v [, vSpeed=1.0] [, vMin=0.0] "
+     "[, vMax=0.0] [, format='%.3f'] [, flags=0])"),
+    ("TableGetSortSpecs", "bi_TableGetSortSpecs", True, False,
+     "[specs, dirty] = PsychImGui('TableGetSortSpecs')"),
+    ("ImPlot.PlotBarGroups", "bi_ImPlotPlotBarGroups", True, False,
+     "PsychImGui('ImPlot.PlotBarGroups', labels, values [, groupSize=0.67] [, shift=0] "
+     "[, spec...])"),
+    ("ImPlot.PlotPieChart", "bi_ImPlotPlotPieChart", True, False,
+     "PsychImGui('ImPlot.PlotPieChart', labels, values, x, y, radius [, labelFmt='%.1f'] "
+     "[, angle0=90] [, spec...])"),
+    ("ImPlot.PlotImage", "bi_ImPlotPlotImage", True, False,
+     "PsychImGui('ImPlot.PlotImage', labelId, tex, boundsMin, boundsMax [, uv0=[0 0]] "
+     "[, uv1=[1 1]] [, tintCol=[1 1 1 1]] [, spec...])"),
+    ("ImPlot.SetupAxisLinks", "bi_ImPlotSetupAxisLinks", True, False,
+     "PsychImGui('ImPlot.SetupAxisLinks', axis, key)"),
+    ("ImPlot.SetNextAxisLinks", "bi_ImPlotSetNextAxisLinks", True, False,
+     "PsychImGui('ImPlot.SetNextAxisLinks', axis, key)"),
+    ("ImPlot.AxisLink", "bi_ImPlotAxisLink", False, False,
+     "range = PsychImGui('ImPlot.AxisLink', key [, range])"),
+    ("ImPlot3D.PlotImage", "bi_ImPlot3DPlotImage", True, False,
+     "PsychImGui('ImPlot3D.PlotImage', labelId, tex, corners [, tintCol=[1 1 1 1]] "
+     "[, spec...])"),
     ("Enum", "bi_Enum", False, False,
      "v = PsychImGui('Enum' [, 'ImGuiWindowFlags_NoTitleBar'])"),
     # The FileDialog subcommands are hand-written: ImGuiFileDialog has no
@@ -95,6 +125,21 @@ BUILTINS = [
      "[mouse, keyboard, text] = PsychImGui('WantCapture')"),
 ]
 
+# Dispatch details of the hand-written subcommands that are not lifecycle
+# calls: whether they need an open frame, and which build option compiles them.
+BUILTIN_EXTRA = {
+    "SliderDouble": {"frame": True},
+    "DragDouble": {"frame": True},
+    "TableGetSortSpecs": {"frame": True},
+    "ImPlot.PlotBarGroups": {"frame": True, "macro": "PIG_IMPLOT_FN"},
+    "ImPlot.PlotPieChart": {"frame": True, "macro": "PIG_IMPLOT_FN"},
+    "ImPlot.PlotImage": {"frame": True, "macro": "PIG_IMPLOT_FN"},
+    "ImPlot.SetupAxisLinks": {"frame": True, "macro": "PIG_IMPLOT_FN"},
+    "ImPlot.SetNextAxisLinks": {"frame": False, "macro": "PIG_IMPLOT_FN"},
+    "ImPlot.AxisLink": {"frame": False, "macro": "PIG_IMPLOT_FN"},
+    "ImPlot3D.PlotImage": {"frame": True, "macro": "PIG_IMPLOT3D_FN"},
+}
+
 # Cosmetic names for the first output of a value returning function.
 RET_NAMES = {
     "Begin": "open", "BeginChild": "visible", "Button": "pressed",
@@ -109,6 +154,13 @@ RET_NAMES = {
     "GetWindowDrawList": "drawList", "GetBackgroundDrawList": "drawList",
     "GetForegroundDrawList": "drawList", "TableGetColumnCount": "count",
     "TableGetColumnIndex": "index",
+    "TreeNodeEx": "open", "CollapsingHeaderClosable": "open", "BeginMainMenuBar": "open",
+    "BeginItemTooltip": "open", "BeginPopupContextItem": "open",
+    "BeginPopupContextWindow": "open", "BeginPopupContextVoid": "open",
+    "TabItemButton": "pressed", "TextLink": "pressed", "GetKeyName": "name",
+    "SaveIniSettingsToMemory": "ini", "BeginAlignedPlots": "open",
+    "BeginLegendPopup": "open", "GetPlotSelection": "rect", "GetPlotDrawList": "drawList",
+    "ColormapButton": "pressed", "PixelsToPlotPlane": "point",
 }
 
 # Test values that differ from the generic one for a kind, because the function
@@ -117,6 +169,24 @@ TEST_ARG_OVERRIDE = {
     ("ArrowButton", "dir"): "0",
     ("IsKeyPressed", "key"): "'ImGuiKey_A'",
     ("IsKeyDown", "key"): "'ImGuiKey_A'",
+    ("IsKeyReleased", "key"): "'ImGuiKey_A'",
+    ("GetKeyName", "key"): "'ImGuiKey_A'",
+    # The generic 'x' would match a tab left selected by the BeginTabItem test.
+    ("TabItemButton", "label"): "'genTabBtn'",
+    ("IsKeyChordPressed", "keyChord"): "{'ImGuiMod_Ctrl', 'ImGuiKey_S'}",
+    ("Shortcut", "keyChord"): "{'ImGuiMod_Ctrl', 'ImGuiKey_S'}",
+    ("PushStyleVarX", "idx"): "'ImGuiStyleVar_ItemSpacing'",
+    ("PushStyleVarY", "idx"): "'ImGuiStyleVar_ItemSpacing'",
+    ("PushStyleVarX", "valX"): "4",
+    ("PushStyleVarY", "valY"): "4",
+    ("SliderFloat4", "vMax"): "1",
+    ("SliderInt2", "vMax"): "10",
+    ("SliderInt3", "vMax"): "10",
+    ("SliderInt4", "vMax"): "10",
+    ("LoadIniSettingsFromMemory", "iniData"): "''",
+    ("ImPlot3D.PushStyleVarInt", "idx"): "'ImPlot3DStyleVar_Marker'",
+    ("ImPlot3D.PushStyleVarInt", "val"): "1",
+    ("ImPlot3D.AddColormap", "name"): "'genCmap3D'",
     ("InvisibleButton", "size"): "[12 12]",
     ("VSliderFloat", "size"): "[20 60]",
     ("VSliderInt", "size"): "[20 60]",
@@ -145,6 +215,8 @@ TEST_ARG_OVERRIDE = {
     ("ImPlot.SetupAxisTicks", "axis"): "'ImAxis_X1'",
     ("ImPlot.IsAxisHovered", "axis"): "'ImAxis_X1'",
     ("ImPlot.SetNextAxisLimits", "axis"): "'ImAxis_X1'",
+    # SetAxes asserts that the second axis is a Y axis.
+    ("ImPlot.SetAxes", "yAxis"): "'ImAxis_Y1'",
     # ImPlot asserts that the style variable matches the Push variant.
     ("ImPlot.PushStyleVar", "idx"): "'ImPlotStyleVar_PlotBorderSize'",
     ("ImPlot.PushColormap", "name"): "'Viridis'",
@@ -196,11 +268,23 @@ PAIRS = {
     "BeginTabBar": ("EndTabBar", False),
     "BeginTabItem": ("EndTabItem", False),
     "TreeNode": ("TreePop", False),
+    "TreeNodeEx": ("TreePop", False),
+    "BeginMainMenuBar": ("EndMainMenuBar", False),
+    "BeginItemTooltip": ("EndTooltip", False),
+    "BeginPopupContextItem": ("EndPopup", False),
+    "BeginPopupContextWindow": ("EndPopup", False),
+    "BeginPopupContextVoid": ("EndPopup", False),
+    "PushItemFlag": ("PopItemFlag", True),
+    "PushTextWrapPos": ("PopTextWrapPos", True),
+    "PushStyleVarX": ("PopStyleVar", True),
+    "PushStyleVarY": ("PopStyleVar", True),
     "BeginTable": ("EndTable", False),
     # The closer takes the same draw list, so it carries its argument along.
     "DrawList.PushClipRect": ("DrawList.PopClipRect', PsychImGui('GetWindowDrawList')", True),
     "ImPlot.BeginPlot": ("ImPlot.EndPlot", False),
     "ImPlot.BeginSubplots": ("ImPlot.EndSubplots", False),
+    "ImPlot.BeginAlignedPlots": ("ImPlot.EndAlignedPlots", False),
+    "ImPlot.BeginLegendPopup": ("ImPlot.EndLegendPopup", False),
     "ImPlot.PushColormap": ("ImPlot.PopColormap", True),
     "ImPlot.PushColormapIndex": ("ImPlot.PopColormap", True),
     "ImPlot.PushStyleColor": ("ImPlot.PopStyleColor", True),
@@ -213,16 +297,19 @@ PAIRS = {
     "ImPlot3D.PushStyleColor": ("ImPlot3D.PopStyleColor", True),
     "ImPlot3D.PushStyleVar": ("ImPlot3D.PopStyleVar", True),
     "ImPlot3D.PushStyleVarVec2": ("ImPlot3D.PopStyleVar", True),
+    "ImPlot3D.PushStyleVarInt": ("ImPlot3D.PopStyleVar", True),
 }
 
 # Subcommands the generated test cannot call with any legal argument, so it
 # records them instead of guessing. ImPlot 1.1 declares a PushStyleVar(int)
 # overload but has no integer style variable, so every call to it asserts.
-TEST_SKIP = {"ImPlot.PushStyleVarInt"}
+# IsSubplotsHovered is legal only inside subplots, which the generated test
+# has no scope for; test_extras.m covers it.
+TEST_SKIP = {"ImPlot.PushStyleVarInt", "ImPlot.IsSubplotsHovered"}
 
 # Subcommands that refuse to run twice with the same arguments. ImPlot keeps a
 # colormap name forever, so a second AddColormap with the same name asserts.
-TEST_ONCE = {"ImPlot.AddColormap"}
+TEST_ONCE = {"ImPlot.AddColormap", "ImPlot3D.AddColormap"}
 
 # Statements the generated test needs around one subcommand.
 _IN_TABLE = (["tt = PsychImGui('BeginTable', 'genT', 3);"],
@@ -244,6 +331,31 @@ TEST_CONTEXT = {
     "TableGetColumnIndex": _IN_TABLE,
     "TableHeader": _IN_TABLE_ROW,
     "TableSetBgColor": _IN_TABLE_ROW,
+    "TableGetColumnFlags": _IN_TABLE_ROW,
+    "TableGetColumnName": _IN_TABLE_ROW,
+    "TableAngledHeadersRow": _IN_TABLE,
+    # Dear ImGui asserts that the table is hideable before it hides a column.
+    "TableSetColumnEnabled": (["tt = PsychImGui('BeginTable', 'genT', 3, "
+                               "'ImGuiTableFlags_Hideable');",
+                               "if tt, PsychImGui('TableNextRow'); "
+                               "PsychImGui('TableNextColumn'); end"],
+                              ["if tt, PsychImGui('EndTable'); end"]),
+    # A tab bar with only a button would select the button, which asserts.
+    "TabItemButton": (["PsychImGui('BeginTabBar', 'genTB');",
+                       "if PsychImGui('BeginTabItem', 'genTI'), PsychImGui('EndTabItem'); end"],
+                      ["PsychImGui('EndTabBar');"]),
+    # A curve continues the path from its last point.
+    "PathBezierCubicCurveTo": (["PsychImGui('DrawList.PathLineTo', "
+                                "PsychImGui('GetWindowDrawList'), [0 0]);"],
+                               ["PsychImGui('DrawList.PathClear', "
+                                "PsychImGui('GetWindowDrawList'));"]),
+    "PathBezierQuadraticCurveTo": (["PsychImGui('DrawList.PathLineTo', "
+                                    "PsychImGui('GetWindowDrawList'), [0 0]);"],
+                                   ["PsychImGui('DrawList.PathClear', "
+                                    "PsychImGui('GetWindowDrawList'));"]),
+    # With no string id these act on the previous item, so there must be one.
+    "BeginPopupContextItem": (["PsychImGui('Button', 'genCtx');"], []),
+    "OpenPopupOnItemClick": (["PsychImGui('Button', 'genCtx');"], []),
 }
 
 # C++ statements around the call of one generated handler, for invariants the
@@ -277,21 +389,43 @@ CALL_HOOKS = {
          "if (v_target == ImGuiTableBgTarget_None) { mrs::fail(\"psychimgui:Usage\", \"TableSetBgColor: target must not be ImGuiTableBgTarget_None.\"); return; }",
          "if (v_column_n < -1 || v_column_n >= ImGui::TableGetColumnCount()) { mrs::fail(\"psychimgui:Range\", \"TableSetBgColor: columnN %d is not -1 or a column of this table.\", v_column_n); return; }",
          "if (v_target == ImGuiTableBgTarget_CellBg && v_column_n == -1 && ImGui::TableGetColumnIndex() < 0) { mrs::fail(\"psychimgui:Usage\", \"TableSetBgColor: a cell color with columnN -1 needs a current cell: call TableNextColumn first.\"); return; }"], []),
-    # Dear ImGui dereferences the current window without a check here, so a
-    # call outside a frame would crash instead of asserting.
-    "GetWindowDrawList": (["if (!pig::frameOpen()) { mrs::fail(\"psychimgui:Usage\", "
-                           "\"GetWindowDrawList needs an open frame: call it between "
-                           "NewFrame and Render.\"); return; }"], []),
-    "GetBackgroundDrawList": (["if (!pig::frameOpen()) { mrs::fail(\"psychimgui:Usage\", "
-                               "\"GetBackgroundDrawList needs an open frame: call it "
-                               "between NewFrame and Render.\"); return; }"], []),
-    "GetForegroundDrawList": (["if (!pig::frameOpen()) { mrs::fail(\"psychimgui:Usage\", "
-                               "\"GetForegroundDrawList needs an open frame: call it "
-                               "between NewFrame and Render.\"); return; }"], []),
+    # Dear ImGui indexes its column array with these after an assert.
+    "TableGetColumnFlags": (["if (!mrs::checkTableColumn(v_column_n, "
+                             "\"TableGetColumnFlags\")) return;"], []),
+    "TableGetColumnName": (["if (!mrs::checkTableColumn(v_column_n, "
+                            "\"TableGetColumnName\")) return;"], []),
+    "TableSetColumnEnabled": (["if (!mrs::checkTableColumn(v_column_n, "
+                               "\"TableSetColumnEnabled\")) return;"], []),
+    "TableAngledHeadersRow": (["if (ImGui::TableGetColumnCount() == 0) { "
+                               "mrs::fail(\"psychimgui:Usage\", \"TableAngledHeadersRow "
+                               "needs an open table: call it between BeginTable and "
+                               "EndTable.\"); return; }"], []),
+    # ImPlot dereferences the current subplot after an assert in both.
+    "EndSubplots": (["if (!pig::implotSubplotOpen()) { mrs::fail(\"psychimgui:Usage\", "
+                     "\"ImPlot.EndSubplots without an open ImPlot.BeginSubplots. Call it "
+                     "only when BeginSubplots returned true.\"); return; }"], []),
+    "IsSubplotsHovered": (["if (!pig::implotSubplotOpen()) { mrs::fail(\"psychimgui:Usage\", "
+                           "\"ImPlot.IsSubplotsHovered needs open subplots: call it between "
+                           "ImPlot.BeginSubplots and ImPlot.EndSubplots.\"); return; }"], []),
+    # ImPlot and ImPlot3D take idx modulo the colormap size, which stays
+    # negative for a negative idx and then indexes the color table.
+    "GetColormapColor": (["if (v_idx < 0) { mrs::fail(\"psychimgui:Range\", "
+                          "\"GetColormapColor: idx must not be negative, got %d.\", "
+                          "v_idx); return; }"], []),
     # ImDrawList::PopClipRect pops without a bounds check once IM_ASSERT
     # returns, and a pop of Dear ImGui's own clip rectangle corrupts the stack
     # for the End that owns it. Count the pushes made through the binding.
     "DrawList.PushClipRect": ([], ["pig::drawListPushClip(slot_self);"]),
+    # The curves start at _Path.back(), which reads before the buffer of an
+    # empty path once IM_ASSERT returns.
+    "DrawList.PathBezierCubicCurveTo": (["if (v_self->_Path.Size == 0) { mrs::fail("
+                                         "\"psychimgui:Usage\", \"DrawList.PathBezierCubicCurveTo "
+                                         "needs a current point: call DrawList.PathLineTo "
+                                         "first.\"); return; }"], []),
+    "DrawList.PathBezierQuadraticCurveTo": (["if (v_self->_Path.Size == 0) { mrs::fail("
+                                             "\"psychimgui:Usage\", \"DrawList."
+                                             "PathBezierQuadraticCurveTo needs a current point: "
+                                             "call DrawList.PathLineTo first.\"); return; }"], []),
     # ImPlot3D asserts on a zero or negative scale and then stores it, which
     # turns every vertex of the plot into NaN.
     "SetupBoxScale": (["if (!(v_x > 0.0 && v_y > 0.0 && v_z > 0.0)) { "
@@ -308,7 +442,9 @@ IMPLOT3D_INSIDE_PLOT = {
     "PlotLine", "PlotScatter", "PlotTriangle", "PlotQuad", "PlotSurface", "PlotMesh",
     "PlotText", "PlotToPixels", "GetPlotRectPos", "GetPlotRectSize", "SetupAxis",
     "SetupAxes", "SetupAxisLimits", "SetupAxesLimits", "SetupAxisTicks", "SetupBoxRotation",
-    "SetupBoxScale", "SetupLegend",
+    "SetupBoxScale", "SetupLegend", "SetupAxisScale", "SetupAxisLimitsConstraints",
+    "SetupAxisZoomConstraints", "SetupBoxInitialRotation", "PixelsToPlotRay",
+    "PixelsToPlotPlane", "NextColormapColor", "PlotDummy", "EndPlot",
 }
 
 def plot_guard(ns, mat):
@@ -325,6 +461,13 @@ def plot_guard(ns, mat):
     return [f"if (!{fn}) {{ mrs::fail(\"psychimgui:Usage\", \"{ns}.{mat} needs an "
             f"open plot: call it between {ns}.BeginPlot and {ns}.EndPlot.\"); return; }}"]
 
+
+# Data argument names of a family whose arrays are not the generic xs and ys,
+# keyed by (full name, number of data arrays).
+PLOT_DATA_NAMES = {
+    ("ImPlot.PlotBubbles", 3): ["xs", "ys", "sizes"],
+    ("ImPlot.PlotBubbles", 2): ["values", "sizes"],
+}
 
 # Per namespace settings of the templated plot families (SPEC.md 7.6).
 PLOT_NS = {
@@ -344,19 +487,98 @@ IMPLOT_INSIDE_PLOT = {
     "SetupFinish", "DragPoint", "DragLineX", "DragLineY", "DragRect", "Annotation", "TagX",
     "TagY", "IsPlotHovered", "IsAxisHovered", "IsLegendEntryHovered", "GetPlotMousePos",
     "GetPlotLimits", "GetPlotSize", "GetPlotPos", "PlotToPixels", "PixelsToPlot",
+    "SetupAxisScale", "SetupAxisLimitsConstraints", "SetupAxisZoomConstraints", "SetAxis",
+    "SetAxes", "GetPlotSelection", "IsPlotSelected", "CancelPlotSelection",
+    "BeginLegendPopup", "NextColormapColor", "EndPlot",
 }
 
 UNSUPPORTED_RE = re.compile(
     r"^(void\*|const void\*|ImGuiInputTextCallback|ImDrawList\*|ImFont\*|"
     r"ImGuiViewport\*|ImGuiStorage\*|ImGuiPayload\*|ImGuiListClipper\*|"
     r"ImGuiStyle\*|ImPlotStyle\*|ImPlotFormatter|ImPlotTransform|"
-    r"ImPlotColormapData\*|ImPlotGetter|ImPlotPoint\(\*.*|.*\(\*.*)$"
+    r"ImPlotColormapData\*|ImPlotGetter|ImPlotPoint\(\*.*|.*\(\*.*|"
+    # Callback typedefs such as ImGuiSizeCallback would otherwise match the
+    # ImGui name pattern of ENUM_RE and be marshaled as a number.
+    r"Im[A-Za-z0-9]*Callback)$"
 )
 
 SPEC_TYPES = {"ImPlotSpec", "ImPlot3DSpec"}
 VEC2_TYPES = {"ImVec2", "ImVec2_c"}
 VEC4_TYPES = {"ImVec4", "ImVec4_c"}
 ENUM_RE = re.compile(r"^(ImGui|ImPlot|ImAxis)[A-Za-z0-9]*$")
+# String arguments that are printf formats for the widget's value. Dear ImGui
+# and ImPlot hand them to snprintf with the number, so the generated handler
+# checks the conversion first (mrs::checkNumberFormat). Varargs formats such as
+# Text's take the "fmt" kind instead and are always called with "%s".
+NUMBER_FORMAT_ARGS = {"format", "formatMax", "labelFmt"}
+NUMBER_FORMAT_EXTRA = {("SetupAxisFormat", "fmt")}
+INT_FORMAT_RE = re.compile(r"^(Drag|Slider|VSlider)Int")
+
+
+def format_check(mat_name, a, v):
+    """The C++ check of one numeric format argument, or None."""
+    if a.mname not in NUMBER_FORMAT_ARGS and (mat_name, a.mname) not in NUMBER_FORMAT_EXTRA:
+        return None
+    integer = "true" if INT_FORMAT_RE.match(mat_name) else "false"
+    return f'mrs::checkNumberFormat({v}, "{a.mname}", {integer});'
+
+
+# Generated subcommands that are safe and useful outside NewFrame to Render.
+# Every other ImGui, ImPlot, and ImPlot3D subcommand gets kEntryNeedsFrame,
+# because Dear ImGui has no current window there and dereferences it anyway.
+# Draw list handles carry their own frame generation, so DrawList.* needs no
+# flag. These only read the input state or edit a stack, a style, or the
+# settings of the next window or item.
+IMGUI_FRAME_FREE = {
+    "GetTime", "GetFrameCount", "GetMousePos", "IsMouseDown", "IsMouseClicked",
+    "IsMouseReleased", "IsMouseDoubleClicked", "IsMouseDragging", "GetMouseDragDelta",
+    "ResetMouseDragDelta", "GetMouseClickedCount", "IsKeyDown", "IsKeyPressed",
+    "IsKeyReleased", "IsKeyChordPressed", "GetKeyName", "IsAnyItemActive",
+    "IsAnyItemHovered", "SetNextWindowPos", "SetNextWindowSize", "SetNextWindowCollapsed",
+    "SetNextWindowFocus", "SetNextWindowBgAlpha", "SetNextWindowContentSize",
+    "SetNextWindowSizeConstraints", "SetNextItemOpen", "SetNextItemWidth",
+    "PushStyleColor", "PopStyleColor", "PushStyleVar", "PushStyleVarVec2", "PushStyleVarX",
+    "PushStyleVarY", "PopStyleVar", "GetFontSize", "GetTextLineHeight",
+    "GetTextLineHeightWithSpacing", "GetFrameHeight", "GetFrameHeightWithSpacing",
+    "TableGetRowIndex", "TableGetHoveredColumn", "SaveIniSettingsToMemory",
+    "LoadIniSettingsFromMemory",
+}
+_PLOT_FRAME_FREE = {
+    "PushColormap", "PushColormapIndex", "PopColormap", "AddColormap", "GetColormapCount",
+    "GetColormapName", "GetColormapIndex", "GetColormapSize", "GetColormapColor",
+    "SampleColormap", "StyleColorsAuto", "StyleColorsDark", "StyleColorsLight",
+    "StyleColorsClassic", "PushStyleColor", "PopStyleColor", "PushStyleVar",
+    "PushStyleVarInt", "PushStyleVarVec2", "PopStyleVar",
+}
+IMPLOT_FRAME_FREE = _PLOT_FRAME_FREE | {
+    "SetNextAxisLimits", "SetNextAxesLimits", "SetNextAxisToFit", "SetNextAxesToFit",
+    "HideNextItem", "BustColorCache", "GetLastItemColor", "MapInputDefault",
+    "MapInputReverse",
+}
+IMPLOT3D_FRAME_FREE = set(_PLOT_FRAME_FREE)
+
+
+def entry_flags(name):
+    """Dispatch flags of one generated subcommand, by its full MATLAB name."""
+    ns, _, mat = name.rpartition(".")
+    free = {"": IMGUI_FRAME_FREE, "ImPlot": IMPLOT_FRAME_FREE,
+            "ImPlot3D": IMPLOT3D_FRAME_FREE}.get(ns)
+    if free is None or mat in free:
+        return "kEntryNeedsInit"
+    return "kEntryNeedsInit | kEntryNeedsFrame"
+
+
+# Enums the libraries use as array indices, mapped to their valid [lo, hi].
+# Filled in main from the enum data: every enum with a <Type>_COUNT member
+# that bounds all its other members, plus CLOSED_ENUMS. IM_ASSERT returns
+# (SPEC.md 8.3), so the library's own check does not stop a bad index.
+ENUM_RANGES = {}
+# Closed enums without a _COUNT member that are still worth checking.
+CLOSED_ENUMS = {"ImPlotScale", "ImPlot3DScale"}
+# Colormap counts change at run time, so their check calls into the library.
+COLORMAP_CHECKS = {"ImPlotColormap": "mrs::checkColormap",
+                   "ImPlot3DColormap": "mrs::checkColormap3D"}
+
 INT_TYPES = {"int", "ImS32", "ImGuiID", "ImS16", "ImS8", "ImPlotColormap"}
 UINT_TYPES = {"unsigned int", "ImU32", "ImU16", "ImU8", "size_t"}
 
@@ -393,7 +615,8 @@ def norm_type(t: str) -> str:
         return "ImVec4"
     return {"ImPlotPoint_c": "ImPlotPoint", "ImPlotRect_c": "ImPlotRect",
             "ImPlotRange_c": "ImPlotRange", "ImPlotSpec_c": "ImPlotSpec",
-            "ImPlot3DSpec_c": "ImPlot3DSpec"}.get(t, t)
+            "ImPlot3DSpec_c": "ImPlot3DSpec", "ImPlot3DPoint_c": "ImPlot3DPoint",
+            "ImPlot3DRay_c": "ImPlot3DRay"}.get(t, t)
 
 
 class Arg:
@@ -439,7 +662,10 @@ def classify(fn_name, argsT, defaults, suppress, enum_types):
             i += 2
             continue
 
-        if t == "char*" and nxt is not None and norm_type(nxt.ctype) == "size_t":
+        # A writable buffer and its capacity, as in InputText. A const char*
+        # with a size, as in LoadIniSettingsFromMemory, is an ordinary string.
+        if (t == "char*" and "const" not in a.ctype and nxt is not None
+                and norm_type(nxt.ctype) == "size_t"):
             a.kind, a.exposed, a.io, a.mname = "textbuf", True, True, "str"
             nxt.kind, nxt.exposed, nxt.mname = "bufsize", True, "bufSize"
             nxt.default = "16384" if "Multiline" in fn_name else "1024"
@@ -718,6 +944,9 @@ def emit_handler(mat_name, d, args, exposed, sig_const, linkage="static", guard=
                 extra = f" && {a.idx} < specAt" if has_spec else ""
                 L.append(f"    if (nargin > {a.idx}{extra} && !mxIsEmpty(args[{a.idx}])) "
                          f'{v} = mrs::toUtf8(args[{a.idx}], "{a.mname}", b_{a.name});')
+            chk = format_check(mat_name, a, v) if k == "str" else None
+            if chk:
+                deferred.append(f"    {chk}")
             callargs.append(f'"%s", {v}' if k == "fmt" else v)
         elif k == "bool":
             L.append(f"    bool {v} = {cpp_default(a) if a.default is not None else 'false'};")
@@ -776,11 +1005,12 @@ def emit_handler(mat_name, d, args, exposed, sig_const, linkage="static", guard=
             callargs.append(v)
         elif k in ("int", "uint", "int64", "double", "enum"):
             ct = strip_const(a.ctype)
-            getter = {"int": "getInt", "uint": "getUInt", "int64": "getInt64",
-                      "double": "getScalar", "enum": "getFlags"}[k]
             dflt = cpp_default(a) if a.default is not None else "0"
             L.append(f"    {ct} {v} = ({ct})({dflt});")
-            L.append(f"{guard}{v} = ({ct})mrs::{getter}(args[{a.idx}], \"{a.mname}\");")
+            L.append(f"{guard}{v} = {scalar_getter(a, k, ct, f'args[{a.idx}]')};")
+            if ct in COLORMAP_CHECKS:
+                auto = "true" if dflt in ("IMPLOT_AUTO", "IMPLOT3D_AUTO", "-1") else "false"
+                L.append(f'{guard}{COLORMAP_CHECKS[ct]}({v}, {auto}, "{a.mname}");')
             callargs.append(v)
         elif k == "floatarray":
             L.append(f"    mrs::FloatVec fv_{a.name};")
@@ -819,9 +1049,12 @@ def emit_handler(mat_name, d, args, exposed, sig_const, linkage="static", guard=
         decl = "const char*" if ret == "char*" else ret
         L.append(f"    {decl} ret = {call}({argstr});")
         rk = {"bool": "bool", "ImVec2": "xy", "ImVec4": "xyzw", "ImPlotPoint": "xy",
-              "ImPlotRange": "range2", "ImPlotRect": "rect4x",
+              "ImPlotRange": "range2", "ImPlotRect": "rect4x", "ImPlot3DPoint": "xyz",
               "char*": "text"}.get(ret, "double")
-        rets = [(rk, "ret")] + outputs
+        if ret == "ImPlot3DRay":
+            rets = [("xyz", "ret.Origin"), ("xyz", "ret.Direction")] + outputs
+        else:
+            rets = [(rk, "ret")] + outputs
     L += [f"    {h}" for h in hook_post]
 
     for oi, (kind, expr) in enumerate(rets):
@@ -834,6 +1067,9 @@ def emit_handler(mat_name, d, args, exposed, sig_const, linkage="static", guard=
         elif kind == "xy":
             stmt = (f"{{ double t[2] = {{(double){expr}.x, (double){expr}.y}}; "
                     f"plhs[{oi}] = mrs::outVec(t, 2); }}")
+        elif kind == "xyz":
+            stmt = (f"{{ double t[3] = {{{expr}.x, {expr}.y, {expr}.z}}; "
+                    f"plhs[{oi}] = mrs::outVec(t, 3); }}")
         elif kind == "xyzw":
             stmt = (f"{{ double t[4] = {{(double){expr}.x, (double){expr}.y, "
                     f"(double){expr}.z, (double){expr}.w}}; "
@@ -926,10 +1162,10 @@ def extra_param(a):
         return cty, f"({cty})({dflt if dflt is not None else 0})", \
             f'({cty})mrs::getScalar(args[{a.idx}], "{a.mname}")'
     if k in ("int", "uint", "int64", "enum"):
-        getter = {"int": "getInt", "uint": "getUInt", "int64": "getInt64",
-                  "enum": "getFlags"}[k]
+        if cty in COLORMAP_CHECKS:
+            raise Refused(f"colormap argument '{a.name}' is not supported in a templated family")
         return cty, f"({cty})({dflt if dflt is not None else 0})", \
-            f'({cty})mrs::{getter}(args[{a.idx}], "{a.mname}")'
+            scalar_getter(a, k, cty, f"args[{a.idx}]")
     if k == "bool":
         return "bool", (dflt if dflt is not None else "false"), \
             f'mrs::getBool(args[{a.idx}], "{a.mname}")'
@@ -1092,6 +1328,9 @@ def emit_implot_group(mat_name, overloads, enum_types, sig_const, ns="ImPlot"):
             else:
                 H.append(f"        if (nargin > {a.idx} && {a.idx} < specAt) "
                          f"v_{a.name} = {getter};")
+            chk = format_check(mat_name, a, f"v_{a.name}") if a.kind == "str" else None
+            if chk:
+                H.append(f"        {chk}")
         H.append("        if (mrs::failed()) return;")
         H.append("        switch (cid) {")
         names = ["nlhs", "plhs", "v_label", "args", "nargin", "specAt"]
@@ -1113,7 +1352,8 @@ def emit_implot_group(mat_name, overloads, enum_types, sig_const, ns="ImPlot"):
                  f'"{prefix}{mat_name}: unsupported data class."); break;')
         H.append("        }")
 
-        data_names = conf["data_names"].get(n_data, [f"d{i}" for i in range(n_data)])
+        data_names = PLOT_DATA_NAMES.get((prefix + mat_name, n_data)) or \
+            conf["data_names"].get(n_data, [f"d{i}" for i in range(n_data)])
         if has_rows:
             data_names = ["values"]
         if has_grid:
@@ -1144,7 +1384,9 @@ def emit_implot_group(mat_name, overloads, enum_types, sig_const, ns="ImPlot"):
 
 def mat_signature(mat_name, exposed, nouts, ret, prefix, has_spec=False):
     outs = []
-    if ret != "void":
+    if ret == "ImPlot3DRay":
+        outs += ["origin", "direction"]
+    elif ret != "void":
         outs.append(RET_NAMES.get(mat_name, "changed" if nouts > 1 else "ret"))
     outs += [a.mname for a in exposed if a.io]
     outs = outs[:nouts]
@@ -1249,6 +1491,37 @@ def collect_igfd_enums(header: Path):
             raise SystemExit(f"ImGuiFileDialog flag {name}: cannot evaluate '{expr}'")
         out[name] = int(eval(expr, {"__builtins__": {}}))
     return out
+
+
+def collect_enum_ranges(se):
+    for ename, entries in se.get("enums", {}).items():
+        t = ename.rstrip("_")
+        vals = {e["name"]: int(e["calc_value"]) for e in entries}
+        count = vals.pop(t + "_COUNT", None)
+        if not vals:
+            continue
+        lo, hi = min(vals.values()), max(vals.values())
+        if count is not None and hi < count:
+            ENUM_RANGES[t] = (lo, count - 1)
+        elif t in CLOSED_ENUMS:
+            ENUM_RANGES[t] = (lo, hi)
+
+
+def scalar_getter(a, k, ct, argexpr):
+    """The C++ expression that reads one int, double, or enum argument."""
+    if k == "enum" and ct == "ImGuiKey":
+        return f'mrs::getKey({argexpr}, "{a.mname}")'
+    if k == "enum" and ct == "ImGuiKeyChord":
+        return f'mrs::getKeyChord({argexpr}, "{a.mname}")'
+    if k == "enum" and ct in ENUM_RANGES:
+        lo, hi = ENUM_RANGES[ct]
+        # IMPLOT_AUTO (-1) selects the current axis where it is the default.
+        if a.default in ("IMPLOT_AUTO", "IMPLOT3D_AUTO", "-1"):
+            lo = min(lo, -1)
+        return f'({ct})mrs::getEnumRanged({argexpr}, "{a.mname}", {lo}, {hi})'
+    getter = {"int": "getInt", "uint": "getUInt", "int64": "getInt64",
+              "double": "getScalar", "enum": "getFlags"}[k]
+    return f'({ct})mrs::{getter}({argexpr}, "{a.mname}")'
 
 
 def collect_enums(se):
@@ -1421,7 +1694,7 @@ def write_gen_dispatch(root, ig, implot_entries, enums, imgui_ver, implot_ver,
     # the dispatch table
     rows = []
     for name, sym, sig_const in entries:
-        rows.append((name, sym, sig_const, "kEntryNeedsInit"))
+        rows.append((name, sym, sig_const, entry_flags(name)))
     for name, sym, _, needs_init, _ in [(b[0], b[1], None, b[2], b[3]) for b in BUILTINS]:
         pass
     for bname, bsym, binit, bgl, bsig in BUILTINS:
@@ -1430,12 +1703,16 @@ def write_gen_dispatch(root, ig, implot_entries, enums, imgui_ver, implot_ver,
             flags.append("kEntryNeedsInit")
         if bgl:
             flags.append("kEntryNeedsGL")
-        rows.append((bname, bsym, f"kSigBi_{bi_ident(bname)}",
+        extra = BUILTIN_EXTRA.get(bname, {})
+        if extra.get("frame"):
+            flags.append("kEntryNeedsFrame")
+        sym = f"{extra['macro']}({bsym})" if "macro" in extra else bsym
+        rows.append((bname, sym, f"kSigBi_{bi_ident(bname)}",
                      " | ".join(flags) if flags else "0"))
     for name, sym, sig_const in implot_entries:
-        rows.append((name, "PIG_IMPLOT_FN(" + sym + ")", sig_const, "kEntryNeedsInit"))
+        rows.append((name, "PIG_IMPLOT_FN(" + sym + ")", sig_const, entry_flags(name)))
     for name, sym, sig_const in implot3d_entries:
-        rows.append((name, "PIG_IMPLOT3D_FN(" + sym + ")", sig_const, "kEntryNeedsInit"))
+        rows.append((name, "PIG_IMPLOT3D_FN(" + sym + ")", sig_const, entry_flags(name)))
 
     for bname, bsym, binit, bgl, bsig in BUILTINS:
         out.append(f'static const char kSigBi_{bi_ident(bname)}[] = "{bsig}";')
@@ -1502,7 +1779,14 @@ def write_help(root, rows, helps, imgui_ver, implot_ver):
          "%   Lifecycle subcommands",
          "%   ---------------------"]
     for bname, bsym, binit, bgl, bsig in BUILTINS:
-        L.append(f"%     {bsig}")
+        if bname not in BUILTIN_EXTRA:
+            L.append(f"%     {bsig}")
+    L.append("%")
+    L.append("%   Hand-written widget and plot subcommands")
+    L.append("%   ----------------------------------------")
+    for bname, bsym, binit, bgl, bsig in BUILTINS:
+        if bname in BUILTIN_EXTRA:
+            L.append(f"%     {bsig}")
     L.append("%")
     L.append("%   Generated subcommands")
     L.append("%   ---------------------")
@@ -1736,6 +2020,8 @@ def write_tests(root, tests, prefix_label, implot_tests, implot3d_tests=()):
                 L.append(f"        t_ok('{full} {label}', numel(o) == {nouts});")
                 if ret == "bool":
                     L.append(f"        t_ok('{full} {label} class', islogical(o{{1}}));")
+                elif ret in ("char*", "const char*"):
+                    L.append(f"        t_ok('{full} {label} class', ischar(o{{1}}));")
                 elif ret != "void":
                     L.append(f"        t_ok('{full} {label} class', isnumeric(o{{1}}));")
                 else:
@@ -1848,6 +2134,7 @@ def main():
     se = json.loads((cimgui / "generator/output/structs_and_enums.json").read_text("utf-8"))
     by_ov = index_definitions(defs)
     enums = collect_enums(se)
+    collect_enum_ranges(se)
     enum_types = {k.rstrip("_") for k in se.get("enums", {})} | set(se.get("enumtypes", {}))
 
     imgui_ver = "unknown"
@@ -1863,6 +2150,7 @@ def main():
         pse = json.loads((cimplot / "generator/output/structs_and_enums.json").read_text("utf-8"))
         by_ov_p = index_definitions(pdefs)
         enums.update(collect_enums(pse))
+        collect_enum_ranges(pse)
         enum_types |= {k.rstrip("_") for k in pse.get("enums", {})} | set(pse.get("enumtypes", {}))
         m = re.search(r'#define\s+IMPLOT_VERSION\s+"([^"]+)"',
                       (cimplot / "implot" / "implot.h").read_text("utf-8", errors="ignore"))
@@ -1878,6 +2166,7 @@ def main():
                           .read_text("utf-8"))
         by_ov_p3 = index_definitions(p3defs)
         enums.update(collect_enums(p3se))
+        collect_enum_ranges(p3se)
         enum_types |= ({k.rstrip("_") for k in p3se.get("enums", {})} |
                        set(p3se.get("enumtypes", {})))
         m = re.search(r'#define\s+IMPLOT3D_VERSION\s+"([^"]+)"',

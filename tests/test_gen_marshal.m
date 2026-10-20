@@ -320,6 +320,162 @@ function test_gen_marshal()
     end
     tf_end();
 
+    %% GetWindowWidth (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetWindowWidth');
+        t_ok('GetWindowWidth defaults', numel(o) == 1);
+        t_ok('GetWindowWidth defaults class', isnumeric(o{1}));
+    catch e
+        t_ok('GetWindowWidth defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% GetWindowWidth (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetWindowWidth');
+        t_ok('GetWindowWidth full', numel(o) == 1);
+        t_ok('GetWindowWidth full class', isnumeric(o{1}));
+    catch e
+        t_ok('GetWindowWidth full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% GetWindowHeight (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetWindowHeight');
+        t_ok('GetWindowHeight defaults', numel(o) == 1);
+        t_ok('GetWindowHeight defaults class', isnumeric(o{1}));
+    catch e
+        t_ok('GetWindowHeight defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% GetWindowHeight (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetWindowHeight');
+        t_ok('GetWindowHeight full', numel(o) == 1);
+        t_ok('GetWindowHeight full class', isnumeric(o{1}));
+    catch e
+        t_ok('GetWindowHeight full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% IsWindowAppearing (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('IsWindowAppearing');
+        t_ok('IsWindowAppearing defaults', numel(o) == 1);
+        t_ok('IsWindowAppearing defaults class', islogical(o{1}));
+    catch e
+        t_ok('IsWindowAppearing defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% IsWindowAppearing (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('IsWindowAppearing');
+        t_ok('IsWindowAppearing full', numel(o) == 1);
+        t_ok('IsWindowAppearing full class', islogical(o{1}));
+    catch e
+        t_ok('IsWindowAppearing full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% IsWindowCollapsed (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('IsWindowCollapsed');
+        t_ok('IsWindowCollapsed defaults', numel(o) == 1);
+        t_ok('IsWindowCollapsed defaults class', islogical(o{1}));
+    catch e
+        t_ok('IsWindowCollapsed defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% IsWindowCollapsed (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('IsWindowCollapsed');
+        t_ok('IsWindowCollapsed full', numel(o) == 1);
+        t_ok('IsWindowCollapsed full class', islogical(o{1}));
+    catch e
+        t_ok('IsWindowCollapsed full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% SetNextWindowContentSize (defaults)
+    tf_begin();
+    try
+        PsychImGui('SetNextWindowContentSize', [0 0]);
+        t_ok('SetNextWindowContentSize defaults', true);
+    catch e
+        t_ok('SetNextWindowContentSize defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% SetNextWindowContentSize (full)
+    tf_begin();
+    try
+        PsychImGui('SetNextWindowContentSize', [0 0]);
+        t_ok('SetNextWindowContentSize full', true);
+    catch e
+        t_ok('SetNextWindowContentSize full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% SetNextWindowSizeConstraints (defaults)
+    tf_begin();
+    try
+        PsychImGui('SetNextWindowSizeConstraints', [0 0], [0 0]);
+        t_ok('SetNextWindowSizeConstraints defaults', true);
+    catch e
+        t_ok('SetNextWindowSizeConstraints defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% SetNextWindowSizeConstraints (full)
+    tf_begin();
+    try
+        PsychImGui('SetNextWindowSizeConstraints', [0 0], [0 0]);
+        t_ok('SetNextWindowSizeConstraints full', true);
+    catch e
+        t_ok('SetNextWindowSizeConstraints full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
     %% Separator (defaults)
     tf_begin();
     try
@@ -702,6 +858,368 @@ function test_gen_marshal()
     end
     tf_end();
 
+    %% AlignTextToFramePadding (defaults)
+    tf_begin();
+    try
+        PsychImGui('AlignTextToFramePadding');
+        t_ok('AlignTextToFramePadding defaults', true);
+    catch e
+        t_ok('AlignTextToFramePadding defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% AlignTextToFramePadding (full)
+    tf_begin();
+    try
+        PsychImGui('AlignTextToFramePadding');
+        t_ok('AlignTextToFramePadding full', true);
+    catch e
+        t_ok('AlignTextToFramePadding full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% GetCursorPos (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetCursorPos');
+        t_ok('GetCursorPos defaults', numel(o) == 1);
+        t_ok('GetCursorPos defaults class', isnumeric(o{1}));
+    catch e
+        t_ok('GetCursorPos defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% GetCursorPos (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetCursorPos');
+        t_ok('GetCursorPos full', numel(o) == 1);
+        t_ok('GetCursorPos full class', isnumeric(o{1}));
+    catch e
+        t_ok('GetCursorPos full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% SetCursorPosX (defaults)
+    tf_begin();
+    try
+        PsychImGui('SetCursorPosX', 0);
+        t_ok('SetCursorPosX defaults', true);
+    catch e
+        t_ok('SetCursorPosX defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% SetCursorPosX (full)
+    tf_begin();
+    try
+        PsychImGui('SetCursorPosX', 0);
+        t_ok('SetCursorPosX full', true);
+    catch e
+        t_ok('SetCursorPosX full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% SetCursorPosY (defaults)
+    tf_begin();
+    try
+        PsychImGui('SetCursorPosY', 0);
+        t_ok('SetCursorPosY defaults', true);
+    catch e
+        t_ok('SetCursorPosY defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% SetCursorPosY (full)
+    tf_begin();
+    try
+        PsychImGui('SetCursorPosY', 0);
+        t_ok('SetCursorPosY full', true);
+    catch e
+        t_ok('SetCursorPosY full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% SetCursorScreenPos (defaults)
+    tf_begin();
+    try
+        PsychImGui('SetCursorScreenPos', [0 0]);
+        t_ok('SetCursorScreenPos defaults', true);
+    catch e
+        t_ok('SetCursorScreenPos defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% SetCursorScreenPos (full)
+    tf_begin();
+    try
+        PsychImGui('SetCursorScreenPos', [0 0]);
+        t_ok('SetCursorScreenPos full', true);
+    catch e
+        t_ok('SetCursorScreenPos full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% GetFrameHeight (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetFrameHeight');
+        t_ok('GetFrameHeight defaults', numel(o) == 1);
+        t_ok('GetFrameHeight defaults class', isnumeric(o{1}));
+    catch e
+        t_ok('GetFrameHeight defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% GetFrameHeight (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetFrameHeight');
+        t_ok('GetFrameHeight full', numel(o) == 1);
+        t_ok('GetFrameHeight full class', isnumeric(o{1}));
+    catch e
+        t_ok('GetFrameHeight full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% GetFrameHeightWithSpacing (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetFrameHeightWithSpacing');
+        t_ok('GetFrameHeightWithSpacing defaults', numel(o) == 1);
+        t_ok('GetFrameHeightWithSpacing defaults class', isnumeric(o{1}));
+    catch e
+        t_ok('GetFrameHeightWithSpacing defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% GetFrameHeightWithSpacing (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetFrameHeightWithSpacing');
+        t_ok('GetFrameHeightWithSpacing full', numel(o) == 1);
+        t_ok('GetFrameHeightWithSpacing full class', isnumeric(o{1}));
+    catch e
+        t_ok('GetFrameHeightWithSpacing full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% GetTextLineHeight (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetTextLineHeight');
+        t_ok('GetTextLineHeight defaults', numel(o) == 1);
+        t_ok('GetTextLineHeight defaults class', isnumeric(o{1}));
+    catch e
+        t_ok('GetTextLineHeight defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% GetTextLineHeight (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetTextLineHeight');
+        t_ok('GetTextLineHeight full', numel(o) == 1);
+        t_ok('GetTextLineHeight full class', isnumeric(o{1}));
+    catch e
+        t_ok('GetTextLineHeight full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% GetTextLineHeightWithSpacing (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetTextLineHeightWithSpacing');
+        t_ok('GetTextLineHeightWithSpacing defaults', numel(o) == 1);
+        t_ok('GetTextLineHeightWithSpacing defaults class', isnumeric(o{1}));
+    catch e
+        t_ok('GetTextLineHeightWithSpacing defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% GetTextLineHeightWithSpacing (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetTextLineHeightWithSpacing');
+        t_ok('GetTextLineHeightWithSpacing full', numel(o) == 1);
+        t_ok('GetTextLineHeightWithSpacing full class', isnumeric(o{1}));
+    catch e
+        t_ok('GetTextLineHeightWithSpacing full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% GetFontSize (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetFontSize');
+        t_ok('GetFontSize defaults', numel(o) == 1);
+        t_ok('GetFontSize defaults class', isnumeric(o{1}));
+    catch e
+        t_ok('GetFontSize defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% GetFontSize (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetFontSize');
+        t_ok('GetFontSize full', numel(o) == 1);
+        t_ok('GetFontSize full class', isnumeric(o{1}));
+    catch e
+        t_ok('GetFontSize full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% CalcItemWidth (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('CalcItemWidth');
+        t_ok('CalcItemWidth defaults', numel(o) == 1);
+        t_ok('CalcItemWidth defaults class', isnumeric(o{1}));
+    catch e
+        t_ok('CalcItemWidth defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% CalcItemWidth (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('CalcItemWidth');
+        t_ok('CalcItemWidth full', numel(o) == 1);
+        t_ok('CalcItemWidth full class', isnumeric(o{1}));
+    catch e
+        t_ok('CalcItemWidth full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% PushTextWrapPos (defaults)
+    tf_begin();
+    try
+        PsychImGui('PushTextWrapPos');
+        t_ok('PushTextWrapPos defaults', true);
+    catch e
+        t_ok('PushTextWrapPos defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    PsychImGui('PopTextWrapPos');
+    tf_end();
+
+    %% PushTextWrapPos (full)
+    tf_begin();
+    try
+        PsychImGui('PushTextWrapPos', 0);
+        t_ok('PushTextWrapPos full', true);
+    catch e
+        t_ok('PushTextWrapPos full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    PsychImGui('PopTextWrapPos');
+    tf_end();
+
+    % PopTextWrapPos is exercised by its opener.
+    %% PushItemFlag (defaults)
+    tf_begin();
+    try
+        PsychImGui('PushItemFlag', 0, false);
+        t_ok('PushItemFlag defaults', true);
+    catch e
+        t_ok('PushItemFlag defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    PsychImGui('PopItemFlag');
+    tf_end();
+
+    %% PushItemFlag (full)
+    tf_begin();
+    try
+        PsychImGui('PushItemFlag', 0, false);
+        t_ok('PushItemFlag full', true);
+    catch e
+        t_ok('PushItemFlag full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    PsychImGui('PopItemFlag');
+    tf_end();
+
+    % PopItemFlag is exercised by its opener.
+    %% GetItemRectSize (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetItemRectSize');
+        t_ok('GetItemRectSize defaults', numel(o) == 1);
+        t_ok('GetItemRectSize defaults class', isnumeric(o{1}));
+    catch e
+        t_ok('GetItemRectSize defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% GetItemRectSize (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetItemRectSize');
+        t_ok('GetItemRectSize full', numel(o) == 1);
+        t_ok('GetItemRectSize full class', isnumeric(o{1}));
+    catch e
+        t_ok('GetItemRectSize full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
     %% PushID (defaults)
     tf_begin();
     try
@@ -880,6 +1398,34 @@ function test_gen_marshal()
     catch e
         t_ok('BulletText full', false);
         fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% TextLink (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('TextLink', 'x');
+        t_ok('TextLink defaults', numel(o) == 1);
+        t_ok('TextLink defaults class', islogical(o{1}));
+    catch e
+        t_ok('TextLink defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% TextLink (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('TextLink', 'x');
+        t_ok('TextLink full', numel(o) == 1);
+        t_ok('TextLink full class', islogical(o{1}));
+    catch e
+        t_ok('TextLink full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
     end
     tf_end();
 
@@ -1613,6 +2159,286 @@ function test_gen_marshal()
     end
     tf_end();
 
+    %% DragFloat4 (defaults)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('DragFloat4', 'x', zeros(1, 4));
+        t_ok('DragFloat4 defaults', numel(o) == 2);
+        t_ok('DragFloat4 defaults class', islogical(o{1}));
+    catch e
+        t_ok('DragFloat4 defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% DragFloat4 (full)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('DragFloat4', 'x', zeros(1, 4), 0, 0, 0, 'x', 0);
+        t_ok('DragFloat4 full', numel(o) == 2);
+        t_ok('DragFloat4 full class', islogical(o{1}));
+    catch e
+        t_ok('DragFloat4 full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% DragInt2 (defaults)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('DragInt2', 'x', zeros(1, 2));
+        t_ok('DragInt2 defaults', numel(o) == 2);
+        t_ok('DragInt2 defaults class', islogical(o{1}));
+    catch e
+        t_ok('DragInt2 defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% DragInt2 (full)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('DragInt2', 'x', zeros(1, 2), 0, 0, 0, 'x', 0);
+        t_ok('DragInt2 full', numel(o) == 2);
+        t_ok('DragInt2 full class', islogical(o{1}));
+    catch e
+        t_ok('DragInt2 full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% DragInt3 (defaults)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('DragInt3', 'x', zeros(1, 3));
+        t_ok('DragInt3 defaults', numel(o) == 2);
+        t_ok('DragInt3 defaults class', islogical(o{1}));
+    catch e
+        t_ok('DragInt3 defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% DragInt3 (full)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('DragInt3', 'x', zeros(1, 3), 0, 0, 0, 'x', 0);
+        t_ok('DragInt3 full', numel(o) == 2);
+        t_ok('DragInt3 full class', islogical(o{1}));
+    catch e
+        t_ok('DragInt3 full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% DragInt4 (defaults)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('DragInt4', 'x', zeros(1, 4));
+        t_ok('DragInt4 defaults', numel(o) == 2);
+        t_ok('DragInt4 defaults class', islogical(o{1}));
+    catch e
+        t_ok('DragInt4 defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% DragInt4 (full)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('DragInt4', 'x', zeros(1, 4), 0, 0, 0, 'x', 0);
+        t_ok('DragInt4 full', numel(o) == 2);
+        t_ok('DragInt4 full class', islogical(o{1}));
+    catch e
+        t_ok('DragInt4 full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% DragFloatRange2 (defaults)
+    tf_begin();
+    try
+        o = cell(1, 3);
+        [o{1:3}] = PsychImGui('DragFloatRange2', 'x', 0, 0);
+        t_ok('DragFloatRange2 defaults', numel(o) == 3);
+        t_ok('DragFloatRange2 defaults class', islogical(o{1}));
+    catch e
+        t_ok('DragFloatRange2 defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% DragFloatRange2 (full)
+    tf_begin();
+    try
+        o = cell(1, 3);
+        [o{1:3}] = PsychImGui('DragFloatRange2', 'x', 0, 0, 0, 0, 0, 'x', 'x', 0);
+        t_ok('DragFloatRange2 full', numel(o) == 3);
+        t_ok('DragFloatRange2 full class', islogical(o{1}));
+    catch e
+        t_ok('DragFloatRange2 full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% DragIntRange2 (defaults)
+    tf_begin();
+    try
+        o = cell(1, 3);
+        [o{1:3}] = PsychImGui('DragIntRange2', 'x', 0, 0);
+        t_ok('DragIntRange2 defaults', numel(o) == 3);
+        t_ok('DragIntRange2 defaults class', islogical(o{1}));
+    catch e
+        t_ok('DragIntRange2 defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% DragIntRange2 (full)
+    tf_begin();
+    try
+        o = cell(1, 3);
+        [o{1:3}] = PsychImGui('DragIntRange2', 'x', 0, 0, 0, 0, 0, 'x', 'x', 0);
+        t_ok('DragIntRange2 full', numel(o) == 3);
+        t_ok('DragIntRange2 full class', islogical(o{1}));
+    catch e
+        t_ok('DragIntRange2 full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% SliderFloat4 (defaults)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('SliderFloat4', 'x', zeros(1, 4), 0, 1);
+        t_ok('SliderFloat4 defaults', numel(o) == 2);
+        t_ok('SliderFloat4 defaults class', islogical(o{1}));
+    catch e
+        t_ok('SliderFloat4 defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% SliderFloat4 (full)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('SliderFloat4', 'x', zeros(1, 4), 0, 1, 'x', 0);
+        t_ok('SliderFloat4 full', numel(o) == 2);
+        t_ok('SliderFloat4 full class', islogical(o{1}));
+    catch e
+        t_ok('SliderFloat4 full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% SliderInt2 (defaults)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('SliderInt2', 'x', zeros(1, 2), 0, 10);
+        t_ok('SliderInt2 defaults', numel(o) == 2);
+        t_ok('SliderInt2 defaults class', islogical(o{1}));
+    catch e
+        t_ok('SliderInt2 defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% SliderInt2 (full)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('SliderInt2', 'x', zeros(1, 2), 0, 10, 'x', 0);
+        t_ok('SliderInt2 full', numel(o) == 2);
+        t_ok('SliderInt2 full class', islogical(o{1}));
+    catch e
+        t_ok('SliderInt2 full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% SliderInt3 (defaults)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('SliderInt3', 'x', zeros(1, 3), 0, 10);
+        t_ok('SliderInt3 defaults', numel(o) == 2);
+        t_ok('SliderInt3 defaults class', islogical(o{1}));
+    catch e
+        t_ok('SliderInt3 defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% SliderInt3 (full)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('SliderInt3', 'x', zeros(1, 3), 0, 10, 'x', 0);
+        t_ok('SliderInt3 full', numel(o) == 2);
+        t_ok('SliderInt3 full class', islogical(o{1}));
+    catch e
+        t_ok('SliderInt3 full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% SliderInt4 (defaults)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('SliderInt4', 'x', zeros(1, 4), 0, 10);
+        t_ok('SliderInt4 defaults', numel(o) == 2);
+        t_ok('SliderInt4 defaults class', islogical(o{1}));
+    catch e
+        t_ok('SliderInt4 defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% SliderInt4 (full)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('SliderInt4', 'x', zeros(1, 4), 0, 10, 'x', 0);
+        t_ok('SliderInt4 full', numel(o) == 2);
+        t_ok('SliderInt4 full class', islogical(o{1}));
+    catch e
+        t_ok('SliderInt4 full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
     %% InputText (defaults)
     tf_begin();
     try
@@ -1781,6 +2607,174 @@ function test_gen_marshal()
     end
     tf_end();
 
+    %% InputFloat2 (defaults)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('InputFloat2', 'x', zeros(1, 2));
+        t_ok('InputFloat2 defaults', numel(o) == 2);
+        t_ok('InputFloat2 defaults class', islogical(o{1}));
+    catch e
+        t_ok('InputFloat2 defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% InputFloat2 (full)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('InputFloat2', 'x', zeros(1, 2), 'x', 0);
+        t_ok('InputFloat2 full', numel(o) == 2);
+        t_ok('InputFloat2 full class', islogical(o{1}));
+    catch e
+        t_ok('InputFloat2 full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% InputFloat3 (defaults)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('InputFloat3', 'x', zeros(1, 3));
+        t_ok('InputFloat3 defaults', numel(o) == 2);
+        t_ok('InputFloat3 defaults class', islogical(o{1}));
+    catch e
+        t_ok('InputFloat3 defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% InputFloat3 (full)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('InputFloat3', 'x', zeros(1, 3), 'x', 0);
+        t_ok('InputFloat3 full', numel(o) == 2);
+        t_ok('InputFloat3 full class', islogical(o{1}));
+    catch e
+        t_ok('InputFloat3 full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% InputFloat4 (defaults)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('InputFloat4', 'x', zeros(1, 4));
+        t_ok('InputFloat4 defaults', numel(o) == 2);
+        t_ok('InputFloat4 defaults class', islogical(o{1}));
+    catch e
+        t_ok('InputFloat4 defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% InputFloat4 (full)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('InputFloat4', 'x', zeros(1, 4), 'x', 0);
+        t_ok('InputFloat4 full', numel(o) == 2);
+        t_ok('InputFloat4 full class', islogical(o{1}));
+    catch e
+        t_ok('InputFloat4 full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% InputInt2 (defaults)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('InputInt2', 'x', zeros(1, 2));
+        t_ok('InputInt2 defaults', numel(o) == 2);
+        t_ok('InputInt2 defaults class', islogical(o{1}));
+    catch e
+        t_ok('InputInt2 defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% InputInt2 (full)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('InputInt2', 'x', zeros(1, 2), 0);
+        t_ok('InputInt2 full', numel(o) == 2);
+        t_ok('InputInt2 full class', islogical(o{1}));
+    catch e
+        t_ok('InputInt2 full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% InputInt3 (defaults)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('InputInt3', 'x', zeros(1, 3));
+        t_ok('InputInt3 defaults', numel(o) == 2);
+        t_ok('InputInt3 defaults class', islogical(o{1}));
+    catch e
+        t_ok('InputInt3 defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% InputInt3 (full)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('InputInt3', 'x', zeros(1, 3), 0);
+        t_ok('InputInt3 full', numel(o) == 2);
+        t_ok('InputInt3 full class', islogical(o{1}));
+    catch e
+        t_ok('InputInt3 full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% InputInt4 (defaults)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('InputInt4', 'x', zeros(1, 4));
+        t_ok('InputInt4 defaults', numel(o) == 2);
+        t_ok('InputInt4 defaults class', islogical(o{1}));
+    catch e
+        t_ok('InputInt4 defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% InputInt4 (full)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('InputInt4', 'x', zeros(1, 4), 0);
+        t_ok('InputInt4 full', numel(o) == 2);
+        t_ok('InputInt4 full class', islogical(o{1}));
+    catch e
+        t_ok('InputInt4 full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
     %% ColorEdit3 (defaults)
     tf_begin();
     try
@@ -1860,6 +2854,62 @@ function test_gen_marshal()
         t_ok('ColorButton full class', islogical(o{1}));
     catch e
         t_ok('ColorButton full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% ColorPicker3 (defaults)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('ColorPicker3', 'x', zeros(1, 3));
+        t_ok('ColorPicker3 defaults', numel(o) == 2);
+        t_ok('ColorPicker3 defaults class', islogical(o{1}));
+    catch e
+        t_ok('ColorPicker3 defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% ColorPicker3 (full)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('ColorPicker3', 'x', zeros(1, 3), 0);
+        t_ok('ColorPicker3 full', numel(o) == 2);
+        t_ok('ColorPicker3 full class', islogical(o{1}));
+    catch e
+        t_ok('ColorPicker3 full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% ColorPicker4 (defaults)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('ColorPicker4', 'x', zeros(1, 4));
+        t_ok('ColorPicker4 defaults', numel(o) == 2);
+        t_ok('ColorPicker4 defaults class', islogical(o{1}));
+    catch e
+        t_ok('ColorPicker4 defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% ColorPicker4 (full)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('ColorPicker4', 'x', zeros(1, 4), 0);
+        t_ok('ColorPicker4 full', numel(o) == 2);
+        t_ok('ColorPicker4 full class', islogical(o{1}));
+    catch e
+        t_ok('ColorPicker4 full', false);
         fprintf(2, '        %s: %s\n', e.identifier, e.message);
         o = {};
     end
@@ -1947,6 +2997,68 @@ function test_gen_marshal()
     catch e
         t_ok('SetNextItemOpen full', false);
         fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% TreeNodeEx (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('TreeNodeEx', 'x');
+        t_ok('TreeNodeEx defaults', numel(o) == 1);
+        t_ok('TreeNodeEx defaults class', islogical(o{1}));
+    catch e
+        t_ok('TreeNodeEx defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    if exist('o', 'var') && ~isempty(o) && islogical(o{1}) && o{1}
+        PsychImGui('TreePop');
+    end
+    tf_end();
+
+    %% TreeNodeEx (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('TreeNodeEx', 'x', 0);
+        t_ok('TreeNodeEx full', numel(o) == 1);
+        t_ok('TreeNodeEx full class', islogical(o{1}));
+    catch e
+        t_ok('TreeNodeEx full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    if exist('o', 'var') && ~isempty(o) && islogical(o{1}) && o{1}
+        PsychImGui('TreePop');
+    end
+    tf_end();
+
+    %% CollapsingHeaderClosable (defaults)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('CollapsingHeaderClosable', 'x', true);
+        t_ok('CollapsingHeaderClosable defaults', numel(o) == 2);
+        t_ok('CollapsingHeaderClosable defaults class', islogical(o{1}));
+    catch e
+        t_ok('CollapsingHeaderClosable defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% CollapsingHeaderClosable (full)
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('CollapsingHeaderClosable', 'x', true, 0);
+        t_ok('CollapsingHeaderClosable full', numel(o) == 2);
+        t_ok('CollapsingHeaderClosable full class', islogical(o{1}));
+    catch e
+        t_ok('CollapsingHeaderClosable full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
     end
     tf_end();
 
@@ -2092,6 +3204,41 @@ function test_gen_marshal()
     end
     tf_end();
 
+    %% BeginMainMenuBar (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('BeginMainMenuBar');
+        t_ok('BeginMainMenuBar defaults', numel(o) == 1);
+        t_ok('BeginMainMenuBar defaults class', islogical(o{1}));
+    catch e
+        t_ok('BeginMainMenuBar defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    if exist('o', 'var') && ~isempty(o) && islogical(o{1}) && o{1}
+        PsychImGui('EndMainMenuBar');
+    end
+    tf_end();
+
+    %% BeginMainMenuBar (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('BeginMainMenuBar');
+        t_ok('BeginMainMenuBar full', numel(o) == 1);
+        t_ok('BeginMainMenuBar full class', islogical(o{1}));
+    catch e
+        t_ok('BeginMainMenuBar full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    if exist('o', 'var') && ~isempty(o) && islogical(o{1}) && o{1}
+        PsychImGui('EndMainMenuBar');
+    end
+    tf_end();
+
+    % EndMainMenuBar is exercised by its opener.
     %% BeginTooltip (defaults)
     tf_begin();
     try
@@ -2290,6 +3437,202 @@ function test_gen_marshal()
     end
     tf_end();
 
+    %% BeginItemTooltip (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('BeginItemTooltip');
+        t_ok('BeginItemTooltip defaults', numel(o) == 1);
+        t_ok('BeginItemTooltip defaults class', islogical(o{1}));
+    catch e
+        t_ok('BeginItemTooltip defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    if exist('o', 'var') && ~isempty(o) && islogical(o{1}) && o{1}
+        PsychImGui('EndTooltip');
+    end
+    tf_end();
+
+    %% BeginItemTooltip (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('BeginItemTooltip');
+        t_ok('BeginItemTooltip full', numel(o) == 1);
+        t_ok('BeginItemTooltip full class', islogical(o{1}));
+    catch e
+        t_ok('BeginItemTooltip full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    if exist('o', 'var') && ~isempty(o) && islogical(o{1}) && o{1}
+        PsychImGui('EndTooltip');
+    end
+    tf_end();
+
+    %% BeginPopupContextItem (defaults)
+    tf_begin();
+    PsychImGui('Button', 'genCtx');
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('BeginPopupContextItem');
+        t_ok('BeginPopupContextItem defaults', numel(o) == 1);
+        t_ok('BeginPopupContextItem defaults class', islogical(o{1}));
+    catch e
+        t_ok('BeginPopupContextItem defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    if exist('o', 'var') && ~isempty(o) && islogical(o{1}) && o{1}
+        PsychImGui('EndPopup');
+    end
+    tf_end();
+
+    %% BeginPopupContextItem (full)
+    tf_begin();
+    PsychImGui('Button', 'genCtx');
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('BeginPopupContextItem', 'x', 0);
+        t_ok('BeginPopupContextItem full', numel(o) == 1);
+        t_ok('BeginPopupContextItem full class', islogical(o{1}));
+    catch e
+        t_ok('BeginPopupContextItem full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    if exist('o', 'var') && ~isempty(o) && islogical(o{1}) && o{1}
+        PsychImGui('EndPopup');
+    end
+    tf_end();
+
+    %% BeginPopupContextWindow (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('BeginPopupContextWindow');
+        t_ok('BeginPopupContextWindow defaults', numel(o) == 1);
+        t_ok('BeginPopupContextWindow defaults class', islogical(o{1}));
+    catch e
+        t_ok('BeginPopupContextWindow defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    if exist('o', 'var') && ~isempty(o) && islogical(o{1}) && o{1}
+        PsychImGui('EndPopup');
+    end
+    tf_end();
+
+    %% BeginPopupContextWindow (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('BeginPopupContextWindow', 'x', 0);
+        t_ok('BeginPopupContextWindow full', numel(o) == 1);
+        t_ok('BeginPopupContextWindow full class', islogical(o{1}));
+    catch e
+        t_ok('BeginPopupContextWindow full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    if exist('o', 'var') && ~isempty(o) && islogical(o{1}) && o{1}
+        PsychImGui('EndPopup');
+    end
+    tf_end();
+
+    %% BeginPopupContextVoid (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('BeginPopupContextVoid');
+        t_ok('BeginPopupContextVoid defaults', numel(o) == 1);
+        t_ok('BeginPopupContextVoid defaults class', islogical(o{1}));
+    catch e
+        t_ok('BeginPopupContextVoid defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    if exist('o', 'var') && ~isempty(o) && islogical(o{1}) && o{1}
+        PsychImGui('EndPopup');
+    end
+    tf_end();
+
+    %% BeginPopupContextVoid (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('BeginPopupContextVoid', 'x', 0);
+        t_ok('BeginPopupContextVoid full', numel(o) == 1);
+        t_ok('BeginPopupContextVoid full class', islogical(o{1}));
+    catch e
+        t_ok('BeginPopupContextVoid full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    if exist('o', 'var') && ~isempty(o) && islogical(o{1}) && o{1}
+        PsychImGui('EndPopup');
+    end
+    tf_end();
+
+    %% OpenPopupOnItemClick (defaults)
+    tf_begin();
+    PsychImGui('Button', 'genCtx');
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('OpenPopupOnItemClick');
+        t_ok('OpenPopupOnItemClick defaults', numel(o) == 1);
+        t_ok('OpenPopupOnItemClick defaults class', islogical(o{1}));
+    catch e
+        t_ok('OpenPopupOnItemClick defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% OpenPopupOnItemClick (full)
+    tf_begin();
+    PsychImGui('Button', 'genCtx');
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('OpenPopupOnItemClick', 'x', 0);
+        t_ok('OpenPopupOnItemClick full', numel(o) == 1);
+        t_ok('OpenPopupOnItemClick full class', islogical(o{1}));
+    catch e
+        t_ok('OpenPopupOnItemClick full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% IsPopupOpen (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('IsPopupOpen', 'x');
+        t_ok('IsPopupOpen defaults', numel(o) == 1);
+        t_ok('IsPopupOpen defaults class', islogical(o{1}));
+    catch e
+        t_ok('IsPopupOpen defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% IsPopupOpen (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('IsPopupOpen', 'x', 0);
+        t_ok('IsPopupOpen full', numel(o) == 1);
+        t_ok('IsPopupOpen full class', islogical(o{1}));
+    catch e
+        t_ok('IsPopupOpen full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
     %% BeginTabBar (defaults)
     tf_begin();
     try
@@ -2364,6 +3707,40 @@ function test_gen_marshal()
     tf_end();
 
     % EndTabItem is exercised by its opener.
+    %% TabItemButton (defaults)
+    tf_begin();
+    PsychImGui('BeginTabBar', 'genTB');
+    if PsychImGui('BeginTabItem', 'genTI'), PsychImGui('EndTabItem'); end
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('TabItemButton', 'genTabBtn');
+        t_ok('TabItemButton defaults', numel(o) == 1);
+        t_ok('TabItemButton defaults class', islogical(o{1}));
+    catch e
+        t_ok('TabItemButton defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    PsychImGui('EndTabBar');
+    tf_end();
+
+    %% TabItemButton (full)
+    tf_begin();
+    PsychImGui('BeginTabBar', 'genTB');
+    if PsychImGui('BeginTabItem', 'genTI'), PsychImGui('EndTabItem'); end
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('TabItemButton', 'genTabBtn', 0);
+        t_ok('TabItemButton full', numel(o) == 1);
+        t_ok('TabItemButton full class', islogical(o{1}));
+    catch e
+        t_ok('TabItemButton full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    PsychImGui('EndTabBar');
+    tf_end();
+
     %% IsItemHovered (defaults)
     tf_begin();
     try
@@ -2532,6 +3909,174 @@ function test_gen_marshal()
     end
     tf_end();
 
+    %% IsItemActivated (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('IsItemActivated');
+        t_ok('IsItemActivated defaults', numel(o) == 1);
+        t_ok('IsItemActivated defaults class', islogical(o{1}));
+    catch e
+        t_ok('IsItemActivated defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% IsItemActivated (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('IsItemActivated');
+        t_ok('IsItemActivated full', numel(o) == 1);
+        t_ok('IsItemActivated full class', islogical(o{1}));
+    catch e
+        t_ok('IsItemActivated full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% IsItemDeactivated (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('IsItemDeactivated');
+        t_ok('IsItemDeactivated defaults', numel(o) == 1);
+        t_ok('IsItemDeactivated defaults class', islogical(o{1}));
+    catch e
+        t_ok('IsItemDeactivated defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% IsItemDeactivated (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('IsItemDeactivated');
+        t_ok('IsItemDeactivated full', numel(o) == 1);
+        t_ok('IsItemDeactivated full class', islogical(o{1}));
+    catch e
+        t_ok('IsItemDeactivated full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% IsItemFocused (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('IsItemFocused');
+        t_ok('IsItemFocused defaults', numel(o) == 1);
+        t_ok('IsItemFocused defaults class', islogical(o{1}));
+    catch e
+        t_ok('IsItemFocused defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% IsItemFocused (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('IsItemFocused');
+        t_ok('IsItemFocused full', numel(o) == 1);
+        t_ok('IsItemFocused full class', islogical(o{1}));
+    catch e
+        t_ok('IsItemFocused full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% IsItemVisible (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('IsItemVisible');
+        t_ok('IsItemVisible defaults', numel(o) == 1);
+        t_ok('IsItemVisible defaults class', islogical(o{1}));
+    catch e
+        t_ok('IsItemVisible defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% IsItemVisible (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('IsItemVisible');
+        t_ok('IsItemVisible full', numel(o) == 1);
+        t_ok('IsItemVisible full class', islogical(o{1}));
+    catch e
+        t_ok('IsItemVisible full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% IsItemToggledOpen (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('IsItemToggledOpen');
+        t_ok('IsItemToggledOpen defaults', numel(o) == 1);
+        t_ok('IsItemToggledOpen defaults class', islogical(o{1}));
+    catch e
+        t_ok('IsItemToggledOpen defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% IsItemToggledOpen (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('IsItemToggledOpen');
+        t_ok('IsItemToggledOpen full', numel(o) == 1);
+        t_ok('IsItemToggledOpen full class', islogical(o{1}));
+    catch e
+        t_ok('IsItemToggledOpen full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% IsAnyItemHovered (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('IsAnyItemHovered');
+        t_ok('IsAnyItemHovered defaults', numel(o) == 1);
+        t_ok('IsAnyItemHovered defaults class', islogical(o{1}));
+    catch e
+        t_ok('IsAnyItemHovered defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% IsAnyItemHovered (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('IsAnyItemHovered');
+        t_ok('IsAnyItemHovered full', numel(o) == 1);
+        t_ok('IsAnyItemHovered full class', islogical(o{1}));
+    catch e
+        t_ok('IsAnyItemHovered full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
     %% IsMouseClicked (defaults)
     tf_begin();
     try
@@ -2672,6 +4217,280 @@ function test_gen_marshal()
     end
     tf_end();
 
+    %% IsMouseReleased (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('IsMouseReleased', 0);
+        t_ok('IsMouseReleased defaults', numel(o) == 1);
+        t_ok('IsMouseReleased defaults class', islogical(o{1}));
+    catch e
+        t_ok('IsMouseReleased defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% IsMouseReleased (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('IsMouseReleased', 0);
+        t_ok('IsMouseReleased full', numel(o) == 1);
+        t_ok('IsMouseReleased full class', islogical(o{1}));
+    catch e
+        t_ok('IsMouseReleased full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% IsMouseDoubleClicked (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('IsMouseDoubleClicked', 0);
+        t_ok('IsMouseDoubleClicked defaults', numel(o) == 1);
+        t_ok('IsMouseDoubleClicked defaults class', islogical(o{1}));
+    catch e
+        t_ok('IsMouseDoubleClicked defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% IsMouseDoubleClicked (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('IsMouseDoubleClicked', 0);
+        t_ok('IsMouseDoubleClicked full', numel(o) == 1);
+        t_ok('IsMouseDoubleClicked full class', islogical(o{1}));
+    catch e
+        t_ok('IsMouseDoubleClicked full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% IsMouseDragging (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('IsMouseDragging', 0);
+        t_ok('IsMouseDragging defaults', numel(o) == 1);
+        t_ok('IsMouseDragging defaults class', islogical(o{1}));
+    catch e
+        t_ok('IsMouseDragging defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% IsMouseDragging (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('IsMouseDragging', 0, 0);
+        t_ok('IsMouseDragging full', numel(o) == 1);
+        t_ok('IsMouseDragging full class', islogical(o{1}));
+    catch e
+        t_ok('IsMouseDragging full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% GetMouseDragDelta (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetMouseDragDelta');
+        t_ok('GetMouseDragDelta defaults', numel(o) == 1);
+        t_ok('GetMouseDragDelta defaults class', isnumeric(o{1}));
+    catch e
+        t_ok('GetMouseDragDelta defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% GetMouseDragDelta (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetMouseDragDelta', 0, 0);
+        t_ok('GetMouseDragDelta full', numel(o) == 1);
+        t_ok('GetMouseDragDelta full class', isnumeric(o{1}));
+    catch e
+        t_ok('GetMouseDragDelta full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% ResetMouseDragDelta (defaults)
+    tf_begin();
+    try
+        PsychImGui('ResetMouseDragDelta');
+        t_ok('ResetMouseDragDelta defaults', true);
+    catch e
+        t_ok('ResetMouseDragDelta defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% ResetMouseDragDelta (full)
+    tf_begin();
+    try
+        PsychImGui('ResetMouseDragDelta', 0);
+        t_ok('ResetMouseDragDelta full', true);
+    catch e
+        t_ok('ResetMouseDragDelta full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% GetMouseClickedCount (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetMouseClickedCount', 0);
+        t_ok('GetMouseClickedCount defaults', numel(o) == 1);
+        t_ok('GetMouseClickedCount defaults class', isnumeric(o{1}));
+    catch e
+        t_ok('GetMouseClickedCount defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% GetMouseClickedCount (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetMouseClickedCount', 0);
+        t_ok('GetMouseClickedCount full', numel(o) == 1);
+        t_ok('GetMouseClickedCount full class', isnumeric(o{1}));
+    catch e
+        t_ok('GetMouseClickedCount full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% IsKeyReleased (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('IsKeyReleased', 'ImGuiKey_A');
+        t_ok('IsKeyReleased defaults', numel(o) == 1);
+        t_ok('IsKeyReleased defaults class', islogical(o{1}));
+    catch e
+        t_ok('IsKeyReleased defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% IsKeyReleased (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('IsKeyReleased', 'ImGuiKey_A');
+        t_ok('IsKeyReleased full', numel(o) == 1);
+        t_ok('IsKeyReleased full class', islogical(o{1}));
+    catch e
+        t_ok('IsKeyReleased full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% IsKeyChordPressed (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('IsKeyChordPressed', {'ImGuiMod_Ctrl', 'ImGuiKey_S'});
+        t_ok('IsKeyChordPressed defaults', numel(o) == 1);
+        t_ok('IsKeyChordPressed defaults class', islogical(o{1}));
+    catch e
+        t_ok('IsKeyChordPressed defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% IsKeyChordPressed (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('IsKeyChordPressed', {'ImGuiMod_Ctrl', 'ImGuiKey_S'});
+        t_ok('IsKeyChordPressed full', numel(o) == 1);
+        t_ok('IsKeyChordPressed full class', islogical(o{1}));
+    catch e
+        t_ok('IsKeyChordPressed full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% Shortcut (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('Shortcut', {'ImGuiMod_Ctrl', 'ImGuiKey_S'});
+        t_ok('Shortcut defaults', numel(o) == 1);
+        t_ok('Shortcut defaults class', islogical(o{1}));
+    catch e
+        t_ok('Shortcut defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% Shortcut (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('Shortcut', {'ImGuiMod_Ctrl', 'ImGuiKey_S'}, 0);
+        t_ok('Shortcut full', numel(o) == 1);
+        t_ok('Shortcut full class', islogical(o{1}));
+    catch e
+        t_ok('Shortcut full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% GetKeyName (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetKeyName', 'ImGuiKey_A');
+        t_ok('GetKeyName defaults', numel(o) == 1);
+        t_ok('GetKeyName defaults class', ischar(o{1}));
+    catch e
+        t_ok('GetKeyName defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% GetKeyName (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetKeyName', 'ImGuiKey_A');
+        t_ok('GetKeyName full', numel(o) == 1);
+        t_ok('GetKeyName full class', ischar(o{1}));
+    catch e
+        t_ok('GetKeyName full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
     %% PushStyleColor (defaults)
     tf_begin();
     try
@@ -2771,6 +4590,54 @@ function test_gen_marshal()
     tf_end();
 
     % EndDisabled is exercised by its opener.
+    %% PushStyleVarX (defaults)
+    tf_begin();
+    try
+        PsychImGui('PushStyleVarX', 'ImGuiStyleVar_ItemSpacing', 4);
+        t_ok('PushStyleVarX defaults', true);
+    catch e
+        t_ok('PushStyleVarX defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    PsychImGui('PopStyleVar');
+    tf_end();
+
+    %% PushStyleVarX (full)
+    tf_begin();
+    try
+        PsychImGui('PushStyleVarX', 'ImGuiStyleVar_ItemSpacing', 4);
+        t_ok('PushStyleVarX full', true);
+    catch e
+        t_ok('PushStyleVarX full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    PsychImGui('PopStyleVar');
+    tf_end();
+
+    %% PushStyleVarY (defaults)
+    tf_begin();
+    try
+        PsychImGui('PushStyleVarY', 'ImGuiStyleVar_ItemSpacing', 4);
+        t_ok('PushStyleVarY defaults', true);
+    catch e
+        t_ok('PushStyleVarY defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    PsychImGui('PopStyleVar');
+    tf_end();
+
+    %% PushStyleVarY (full)
+    tf_begin();
+    try
+        PsychImGui('PushStyleVarY', 'ImGuiStyleVar_ItemSpacing', 4);
+        t_ok('PushStyleVarY full', true);
+    catch e
+        t_ok('PushStyleVarY full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    PsychImGui('PopStyleVar');
+    tf_end();
+
     %% SetKeyboardFocusHere (defaults)
     tf_begin();
     try
@@ -2837,6 +4704,228 @@ function test_gen_marshal()
     end
     tf_end();
 
+    %% GetScrollX (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetScrollX');
+        t_ok('GetScrollX defaults', numel(o) == 1);
+        t_ok('GetScrollX defaults class', isnumeric(o{1}));
+    catch e
+        t_ok('GetScrollX defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% GetScrollX (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetScrollX');
+        t_ok('GetScrollX full', numel(o) == 1);
+        t_ok('GetScrollX full class', isnumeric(o{1}));
+    catch e
+        t_ok('GetScrollX full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% GetScrollY (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetScrollY');
+        t_ok('GetScrollY defaults', numel(o) == 1);
+        t_ok('GetScrollY defaults class', isnumeric(o{1}));
+    catch e
+        t_ok('GetScrollY defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% GetScrollY (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetScrollY');
+        t_ok('GetScrollY full', numel(o) == 1);
+        t_ok('GetScrollY full class', isnumeric(o{1}));
+    catch e
+        t_ok('GetScrollY full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% SetScrollX (defaults)
+    tf_begin();
+    try
+        PsychImGui('SetScrollX', 0);
+        t_ok('SetScrollX defaults', true);
+    catch e
+        t_ok('SetScrollX defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% SetScrollX (full)
+    tf_begin();
+    try
+        PsychImGui('SetScrollX', 0);
+        t_ok('SetScrollX full', true);
+    catch e
+        t_ok('SetScrollX full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% SetScrollY (defaults)
+    tf_begin();
+    try
+        PsychImGui('SetScrollY', 0);
+        t_ok('SetScrollY defaults', true);
+    catch e
+        t_ok('SetScrollY defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% SetScrollY (full)
+    tf_begin();
+    try
+        PsychImGui('SetScrollY', 0);
+        t_ok('SetScrollY full', true);
+    catch e
+        t_ok('SetScrollY full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% GetScrollMaxX (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetScrollMaxX');
+        t_ok('GetScrollMaxX defaults', numel(o) == 1);
+        t_ok('GetScrollMaxX defaults class', isnumeric(o{1}));
+    catch e
+        t_ok('GetScrollMaxX defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% GetScrollMaxX (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetScrollMaxX');
+        t_ok('GetScrollMaxX full', numel(o) == 1);
+        t_ok('GetScrollMaxX full class', isnumeric(o{1}));
+    catch e
+        t_ok('GetScrollMaxX full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% GetScrollMaxY (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetScrollMaxY');
+        t_ok('GetScrollMaxY defaults', numel(o) == 1);
+        t_ok('GetScrollMaxY defaults class', isnumeric(o{1}));
+    catch e
+        t_ok('GetScrollMaxY defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% GetScrollMaxY (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('GetScrollMaxY');
+        t_ok('GetScrollMaxY full', numel(o) == 1);
+        t_ok('GetScrollMaxY full class', isnumeric(o{1}));
+    catch e
+        t_ok('GetScrollMaxY full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% SetScrollHereX (defaults)
+    tf_begin();
+    try
+        PsychImGui('SetScrollHereX');
+        t_ok('SetScrollHereX defaults', true);
+    catch e
+        t_ok('SetScrollHereX defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% SetScrollHereX (full)
+    tf_begin();
+    try
+        PsychImGui('SetScrollHereX', 0);
+        t_ok('SetScrollHereX full', true);
+    catch e
+        t_ok('SetScrollHereX full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% SetScrollFromPosX (defaults)
+    tf_begin();
+    try
+        PsychImGui('SetScrollFromPosX', 0);
+        t_ok('SetScrollFromPosX defaults', true);
+    catch e
+        t_ok('SetScrollFromPosX defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% SetScrollFromPosX (full)
+    tf_begin();
+    try
+        PsychImGui('SetScrollFromPosX', 0, 0);
+        t_ok('SetScrollFromPosX full', true);
+    catch e
+        t_ok('SetScrollFromPosX full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% SetScrollFromPosY (defaults)
+    tf_begin();
+    try
+        PsychImGui('SetScrollFromPosY', 0);
+        t_ok('SetScrollFromPosY defaults', true);
+    catch e
+        t_ok('SetScrollFromPosY defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% SetScrollFromPosY (full)
+    tf_begin();
+    try
+        PsychImGui('SetScrollFromPosY', 0, 0);
+        t_ok('SetScrollFromPosY full', true);
+    catch e
+        t_ok('SetScrollFromPosY full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
     %% GetFrameCount (defaults)
     tf_begin();
     try
@@ -2888,6 +4977,134 @@ function test_gen_marshal()
         t_ok('GetTime full class', isnumeric(o{1}));
     catch e
         t_ok('GetTime full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% SaveIniSettingsToMemory (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('SaveIniSettingsToMemory');
+        t_ok('SaveIniSettingsToMemory defaults', numel(o) == 1);
+        t_ok('SaveIniSettingsToMemory defaults class', ischar(o{1}));
+    catch e
+        t_ok('SaveIniSettingsToMemory defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% SaveIniSettingsToMemory (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('SaveIniSettingsToMemory');
+        t_ok('SaveIniSettingsToMemory full', numel(o) == 1);
+        t_ok('SaveIniSettingsToMemory full class', ischar(o{1}));
+    catch e
+        t_ok('SaveIniSettingsToMemory full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% LoadIniSettingsFromMemory (defaults)
+    tf_begin();
+    try
+        PsychImGui('LoadIniSettingsFromMemory', '');
+        t_ok('LoadIniSettingsFromMemory defaults', true);
+    catch e
+        t_ok('LoadIniSettingsFromMemory defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% LoadIniSettingsFromMemory (full)
+    tf_begin();
+    try
+        PsychImGui('LoadIniSettingsFromMemory', '');
+        t_ok('LoadIniSettingsFromMemory full', true);
+    catch e
+        t_ok('LoadIniSettingsFromMemory full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% ShowStyleEditor (defaults)
+    tf_begin();
+    try
+        PsychImGui('ShowStyleEditor');
+        t_ok('ShowStyleEditor defaults', true);
+    catch e
+        t_ok('ShowStyleEditor defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% ShowStyleEditor (full)
+    tf_begin();
+    try
+        PsychImGui('ShowStyleEditor');
+        t_ok('ShowStyleEditor full', true);
+    catch e
+        t_ok('ShowStyleEditor full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% ShowIDStackToolWindow (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ShowIDStackToolWindow');
+        t_ok('ShowIDStackToolWindow defaults', numel(o) == 1);
+        t_ok('ShowIDStackToolWindow defaults class', ~isempty(class(o{1})));
+    catch e
+        t_ok('ShowIDStackToolWindow defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% ShowIDStackToolWindow (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ShowIDStackToolWindow', true);
+        t_ok('ShowIDStackToolWindow full', numel(o) == 1);
+        t_ok('ShowIDStackToolWindow full class', ~isempty(class(o{1})));
+    catch e
+        t_ok('ShowIDStackToolWindow full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% ShowDebugLogWindow (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ShowDebugLogWindow');
+        t_ok('ShowDebugLogWindow defaults', numel(o) == 1);
+        t_ok('ShowDebugLogWindow defaults class', ~isempty(class(o{1})));
+    catch e
+        t_ok('ShowDebugLogWindow defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% ShowDebugLogWindow (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ShowDebugLogWindow', true);
+        t_ok('ShowDebugLogWindow full', numel(o) == 1);
+        t_ok('ShowDebugLogWindow full class', ~isempty(class(o{1})));
+    catch e
+        t_ok('ShowDebugLogWindow full', false);
         fprintf(2, '        %s: %s\n', e.identifier, e.message);
         o = {};
     end
@@ -3213,6 +5430,184 @@ function test_gen_marshal()
         t_ok('TableSetBgColor full', true);
     catch e
         t_ok('TableSetBgColor full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    if tt, PsychImGui('EndTable'); end
+    tf_end();
+
+    %% TableGetRowIndex (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('TableGetRowIndex');
+        t_ok('TableGetRowIndex defaults', numel(o) == 1);
+        t_ok('TableGetRowIndex defaults class', isnumeric(o{1}));
+    catch e
+        t_ok('TableGetRowIndex defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% TableGetRowIndex (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('TableGetRowIndex');
+        t_ok('TableGetRowIndex full', numel(o) == 1);
+        t_ok('TableGetRowIndex full class', isnumeric(o{1}));
+    catch e
+        t_ok('TableGetRowIndex full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% TableGetHoveredColumn (defaults)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('TableGetHoveredColumn');
+        t_ok('TableGetHoveredColumn defaults', numel(o) == 1);
+        t_ok('TableGetHoveredColumn defaults class', isnumeric(o{1}));
+    catch e
+        t_ok('TableGetHoveredColumn defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% TableGetHoveredColumn (full)
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('TableGetHoveredColumn');
+        t_ok('TableGetHoveredColumn full', numel(o) == 1);
+        t_ok('TableGetHoveredColumn full class', isnumeric(o{1}));
+    catch e
+        t_ok('TableGetHoveredColumn full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    %% TableGetColumnFlags (defaults)
+    tf_begin();
+    tt = PsychImGui('BeginTable', 'genT', 3);
+    if tt, PsychImGui('TableNextRow'); PsychImGui('TableNextColumn'); end
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('TableGetColumnFlags');
+        t_ok('TableGetColumnFlags defaults', numel(o) == 1);
+        t_ok('TableGetColumnFlags defaults class', isnumeric(o{1}));
+    catch e
+        t_ok('TableGetColumnFlags defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    if tt, PsychImGui('EndTable'); end
+    tf_end();
+
+    %% TableGetColumnFlags (full)
+    tf_begin();
+    tt = PsychImGui('BeginTable', 'genT', 3);
+    if tt, PsychImGui('TableNextRow'); PsychImGui('TableNextColumn'); end
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('TableGetColumnFlags', 0);
+        t_ok('TableGetColumnFlags full', numel(o) == 1);
+        t_ok('TableGetColumnFlags full class', isnumeric(o{1}));
+    catch e
+        t_ok('TableGetColumnFlags full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    if tt, PsychImGui('EndTable'); end
+    tf_end();
+
+    %% TableGetColumnName (defaults)
+    tf_begin();
+    tt = PsychImGui('BeginTable', 'genT', 3);
+    if tt, PsychImGui('TableNextRow'); PsychImGui('TableNextColumn'); end
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('TableGetColumnName');
+        t_ok('TableGetColumnName defaults', numel(o) == 1);
+        t_ok('TableGetColumnName defaults class', ischar(o{1}));
+    catch e
+        t_ok('TableGetColumnName defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    if tt, PsychImGui('EndTable'); end
+    tf_end();
+
+    %% TableGetColumnName (full)
+    tf_begin();
+    tt = PsychImGui('BeginTable', 'genT', 3);
+    if tt, PsychImGui('TableNextRow'); PsychImGui('TableNextColumn'); end
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('TableGetColumnName', 0);
+        t_ok('TableGetColumnName full', numel(o) == 1);
+        t_ok('TableGetColumnName full class', ischar(o{1}));
+    catch e
+        t_ok('TableGetColumnName full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    if tt, PsychImGui('EndTable'); end
+    tf_end();
+
+    %% TableSetColumnEnabled (defaults)
+    tf_begin();
+    tt = PsychImGui('BeginTable', 'genT', 3, 'ImGuiTableFlags_Hideable');
+    if tt, PsychImGui('TableNextRow'); PsychImGui('TableNextColumn'); end
+    try
+        PsychImGui('TableSetColumnEnabled', 0, false);
+        t_ok('TableSetColumnEnabled defaults', true);
+    catch e
+        t_ok('TableSetColumnEnabled defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    if tt, PsychImGui('EndTable'); end
+    tf_end();
+
+    %% TableSetColumnEnabled (full)
+    tf_begin();
+    tt = PsychImGui('BeginTable', 'genT', 3, 'ImGuiTableFlags_Hideable');
+    if tt, PsychImGui('TableNextRow'); PsychImGui('TableNextColumn'); end
+    try
+        PsychImGui('TableSetColumnEnabled', 0, false);
+        t_ok('TableSetColumnEnabled full', true);
+    catch e
+        t_ok('TableSetColumnEnabled full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    if tt, PsychImGui('EndTable'); end
+    tf_end();
+
+    %% TableAngledHeadersRow (defaults)
+    tf_begin();
+    tt = PsychImGui('BeginTable', 'genT', 3);
+    try
+        PsychImGui('TableAngledHeadersRow');
+        t_ok('TableAngledHeadersRow defaults', true);
+    catch e
+        t_ok('TableAngledHeadersRow defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    if tt, PsychImGui('EndTable'); end
+    tf_end();
+
+    %% TableAngledHeadersRow (full)
+    tf_begin();
+    tt = PsychImGui('BeginTable', 'genT', 3);
+    try
+        PsychImGui('TableAngledHeadersRow');
+        t_ok('TableAngledHeadersRow full', true);
+    catch e
+        t_ok('TableAngledHeadersRow full', false);
         fprintf(2, '        %s: %s\n', e.identifier, e.message);
     end
     if tt, PsychImGui('EndTable'); end
@@ -3547,6 +5942,476 @@ function test_gen_marshal()
     tf_end();
 
     % DrawList.PopClipRect is exercised by its opener.
+    %% DrawList.AddQuad (defaults)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddQuad', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [0 0], [0 0], [1 0 0 1]);
+        t_ok('DrawList.AddQuad defaults', true);
+    catch e
+        t_ok('DrawList.AddQuad defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddQuad (full)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddQuad', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [0 0], [0 0], [1 0 0 1], 0);
+        t_ok('DrawList.AddQuad full', true);
+    catch e
+        t_ok('DrawList.AddQuad full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddQuadFilled (defaults)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddQuadFilled', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [0 0], [0 0], [1 0 0 1]);
+        t_ok('DrawList.AddQuadFilled defaults', true);
+    catch e
+        t_ok('DrawList.AddQuadFilled defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddQuadFilled (full)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddQuadFilled', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [0 0], [0 0], [1 0 0 1]);
+        t_ok('DrawList.AddQuadFilled full', true);
+    catch e
+        t_ok('DrawList.AddQuadFilled full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddNgon (defaults)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddNgon', PsychImGui('GetWindowDrawList'), [0 0], 0, [1 0 0 1], 0);
+        t_ok('DrawList.AddNgon defaults', true);
+    catch e
+        t_ok('DrawList.AddNgon defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddNgon (full)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddNgon', PsychImGui('GetWindowDrawList'), [0 0], 0, [1 0 0 1], 0, 0);
+        t_ok('DrawList.AddNgon full', true);
+    catch e
+        t_ok('DrawList.AddNgon full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddNgonFilled (defaults)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddNgonFilled', PsychImGui('GetWindowDrawList'), [0 0], 0, [1 0 0 1], 0);
+        t_ok('DrawList.AddNgonFilled defaults', true);
+    catch e
+        t_ok('DrawList.AddNgonFilled defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddNgonFilled (full)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddNgonFilled', PsychImGui('GetWindowDrawList'), [0 0], 0, [1 0 0 1], 0);
+        t_ok('DrawList.AddNgonFilled full', true);
+    catch e
+        t_ok('DrawList.AddNgonFilled full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddEllipse (defaults)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddEllipse', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [1 0 0 1]);
+        t_ok('DrawList.AddEllipse defaults', true);
+    catch e
+        t_ok('DrawList.AddEllipse defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddEllipse (full)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddEllipse', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [1 0 0 1], 0, 0, 0);
+        t_ok('DrawList.AddEllipse full', true);
+    catch e
+        t_ok('DrawList.AddEllipse full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddEllipseFilled (defaults)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddEllipseFilled', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [1 0 0 1]);
+        t_ok('DrawList.AddEllipseFilled defaults', true);
+    catch e
+        t_ok('DrawList.AddEllipseFilled defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddEllipseFilled (full)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddEllipseFilled', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [1 0 0 1], 0, 0);
+        t_ok('DrawList.AddEllipseFilled full', true);
+    catch e
+        t_ok('DrawList.AddEllipseFilled full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddBezierCubic (defaults)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddBezierCubic', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [0 0], [0 0], [1 0 0 1], 0);
+        t_ok('DrawList.AddBezierCubic defaults', true);
+    catch e
+        t_ok('DrawList.AddBezierCubic defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddBezierCubic (full)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddBezierCubic', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [0 0], [0 0], [1 0 0 1], 0, 0);
+        t_ok('DrawList.AddBezierCubic full', true);
+    catch e
+        t_ok('DrawList.AddBezierCubic full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddBezierQuadratic (defaults)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddBezierQuadratic', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [0 0], [1 0 0 1], 0);
+        t_ok('DrawList.AddBezierQuadratic defaults', true);
+    catch e
+        t_ok('DrawList.AddBezierQuadratic defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddBezierQuadratic (full)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddBezierQuadratic', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [0 0], [1 0 0 1], 0, 0);
+        t_ok('DrawList.AddBezierQuadratic full', true);
+    catch e
+        t_ok('DrawList.AddBezierQuadratic full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddConcavePolyFilled (defaults)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddConcavePolyFilled', PsychImGui('GetWindowDrawList'), [0 0; 10 10; 20 0], [1 0 0 1]);
+        t_ok('DrawList.AddConcavePolyFilled defaults', true);
+    catch e
+        t_ok('DrawList.AddConcavePolyFilled defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddConcavePolyFilled (full)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddConcavePolyFilled', PsychImGui('GetWindowDrawList'), [0 0; 10 10; 20 0], [1 0 0 1]);
+        t_ok('DrawList.AddConcavePolyFilled full', true);
+    catch e
+        t_ok('DrawList.AddConcavePolyFilled full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddRectFilledMultiColor (defaults)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddRectFilledMultiColor', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [1 0 0 1], [1 0 0 1], [1 0 0 1], [1 0 0 1]);
+        t_ok('DrawList.AddRectFilledMultiColor defaults', true);
+    catch e
+        t_ok('DrawList.AddRectFilledMultiColor defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.AddRectFilledMultiColor (full)
+    tf_begin();
+    try
+        PsychImGui('DrawList.AddRectFilledMultiColor', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [1 0 0 1], [1 0 0 1], [1 0 0 1], [1 0 0 1]);
+        t_ok('DrawList.AddRectFilledMultiColor full', true);
+    catch e
+        t_ok('DrawList.AddRectFilledMultiColor full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.PathClear (defaults)
+    tf_begin();
+    try
+        PsychImGui('DrawList.PathClear', PsychImGui('GetWindowDrawList'));
+        t_ok('DrawList.PathClear defaults', true);
+    catch e
+        t_ok('DrawList.PathClear defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.PathClear (full)
+    tf_begin();
+    try
+        PsychImGui('DrawList.PathClear', PsychImGui('GetWindowDrawList'));
+        t_ok('DrawList.PathClear full', true);
+    catch e
+        t_ok('DrawList.PathClear full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.PathLineTo (defaults)
+    tf_begin();
+    try
+        PsychImGui('DrawList.PathLineTo', PsychImGui('GetWindowDrawList'), [0 0]);
+        t_ok('DrawList.PathLineTo defaults', true);
+    catch e
+        t_ok('DrawList.PathLineTo defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.PathLineTo (full)
+    tf_begin();
+    try
+        PsychImGui('DrawList.PathLineTo', PsychImGui('GetWindowDrawList'), [0 0]);
+        t_ok('DrawList.PathLineTo full', true);
+    catch e
+        t_ok('DrawList.PathLineTo full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.PathLineToMergeDuplicate (defaults)
+    tf_begin();
+    try
+        PsychImGui('DrawList.PathLineToMergeDuplicate', PsychImGui('GetWindowDrawList'), [0 0]);
+        t_ok('DrawList.PathLineToMergeDuplicate defaults', true);
+    catch e
+        t_ok('DrawList.PathLineToMergeDuplicate defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.PathLineToMergeDuplicate (full)
+    tf_begin();
+    try
+        PsychImGui('DrawList.PathLineToMergeDuplicate', PsychImGui('GetWindowDrawList'), [0 0]);
+        t_ok('DrawList.PathLineToMergeDuplicate full', true);
+    catch e
+        t_ok('DrawList.PathLineToMergeDuplicate full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.PathArcTo (defaults)
+    tf_begin();
+    try
+        PsychImGui('DrawList.PathArcTo', PsychImGui('GetWindowDrawList'), [0 0], 0, 0, 0);
+        t_ok('DrawList.PathArcTo defaults', true);
+    catch e
+        t_ok('DrawList.PathArcTo defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.PathArcTo (full)
+    tf_begin();
+    try
+        PsychImGui('DrawList.PathArcTo', PsychImGui('GetWindowDrawList'), [0 0], 0, 0, 0, 0);
+        t_ok('DrawList.PathArcTo full', true);
+    catch e
+        t_ok('DrawList.PathArcTo full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.PathEllipticalArcTo (defaults)
+    tf_begin();
+    try
+        PsychImGui('DrawList.PathEllipticalArcTo', PsychImGui('GetWindowDrawList'), [0 0], [0 0], 0, 0, 0);
+        t_ok('DrawList.PathEllipticalArcTo defaults', true);
+    catch e
+        t_ok('DrawList.PathEllipticalArcTo defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.PathEllipticalArcTo (full)
+    tf_begin();
+    try
+        PsychImGui('DrawList.PathEllipticalArcTo', PsychImGui('GetWindowDrawList'), [0 0], [0 0], 0, 0, 0, 0);
+        t_ok('DrawList.PathEllipticalArcTo full', true);
+    catch e
+        t_ok('DrawList.PathEllipticalArcTo full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.PathBezierCubicCurveTo (defaults)
+    tf_begin();
+    PsychImGui('DrawList.PathLineTo', PsychImGui('GetWindowDrawList'), [0 0]);
+    try
+        PsychImGui('DrawList.PathBezierCubicCurveTo', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [0 0]);
+        t_ok('DrawList.PathBezierCubicCurveTo defaults', true);
+    catch e
+        t_ok('DrawList.PathBezierCubicCurveTo defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    PsychImGui('DrawList.PathClear', PsychImGui('GetWindowDrawList'));
+    tf_end();
+
+    %% DrawList.PathBezierCubicCurveTo (full)
+    tf_begin();
+    PsychImGui('DrawList.PathLineTo', PsychImGui('GetWindowDrawList'), [0 0]);
+    try
+        PsychImGui('DrawList.PathBezierCubicCurveTo', PsychImGui('GetWindowDrawList'), [0 0], [0 0], [0 0], 0);
+        t_ok('DrawList.PathBezierCubicCurveTo full', true);
+    catch e
+        t_ok('DrawList.PathBezierCubicCurveTo full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    PsychImGui('DrawList.PathClear', PsychImGui('GetWindowDrawList'));
+    tf_end();
+
+    %% DrawList.PathBezierQuadraticCurveTo (defaults)
+    tf_begin();
+    PsychImGui('DrawList.PathLineTo', PsychImGui('GetWindowDrawList'), [0 0]);
+    try
+        PsychImGui('DrawList.PathBezierQuadraticCurveTo', PsychImGui('GetWindowDrawList'), [0 0], [0 0]);
+        t_ok('DrawList.PathBezierQuadraticCurveTo defaults', true);
+    catch e
+        t_ok('DrawList.PathBezierQuadraticCurveTo defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    PsychImGui('DrawList.PathClear', PsychImGui('GetWindowDrawList'));
+    tf_end();
+
+    %% DrawList.PathBezierQuadraticCurveTo (full)
+    tf_begin();
+    PsychImGui('DrawList.PathLineTo', PsychImGui('GetWindowDrawList'), [0 0]);
+    try
+        PsychImGui('DrawList.PathBezierQuadraticCurveTo', PsychImGui('GetWindowDrawList'), [0 0], [0 0], 0);
+        t_ok('DrawList.PathBezierQuadraticCurveTo full', true);
+    catch e
+        t_ok('DrawList.PathBezierQuadraticCurveTo full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    PsychImGui('DrawList.PathClear', PsychImGui('GetWindowDrawList'));
+    tf_end();
+
+    %% DrawList.PathRect (defaults)
+    tf_begin();
+    try
+        PsychImGui('DrawList.PathRect', PsychImGui('GetWindowDrawList'), [0 0], [0 0]);
+        t_ok('DrawList.PathRect defaults', true);
+    catch e
+        t_ok('DrawList.PathRect defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.PathRect (full)
+    tf_begin();
+    try
+        PsychImGui('DrawList.PathRect', PsychImGui('GetWindowDrawList'), [0 0], [0 0], 0, 0);
+        t_ok('DrawList.PathRect full', true);
+    catch e
+        t_ok('DrawList.PathRect full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.PathStroke (defaults)
+    tf_begin();
+    try
+        PsychImGui('DrawList.PathStroke', PsychImGui('GetWindowDrawList'), [1 0 0 1]);
+        t_ok('DrawList.PathStroke defaults', true);
+    catch e
+        t_ok('DrawList.PathStroke defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.PathStroke (full)
+    tf_begin();
+    try
+        PsychImGui('DrawList.PathStroke', PsychImGui('GetWindowDrawList'), [1 0 0 1], 0, 0);
+        t_ok('DrawList.PathStroke full', true);
+    catch e
+        t_ok('DrawList.PathStroke full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.PathFillConvex (defaults)
+    tf_begin();
+    try
+        PsychImGui('DrawList.PathFillConvex', PsychImGui('GetWindowDrawList'), [1 0 0 1]);
+        t_ok('DrawList.PathFillConvex defaults', true);
+    catch e
+        t_ok('DrawList.PathFillConvex defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.PathFillConvex (full)
+    tf_begin();
+    try
+        PsychImGui('DrawList.PathFillConvex', PsychImGui('GetWindowDrawList'), [1 0 0 1]);
+        t_ok('DrawList.PathFillConvex full', true);
+    catch e
+        t_ok('DrawList.PathFillConvex full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.PathFillConcave (defaults)
+    tf_begin();
+    try
+        PsychImGui('DrawList.PathFillConcave', PsychImGui('GetWindowDrawList'), [1 0 0 1]);
+        t_ok('DrawList.PathFillConcave defaults', true);
+    catch e
+        t_ok('DrawList.PathFillConcave defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    %% DrawList.PathFillConcave (full)
+    tf_begin();
+    try
+        PsychImGui('DrawList.PathFillConcave', PsychImGui('GetWindowDrawList'), [1 0 0 1]);
+        t_ok('DrawList.PathFillConcave full', true);
+    catch e
+        t_ok('DrawList.PathFillConcave full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
     %% ---- ImPlot ----
     v = PsychImGui('Version');
     if ~v.implot
@@ -3621,6 +6486,38 @@ function test_gen_marshal()
     tf_end();
 
     % ImPlot.EndSubplots is exercised by its opener.
+    % ImPlot.IsSubplotsHovered has no legal argument in this ImPlot version.
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot.BeginAlignedPlots', 'x');
+        t_ok('ImPlot.BeginAlignedPlots defaults', numel(o) == 1);
+    catch e
+        t_ok('ImPlot.BeginAlignedPlots defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    if exist('o', 'var') && ~isempty(o) && islogical(o{1}) && o{1}
+        PsychImGui('ImPlot.EndAlignedPlots');
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot.BeginAlignedPlots', 'x', false);
+        t_ok('ImPlot.BeginAlignedPlots full', numel(o) == 1);
+    catch e
+        t_ok('ImPlot.BeginAlignedPlots full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    if exist('o', 'var') && ~isempty(o) && islogical(o{1}) && o{1}
+        PsychImGui('ImPlot.EndAlignedPlots');
+    end
+    tf_end();
+
+    % ImPlot.EndAlignedPlots is exercised by its opener.
     p = tf_plot_begin();
     if p
         try
@@ -3792,6 +6689,90 @@ function test_gen_marshal()
     p = tf_plot_begin();
     if p
         try
+            PsychImGui('ImPlot.SetupAxisScale', 0, 1);
+            t_ok('ImPlot.SetupAxisScale defaults', true);
+        catch e
+            t_ok('ImPlot.SetupAxisScale defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot.SetupAxisScale defaults', false);
+    end
+    tf_plot_end(p);
+
+    p = tf_plot_begin();
+    if p
+        try
+            PsychImGui('ImPlot.SetupAxisScale', 0, 1);
+            t_ok('ImPlot.SetupAxisScale full', true);
+        catch e
+            t_ok('ImPlot.SetupAxisScale full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot.SetupAxisScale full', false);
+    end
+    tf_plot_end(p);
+
+    p = tf_plot_begin();
+    if p
+        try
+            PsychImGui('ImPlot.SetupAxisLimitsConstraints', 0, 0, 0);
+            t_ok('ImPlot.SetupAxisLimitsConstraints defaults', true);
+        catch e
+            t_ok('ImPlot.SetupAxisLimitsConstraints defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot.SetupAxisLimitsConstraints defaults', false);
+    end
+    tf_plot_end(p);
+
+    p = tf_plot_begin();
+    if p
+        try
+            PsychImGui('ImPlot.SetupAxisLimitsConstraints', 0, 0, 0);
+            t_ok('ImPlot.SetupAxisLimitsConstraints full', true);
+        catch e
+            t_ok('ImPlot.SetupAxisLimitsConstraints full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot.SetupAxisLimitsConstraints full', false);
+    end
+    tf_plot_end(p);
+
+    p = tf_plot_begin();
+    if p
+        try
+            PsychImGui('ImPlot.SetupAxisZoomConstraints', 0, 0, 0);
+            t_ok('ImPlot.SetupAxisZoomConstraints defaults', true);
+        catch e
+            t_ok('ImPlot.SetupAxisZoomConstraints defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot.SetupAxisZoomConstraints defaults', false);
+    end
+    tf_plot_end(p);
+
+    p = tf_plot_begin();
+    if p
+        try
+            PsychImGui('ImPlot.SetupAxisZoomConstraints', 0, 0, 0);
+            t_ok('ImPlot.SetupAxisZoomConstraints full', true);
+        catch e
+            t_ok('ImPlot.SetupAxisZoomConstraints full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot.SetupAxisZoomConstraints full', false);
+    end
+    tf_plot_end(p);
+
+    p = tf_plot_begin();
+    if p
+        try
             PsychImGui('ImPlot.SetupLegend', 0);
             t_ok('ImPlot.SetupLegend defaults', true);
         catch e
@@ -3915,6 +6896,26 @@ function test_gen_marshal()
 
     tf_begin();
     try
+        PsychImGui('ImPlot.SetNextAxisToFit', 0);
+        t_ok('ImPlot.SetNextAxisToFit defaults', true);
+    catch e
+        t_ok('ImPlot.SetNextAxisToFit defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot.SetNextAxisToFit', 0);
+        t_ok('ImPlot.SetNextAxisToFit full', true);
+    catch e
+        t_ok('ImPlot.SetNextAxisToFit full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
         PsychImGui('ImPlot.SetNextAxesToFit');
         t_ok('ImPlot.SetNextAxesToFit defaults', true);
     catch e
@@ -3929,6 +6930,82 @@ function test_gen_marshal()
         t_ok('ImPlot.SetNextAxesToFit full', true);
     catch e
         t_ok('ImPlot.SetNextAxesToFit full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    p = tf_plot_begin();
+    if p
+        try
+            PsychImGui('ImPlot.SetAxis', 0);
+            t_ok('ImPlot.SetAxis defaults', true);
+        catch e
+            t_ok('ImPlot.SetAxis defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot.SetAxis defaults', false);
+    end
+    tf_plot_end(p);
+
+    p = tf_plot_begin();
+    if p
+        try
+            PsychImGui('ImPlot.SetAxis', 0);
+            t_ok('ImPlot.SetAxis full', true);
+        catch e
+            t_ok('ImPlot.SetAxis full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot.SetAxis full', false);
+    end
+    tf_plot_end(p);
+
+    p = tf_plot_begin();
+    if p
+        try
+            PsychImGui('ImPlot.SetAxes', 'ImAxis_X1', 'ImAxis_Y1');
+            t_ok('ImPlot.SetAxes defaults', true);
+        catch e
+            t_ok('ImPlot.SetAxes defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot.SetAxes defaults', false);
+    end
+    tf_plot_end(p);
+
+    p = tf_plot_begin();
+    if p
+        try
+            PsychImGui('ImPlot.SetAxes', 'ImAxis_X1', 'ImAxis_Y1');
+            t_ok('ImPlot.SetAxes full', true);
+        catch e
+            t_ok('ImPlot.SetAxes full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot.SetAxes full', false);
+    end
+    tf_plot_end(p);
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot.HideNextItem');
+        t_ok('ImPlot.HideNextItem defaults', true);
+    catch e
+        t_ok('ImPlot.HideNextItem defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot.HideNextItem', false, 0);
+        t_ok('ImPlot.HideNextItem full', true);
+    catch e
+        t_ok('ImPlot.HideNextItem full', false);
         fprintf(2, '        %s: %s\n', e.identifier, e.message);
     end
     tf_end();
@@ -4552,6 +7629,90 @@ function test_gen_marshal()
     p = tf_plot_begin();
     if p
         try
+            PsychImGui('ImPlot.PlotPolygon', 'x', [0 1 2 3], [0 1 2 3]);
+            t_ok('ImPlot.PlotPolygon 2d defaults', true);
+        catch e
+            t_ok('ImPlot.PlotPolygon 2d defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot.PlotPolygon 2d defaults', false);
+    end
+    tf_plot_end(p);
+
+    p = tf_plot_begin();
+    if p
+        try
+            PsychImGui('ImPlot.PlotPolygon', 'x', [0 1 2 3], [0 1 2 3], 'LineColor', [1 0 0 1]);
+            t_ok('ImPlot.PlotPolygon 2d full', true);
+        catch e
+            t_ok('ImPlot.PlotPolygon 2d full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot.PlotPolygon 2d full', false);
+    end
+    tf_plot_end(p);
+
+    p = tf_plot_begin();
+    if p
+        try
+            PsychImGui('ImPlot.PlotBubbles', 'x', [0 1 2 3], [0 1 2 3], [0 1 2 3]);
+            t_ok('ImPlot.PlotBubbles 3d defaults', true);
+        catch e
+            t_ok('ImPlot.PlotBubbles 3d defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot.PlotBubbles 3d defaults', false);
+    end
+    tf_plot_end(p);
+
+    p = tf_plot_begin();
+    if p
+        try
+            PsychImGui('ImPlot.PlotBubbles', 'x', [0 1 2 3], [0 1 2 3], [0 1 2 3], 'LineColor', [1 0 0 1]);
+            t_ok('ImPlot.PlotBubbles 3d full', true);
+        catch e
+            t_ok('ImPlot.PlotBubbles 3d full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot.PlotBubbles 3d full', false);
+    end
+    tf_plot_end(p);
+
+    p = tf_plot_begin();
+    if p
+        try
+            PsychImGui('ImPlot.PlotBubbles', 'x', [0 1 2 3], [0 1 2 3]);
+            t_ok('ImPlot.PlotBubbles 2d defaults', true);
+        catch e
+            t_ok('ImPlot.PlotBubbles 2d defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot.PlotBubbles 2d defaults', false);
+    end
+    tf_plot_end(p);
+
+    p = tf_plot_begin();
+    if p
+        try
+            PsychImGui('ImPlot.PlotBubbles', 'x', [0 1 2 3], [0 1 2 3], 1, 0, 'LineColor', [1 0 0 1]);
+            t_ok('ImPlot.PlotBubbles 2d full', true);
+        catch e
+            t_ok('ImPlot.PlotBubbles 2d full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot.PlotBubbles 2d full', false);
+    end
+    tf_plot_end(p);
+
+    p = tf_plot_begin();
+    if p
+        try
             o = cell(1, 6);
             [o{1:6}] = PsychImGui('ImPlot.DragPoint', 0, 0, 0, [0 0 0 1]);
             t_ok('ImPlot.DragPoint defaults', numel(o) == 6);
@@ -4760,6 +7921,161 @@ function test_gen_marshal()
         t_ok('ImPlot.TagY full', false);
     end
     tf_plot_end(p);
+
+    p = tf_plot_begin();
+    if p
+        try
+            o = cell(1, 1);
+            [o{1:1}] = PsychImGui('ImPlot.GetPlotSelection');
+            t_ok('ImPlot.GetPlotSelection defaults', numel(o) == 1);
+        catch e
+            t_ok('ImPlot.GetPlotSelection defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+            o = {};
+        end
+    else
+        t_ok('ImPlot.GetPlotSelection defaults', false);
+    end
+    tf_plot_end(p);
+
+    p = tf_plot_begin();
+    if p
+        try
+            o = cell(1, 1);
+            [o{1:1}] = PsychImGui('ImPlot.GetPlotSelection', 'ImAxis_X1', 'ImAxis_Y1');
+            t_ok('ImPlot.GetPlotSelection full', numel(o) == 1);
+        catch e
+            t_ok('ImPlot.GetPlotSelection full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+            o = {};
+        end
+    else
+        t_ok('ImPlot.GetPlotSelection full', false);
+    end
+    tf_plot_end(p);
+
+    p = tf_plot_begin();
+    if p
+        try
+            o = cell(1, 1);
+            [o{1:1}] = PsychImGui('ImPlot.IsPlotSelected');
+            t_ok('ImPlot.IsPlotSelected defaults', numel(o) == 1);
+        catch e
+            t_ok('ImPlot.IsPlotSelected defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+            o = {};
+        end
+    else
+        t_ok('ImPlot.IsPlotSelected defaults', false);
+    end
+    tf_plot_end(p);
+
+    p = tf_plot_begin();
+    if p
+        try
+            o = cell(1, 1);
+            [o{1:1}] = PsychImGui('ImPlot.IsPlotSelected');
+            t_ok('ImPlot.IsPlotSelected full', numel(o) == 1);
+        catch e
+            t_ok('ImPlot.IsPlotSelected full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+            o = {};
+        end
+    else
+        t_ok('ImPlot.IsPlotSelected full', false);
+    end
+    tf_plot_end(p);
+
+    p = tf_plot_begin();
+    if p
+        try
+            PsychImGui('ImPlot.CancelPlotSelection');
+            t_ok('ImPlot.CancelPlotSelection defaults', true);
+        catch e
+            t_ok('ImPlot.CancelPlotSelection defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot.CancelPlotSelection defaults', false);
+    end
+    tf_plot_end(p);
+
+    p = tf_plot_begin();
+    if p
+        try
+            PsychImGui('ImPlot.CancelPlotSelection');
+            t_ok('ImPlot.CancelPlotSelection full', true);
+        catch e
+            t_ok('ImPlot.CancelPlotSelection full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot.CancelPlotSelection full', false);
+    end
+    tf_plot_end(p);
+
+    p = tf_plot_begin();
+    if p
+        try
+            o = cell(1, 1);
+            [o{1:1}] = PsychImGui('ImPlot.BeginLegendPopup', 'x');
+            t_ok('ImPlot.BeginLegendPopup defaults', numel(o) == 1);
+        catch e
+            t_ok('ImPlot.BeginLegendPopup defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+            o = {};
+        end
+        if exist('o', 'var') && ~isempty(o) && islogical(o{1}) && o{1}
+            PsychImGui('ImPlot.EndLegendPopup');
+        end
+    else
+        t_ok('ImPlot.BeginLegendPopup defaults', false);
+    end
+    tf_plot_end(p);
+
+    p = tf_plot_begin();
+    if p
+        try
+            o = cell(1, 1);
+            [o{1:1}] = PsychImGui('ImPlot.BeginLegendPopup', 'x', 0);
+            t_ok('ImPlot.BeginLegendPopup full', numel(o) == 1);
+        catch e
+            t_ok('ImPlot.BeginLegendPopup full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+            o = {};
+        end
+        if exist('o', 'var') && ~isempty(o) && islogical(o{1}) && o{1}
+            PsychImGui('ImPlot.EndLegendPopup');
+        end
+    else
+        t_ok('ImPlot.BeginLegendPopup full', false);
+    end
+    tf_plot_end(p);
+
+    % ImPlot.EndLegendPopup is exercised by its opener.
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot.GetPlotDrawList');
+        t_ok('ImPlot.GetPlotDrawList defaults', numel(o) == 1);
+    catch e
+        t_ok('ImPlot.GetPlotDrawList defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot.GetPlotDrawList');
+        t_ok('ImPlot.GetPlotDrawList full', numel(o) == 1);
+    catch e
+        t_ok('ImPlot.GetPlotDrawList full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
 
     p = tf_plot_begin();
     if p
@@ -5200,6 +8516,222 @@ function test_gen_marshal()
 
     tf_begin();
     try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot.GetColormapIndex', 'x');
+        t_ok('ImPlot.GetColormapIndex defaults', numel(o) == 1);
+    catch e
+        t_ok('ImPlot.GetColormapIndex defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot.GetColormapIndex', 'x');
+        t_ok('ImPlot.GetColormapIndex full', numel(o) == 1);
+    catch e
+        t_ok('ImPlot.GetColormapIndex full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot.GetColormapSize');
+        t_ok('ImPlot.GetColormapSize defaults', numel(o) == 1);
+    catch e
+        t_ok('ImPlot.GetColormapSize defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot.GetColormapSize', 0);
+        t_ok('ImPlot.GetColormapSize full', numel(o) == 1);
+    catch e
+        t_ok('ImPlot.GetColormapSize full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot.GetColormapColor', 0);
+        t_ok('ImPlot.GetColormapColor defaults', numel(o) == 1);
+    catch e
+        t_ok('ImPlot.GetColormapColor defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot.GetColormapColor', 0, 0);
+        t_ok('ImPlot.GetColormapColor full', numel(o) == 1);
+    catch e
+        t_ok('ImPlot.GetColormapColor full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    p = tf_plot_begin();
+    if p
+        try
+            o = cell(1, 1);
+            [o{1:1}] = PsychImGui('ImPlot.NextColormapColor');
+            t_ok('ImPlot.NextColormapColor defaults', numel(o) == 1);
+        catch e
+            t_ok('ImPlot.NextColormapColor defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+            o = {};
+        end
+    else
+        t_ok('ImPlot.NextColormapColor defaults', false);
+    end
+    tf_plot_end(p);
+
+    p = tf_plot_begin();
+    if p
+        try
+            o = cell(1, 1);
+            [o{1:1}] = PsychImGui('ImPlot.NextColormapColor');
+            t_ok('ImPlot.NextColormapColor full', numel(o) == 1);
+        catch e
+            t_ok('ImPlot.NextColormapColor full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+            o = {};
+        end
+    else
+        t_ok('ImPlot.NextColormapColor full', false);
+    end
+    tf_plot_end(p);
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot.GetLastItemColor');
+        t_ok('ImPlot.GetLastItemColor defaults', numel(o) == 1);
+    catch e
+        t_ok('ImPlot.GetLastItemColor defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot.GetLastItemColor');
+        t_ok('ImPlot.GetLastItemColor full', numel(o) == 1);
+    catch e
+        t_ok('ImPlot.GetLastItemColor full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot.BustColorCache');
+        t_ok('ImPlot.BustColorCache defaults', true);
+    catch e
+        t_ok('ImPlot.BustColorCache defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot.BustColorCache', 'x');
+        t_ok('ImPlot.BustColorCache full', true);
+    catch e
+        t_ok('ImPlot.BustColorCache full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot.ColormapIcon', 0);
+        t_ok('ImPlot.ColormapIcon defaults', true);
+    catch e
+        t_ok('ImPlot.ColormapIcon defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot.ColormapIcon', 0);
+        t_ok('ImPlot.ColormapIcon full', true);
+    catch e
+        t_ok('ImPlot.ColormapIcon full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot.ColormapButton', 'x');
+        t_ok('ImPlot.ColormapButton defaults', numel(o) == 1);
+    catch e
+        t_ok('ImPlot.ColormapButton defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot.ColormapButton', 'x', [0 0], 0);
+        t_ok('ImPlot.ColormapButton full', numel(o) == 1);
+    catch e
+        t_ok('ImPlot.ColormapButton full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('ImPlot.ColormapSlider', 'x', 0);
+        t_ok('ImPlot.ColormapSlider defaults', numel(o) == 2);
+    catch e
+        t_ok('ImPlot.ColormapSlider defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 2);
+        [o{1:2}] = PsychImGui('ImPlot.ColormapSlider', 'x', 0, 'x', 0);
+        t_ok('ImPlot.ColormapSlider full', numel(o) == 2);
+    catch e
+        t_ok('ImPlot.ColormapSlider full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
         PsychImGui('ImPlot.StyleColorsAuto');
         t_ok('ImPlot.StyleColorsAuto defaults', true);
     catch e
@@ -5349,6 +8881,46 @@ function test_gen_marshal()
     % ImPlot.PopStyleVar is exercised by its opener.
     tf_begin();
     try
+        PsychImGui('ImPlot.MapInputDefault');
+        t_ok('ImPlot.MapInputDefault defaults', true);
+    catch e
+        t_ok('ImPlot.MapInputDefault defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot.MapInputDefault');
+        t_ok('ImPlot.MapInputDefault full', true);
+    catch e
+        t_ok('ImPlot.MapInputDefault full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot.MapInputReverse');
+        t_ok('ImPlot.MapInputReverse defaults', true);
+    catch e
+        t_ok('ImPlot.MapInputReverse defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot.MapInputReverse');
+        t_ok('ImPlot.MapInputReverse full', true);
+    catch e
+        t_ok('ImPlot.MapInputReverse full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
         o = cell(1, 1);
         [o{1:1}] = PsychImGui('ImPlot.ShowDemoWindow');
         t_ok('ImPlot.ShowDemoWindow defaults', numel(o) == 1);
@@ -5392,6 +8964,70 @@ function test_gen_marshal()
         t_ok('ImPlot.ShowMetricsWindow full', false);
         fprintf(2, '        %s: %s\n', e.identifier, e.message);
         o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot.ShowStyleEditor');
+        t_ok('ImPlot.ShowStyleEditor defaults', true);
+    catch e
+        t_ok('ImPlot.ShowStyleEditor defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot.ShowStyleEditor');
+        t_ok('ImPlot.ShowStyleEditor full', true);
+    catch e
+        t_ok('ImPlot.ShowStyleEditor full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot.ShowColormapSelector', 'x');
+        t_ok('ImPlot.ShowColormapSelector defaults', numel(o) == 1);
+    catch e
+        t_ok('ImPlot.ShowColormapSelector defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot.ShowColormapSelector', 'x');
+        t_ok('ImPlot.ShowColormapSelector full', numel(o) == 1);
+    catch e
+        t_ok('ImPlot.ShowColormapSelector full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot.ShowUserGuide');
+        t_ok('ImPlot.ShowUserGuide defaults', true);
+    catch e
+        t_ok('ImPlot.ShowUserGuide defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot.ShowUserGuide');
+        t_ok('ImPlot.ShowUserGuide full', true);
+    catch e
+        t_ok('ImPlot.ShowUserGuide full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
     end
     tf_end();
 
@@ -5663,6 +9299,118 @@ function test_gen_marshal()
     p = tf_plot3d_begin();
     if p
         try
+            PsychImGui('ImPlot3D.SetupAxisScale', 0, 1);
+            t_ok('ImPlot3D.SetupAxisScale defaults', true);
+        catch e
+            t_ok('ImPlot3D.SetupAxisScale defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.SetupAxisScale defaults', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.SetupAxisScale', 0, 1);
+            t_ok('ImPlot3D.SetupAxisScale full', true);
+        catch e
+            t_ok('ImPlot3D.SetupAxisScale full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.SetupAxisScale full', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.SetupAxisLimitsConstraints', 0, 0, 0);
+            t_ok('ImPlot3D.SetupAxisLimitsConstraints defaults', true);
+        catch e
+            t_ok('ImPlot3D.SetupAxisLimitsConstraints defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.SetupAxisLimitsConstraints defaults', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.SetupAxisLimitsConstraints', 0, 0, 0);
+            t_ok('ImPlot3D.SetupAxisLimitsConstraints full', true);
+        catch e
+            t_ok('ImPlot3D.SetupAxisLimitsConstraints full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.SetupAxisLimitsConstraints full', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.SetupAxisZoomConstraints', 0, 0, 0);
+            t_ok('ImPlot3D.SetupAxisZoomConstraints defaults', true);
+        catch e
+            t_ok('ImPlot3D.SetupAxisZoomConstraints defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.SetupAxisZoomConstraints defaults', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.SetupAxisZoomConstraints', 0, 0, 0);
+            t_ok('ImPlot3D.SetupAxisZoomConstraints full', true);
+        catch e
+            t_ok('ImPlot3D.SetupAxisZoomConstraints full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.SetupAxisZoomConstraints full', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.SetupBoxInitialRotation', 0, 0);
+            t_ok('ImPlot3D.SetupBoxInitialRotation defaults', true);
+        catch e
+            t_ok('ImPlot3D.SetupBoxInitialRotation defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.SetupBoxInitialRotation defaults', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.SetupBoxInitialRotation', 0, 0);
+            t_ok('ImPlot3D.SetupBoxInitialRotation full', true);
+        catch e
+            t_ok('ImPlot3D.SetupBoxInitialRotation full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.SetupBoxInitialRotation full', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
             PsychImGui('ImPlot3D.PlotLine', 'x', [0 1 2 3], [0 1 2 3], [0 1 2 3]);
             t_ok('ImPlot3D.PlotLine 3d defaults', true);
         catch e
@@ -5859,6 +9607,34 @@ function test_gen_marshal()
     p = tf_plot3d_begin();
     if p
         try
+            PsychImGui('ImPlot3D.PlotDummy', 'x');
+            t_ok('ImPlot3D.PlotDummy defaults', true);
+        catch e
+            t_ok('ImPlot3D.PlotDummy defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.PlotDummy defaults', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            PsychImGui('ImPlot3D.PlotDummy', 'x');
+            t_ok('ImPlot3D.PlotDummy full', true);
+        catch e
+            t_ok('ImPlot3D.PlotDummy full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        end
+    else
+        t_ok('ImPlot3D.PlotDummy full', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
             o = cell(1, 1);
             [o{1:1}] = PsychImGui('ImPlot3D.PlotToPixels', 0, 0, 0);
             t_ok('ImPlot3D.PlotToPixels defaults', numel(o) == 1);
@@ -5951,6 +9727,94 @@ function test_gen_marshal()
         t_ok('ImPlot3D.GetPlotRectSize full', false);
     end
     tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            o = cell(1, 2);
+            [o{1:2}] = PsychImGui('ImPlot3D.PixelsToPlotRay', 0, 0);
+            t_ok('ImPlot3D.PixelsToPlotRay defaults', numel(o) == 2);
+        catch e
+            t_ok('ImPlot3D.PixelsToPlotRay defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+            o = {};
+        end
+    else
+        t_ok('ImPlot3D.PixelsToPlotRay defaults', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            o = cell(1, 2);
+            [o{1:2}] = PsychImGui('ImPlot3D.PixelsToPlotRay', 0, 0);
+            t_ok('ImPlot3D.PixelsToPlotRay full', numel(o) == 2);
+        catch e
+            t_ok('ImPlot3D.PixelsToPlotRay full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+            o = {};
+        end
+    else
+        t_ok('ImPlot3D.PixelsToPlotRay full', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            o = cell(1, 1);
+            [o{1:1}] = PsychImGui('ImPlot3D.PixelsToPlotPlane', 0, 0, 0);
+            t_ok('ImPlot3D.PixelsToPlotPlane defaults', numel(o) == 1);
+        catch e
+            t_ok('ImPlot3D.PixelsToPlotPlane defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+            o = {};
+        end
+    else
+        t_ok('ImPlot3D.PixelsToPlotPlane defaults', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            o = cell(1, 1);
+            [o{1:1}] = PsychImGui('ImPlot3D.PixelsToPlotPlane', 0, 0, 0, false);
+            t_ok('ImPlot3D.PixelsToPlotPlane full', numel(o) == 1);
+        catch e
+            t_ok('ImPlot3D.PixelsToPlotPlane full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+            o = {};
+        end
+    else
+        t_ok('ImPlot3D.PixelsToPlotPlane full', false);
+    end
+    tf_plot3d_end(p);
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot3D.GetPlotDrawList');
+        t_ok('ImPlot3D.GetPlotDrawList defaults', numel(o) == 1);
+    catch e
+        t_ok('ImPlot3D.GetPlotDrawList defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot3D.GetPlotDrawList');
+        t_ok('ImPlot3D.GetPlotDrawList full', numel(o) == 1);
+    catch e
+        t_ok('ImPlot3D.GetPlotDrawList full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
 
     tf_begin();
     try
@@ -6068,6 +9932,122 @@ function test_gen_marshal()
         o = {};
     end
     tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot3D.AddColormap', 'genCmap3D', [1 0 0 1; 0 1 0 1]);
+        t_ok('ImPlot3D.AddColormap defaults', numel(o) == 1);
+    catch e
+        t_ok('ImPlot3D.AddColormap defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot3D.GetColormapIndex', 'x');
+        t_ok('ImPlot3D.GetColormapIndex defaults', numel(o) == 1);
+    catch e
+        t_ok('ImPlot3D.GetColormapIndex defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot3D.GetColormapIndex', 'x');
+        t_ok('ImPlot3D.GetColormapIndex full', numel(o) == 1);
+    catch e
+        t_ok('ImPlot3D.GetColormapIndex full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot3D.GetColormapSize');
+        t_ok('ImPlot3D.GetColormapSize defaults', numel(o) == 1);
+    catch e
+        t_ok('ImPlot3D.GetColormapSize defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot3D.GetColormapSize', 0);
+        t_ok('ImPlot3D.GetColormapSize full', numel(o) == 1);
+    catch e
+        t_ok('ImPlot3D.GetColormapSize full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot3D.GetColormapColor', 0);
+        t_ok('ImPlot3D.GetColormapColor defaults', numel(o) == 1);
+    catch e
+        t_ok('ImPlot3D.GetColormapColor defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        o = cell(1, 1);
+        [o{1:1}] = PsychImGui('ImPlot3D.GetColormapColor', 0, 0);
+        t_ok('ImPlot3D.GetColormapColor full', numel(o) == 1);
+    catch e
+        t_ok('ImPlot3D.GetColormapColor full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+        o = {};
+    end
+    tf_end();
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            o = cell(1, 1);
+            [o{1:1}] = PsychImGui('ImPlot3D.NextColormapColor');
+            t_ok('ImPlot3D.NextColormapColor defaults', numel(o) == 1);
+        catch e
+            t_ok('ImPlot3D.NextColormapColor defaults', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+            o = {};
+        end
+    else
+        t_ok('ImPlot3D.NextColormapColor defaults', false);
+    end
+    tf_plot3d_end(p);
+
+    p = tf_plot3d_begin();
+    if p
+        try
+            o = cell(1, 1);
+            [o{1:1}] = PsychImGui('ImPlot3D.NextColormapColor');
+            t_ok('ImPlot3D.NextColormapColor full', numel(o) == 1);
+        catch e
+            t_ok('ImPlot3D.NextColormapColor full', false);
+            fprintf(2, '        %s: %s\n', e.identifier, e.message);
+            o = {};
+        end
+    else
+        t_ok('ImPlot3D.NextColormapColor full', false);
+    end
+    tf_plot3d_end(p);
 
     tf_begin();
     try
@@ -6219,6 +10199,28 @@ function test_gen_marshal()
     % ImPlot3D.PopStyleVar is exercised by its opener.
     tf_begin();
     try
+        PsychImGui('ImPlot3D.PushStyleVarInt', 'ImPlot3DStyleVar_Marker', 1);
+        t_ok('ImPlot3D.PushStyleVarInt defaults', true);
+        PsychImGui('ImPlot3D.PopStyleVar');
+    catch e
+        t_ok('ImPlot3D.PushStyleVarInt defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot3D.PushStyleVarInt', 'ImPlot3DStyleVar_Marker', 1);
+        t_ok('ImPlot3D.PushStyleVarInt full', true);
+        PsychImGui('ImPlot3D.PopStyleVar');
+    catch e
+        t_ok('ImPlot3D.PushStyleVarInt full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
         o = cell(1, 1);
         [o{1:1}] = PsychImGui('ImPlot3D.ShowDemoWindow');
         t_ok('ImPlot3D.ShowDemoWindow defaults', numel(o) == 1);
@@ -6262,6 +10264,26 @@ function test_gen_marshal()
         t_ok('ImPlot3D.ShowMetricsWindow full', false);
         fprintf(2, '        %s: %s\n', e.identifier, e.message);
         o = {};
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot3D.ShowStyleEditor');
+        t_ok('ImPlot3D.ShowStyleEditor defaults', true);
+    catch e
+        t_ok('ImPlot3D.ShowStyleEditor defaults', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
+    end
+    tf_end();
+
+    tf_begin();
+    try
+        PsychImGui('ImPlot3D.ShowStyleEditor');
+        t_ok('ImPlot3D.ShowStyleEditor full', true);
+    catch e
+        t_ok('ImPlot3D.ShowStyleEditor full', false);
+        fprintf(2, '        %s: %s\n', e.identifier, e.message);
     end
     tf_end();
 

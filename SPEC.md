@@ -1023,6 +1023,9 @@ PsychImGui/
     imconfig_psych.h      IMGUI_USER_CONFIG: IM_ASSERT redirection, IMGUI_DISABLE_OBSOLETE_FUNCTIONS
     gen_dispatch_implot3d.cpp  generated, committed (phase 3)
     filedialog.cpp        the FileDialog subcommands (phase 3)
+    extras.cpp            hand-written ImGui subcommands (14.15)
+    implot_extras.cpp, implot3d_extras.cpp  hand-written plot subcommands (14.15)
+    texture_marshal.h     texture arguments of Image and PlotImage (14.15)
     igfd_psych.h, igfd_config_psych.h  ImGuiFileDialog configuration (phase 3)
     plotdata_marshal.h, implot3d_marshal.h  plot data and ImPlot3D rules (phase 3)
     core/gpu_timer.cpp    GL_TIMESTAMP queries and the Tracy GPU zone (phase 3)
@@ -1521,3 +1524,81 @@ Two fixes after the first phase 3 CI run (35863090083):
 | Without `MouseIndex`, `Start` makes no mouse queue. | A user decision: without configuration, the input stays PTB's default, `GetMouse(win)` and `GetMouseWheel()`, as in version 0.2. |
 | `tests/test_input.m` and `tests/tf_input_stub.m`. The stub folder of `tf_screen` has forwarders for `KbQueueCreate`, `KbQueueStart`, `KbQueueStop`, `KbQueueRelease`, `KbEventAvail`, `KbEventGet`, `GetMouse`, `GetMouseWheel`, `GetMouseIndices`, and `GetKeyboardIndices`. They are written with the other stubs, before the folder goes on the path. | The stubs record the device arguments and accept injected events. Thus the tests check the indices, the wheel sign, the horizontal component, the one-time warning, and the shape of `Devices` without devices. The forwarders keep the single path change of 14.6. Because of the stubs, `test_helpers` now runs with an active keyboard queue, not the degraded path. |
 | `in.events`, an Nx1 struct array of the key, button, and wheel events with their device times, and `m/PsychImGuiEvents.m` to filter it. With a `MouseIndex`, the mouse queue also records buttons 1 to 3. | Scripts need reaction times, and `in.keys`, `in.buttons`, and `in.wheel` lose the device time of buttons and wheel clicks. A struct array, not an Nx6 matrix as first built, so that nobody has to remember which column is which (a user decision); it is built with one `struct` call per frame. `filter` follows PsychLVGL. The MEX contract does not change: `NewFrame` does not read the field. Without a mouse queue, button events can only have the poll time, and the help text says so. |
+
+### 14.14 Allowlist expansion and safety checks
+
+Subcommands added after phase 3. Each one is an allowlist entry. The
+generator rules of section 7 apply, except where the second table says
+otherwise.
+
+| Namespace | Group | Added subcommands |
+|---|---|---|
+| ImGui | Windows | GetWindowWidth, GetWindowHeight, IsWindowAppearing, IsWindowCollapsed, SetNextWindowContentSize, SetNextWindowSizeConstraints (without the callback) |
+| ImGui | Layout | AlignTextToFramePadding, GetCursorPos, SetCursorPosX, SetCursorPosY, SetCursorScreenPos, GetFrameHeight, GetFrameHeightWithSpacing, GetTextLineHeight, GetTextLineHeightWithSpacing, GetFontSize, CalcItemWidth, PushTextWrapPos, PopTextWrapPos, PushItemFlag, PopItemFlag, GetItemRectSize |
+| ImGui | Text | TextLink |
+| ImGui | Drag and slider | DragFloat4, DragInt2, DragInt3, DragInt4, DragFloatRange2, DragIntRange2, SliderFloat4, SliderInt2, SliderInt3, SliderInt4 |
+| ImGui | Input | InputFloat2, InputFloat3, InputFloat4, InputInt2, InputInt3, InputInt4 |
+| ImGui | Color | ColorPicker3, ColorPicker4 (without the reference color) |
+| ImGui | Trees | TreeNodeEx, CollapsingHeaderClosable (the `bool*` form of CollapsingHeader) |
+| ImGui | Menus | BeginMainMenuBar, EndMainMenuBar |
+| ImGui | Tooltips and popups | BeginItemTooltip, BeginPopupContextItem, BeginPopupContextWindow, BeginPopupContextVoid, OpenPopupOnItemClick, IsPopupOpen |
+| ImGui | Tabs | TabItemButton |
+| ImGui | Item queries | IsItemActivated, IsItemDeactivated, IsItemFocused, IsItemVisible, IsItemToggledOpen, IsAnyItemHovered |
+| ImGui | Input queries | IsMouseReleased, IsMouseDoubleClicked, IsMouseDragging, GetMouseDragDelta, ResetMouseDragDelta, GetMouseClickedCount, IsKeyReleased, IsKeyChordPressed, Shortcut, GetKeyName |
+| ImGui | Style | PushStyleVarX, PushStyleVarY |
+| ImGui | Focus and scroll | GetScrollX, GetScrollY, SetScrollX, SetScrollY, GetScrollMaxX, GetScrollMaxY, SetScrollHereX, SetScrollFromPosX, SetScrollFromPosY |
+| ImGui | Misc | SaveIniSettingsToMemory, LoadIniSettingsFromMemory, ShowStyleEditor, ShowIDStackToolWindow, ShowDebugLogWindow |
+| ImGui | Tables | TableGetRowIndex, TableGetHoveredColumn, TableGetColumnFlags, TableGetColumnName, TableSetColumnEnabled, TableAngledHeadersRow |
+| DrawList | Shapes | AddQuad, AddQuadFilled, AddNgon, AddNgonFilled, AddEllipse, AddEllipseFilled, AddBezierCubic, AddBezierQuadratic, AddConcavePolyFilled, AddRectFilledMultiColor |
+| DrawList | Path | PathClear, PathLineTo, PathLineToMergeDuplicate, PathArcTo, PathEllipticalArcTo, PathBezierCubicCurveTo, PathBezierQuadraticCurveTo, PathRect, PathStroke, PathFillConvex, PathFillConcave |
+| ImPlot | Plot frame | BeginAlignedPlots, EndAlignedPlots |
+| ImPlot | Setup | SetupAxisScale (built-in scale form), SetupAxisLimitsConstraints, SetupAxisZoomConstraints, SetNextAxisToFit |
+| ImPlot | Plot axes | SetAxis, SetAxes, HideNextItem |
+| ImPlot | Items | PlotPolygon |
+| ImPlot | Tools | GetPlotSelection, IsPlotSelected, CancelPlotSelection, BeginLegendPopup, EndLegendPopup, GetPlotDrawList |
+| ImPlot | Colormaps | GetColormapIndex, GetColormapSize, GetColormapColor, NextColormapColor, GetLastItemColor, BustColorCache, ColormapIcon, ColormapButton, ColormapSlider (without the color output) |
+| ImPlot | Style | MapInputDefault, MapInputReverse |
+| ImPlot | Diagnostics | ShowStyleEditor, ShowColormapSelector, ShowUserGuide |
+| ImPlot3D | Setup | SetupAxisScale (built-in scale form), SetupAxisLimitsConstraints, SetupAxisZoomConstraints, SetupBoxInitialRotation (elevation and azimuth form) |
+| ImPlot3D | Items | PlotDummy |
+| ImPlot3D | Queries | PixelsToPlotRay, PixelsToPlotPlane (x, y forms), GetPlotDrawList |
+| ImPlot3D | Colormaps | AddColormap (Nx3 or Nx4 matrix), GetColormapIndex, GetColormapSize, GetColormapColor, NextColormapColor |
+| ImPlot3D | Style | PushStyleVarInt |
+| ImPlot3D | Diagnostics | ShowStyleEditor |
+
+| Deviation | Reason |
+|---|---|
+| A generated ImGui, ImPlot, or ImPlot3D subcommand raises `psychimgui:Usage` outside `NewFrame` to `Render` (dispatch flag `kEntryNeedsFrame`). The exceptions work at any time after `Init`: the input queries (`IsKeyDown`, `IsMouseClicked`, `GetMousePos`, and the like), `SetNextWindow*`, `SetNextItemOpen`, `SetNextItemWidth`, the style and colormap stacks, the font and frame height queries, `TableGetRowIndex`, `TableGetHoveredColumn`, the ini settings calls, and ImPlot's `SetNextAxis*`, `HideNextItem`, `BustColorCache`, `GetLastItemColor`, and `MapInput*`. `IMGUI_FRAME_FREE`, `IMPLOT_FRAME_FREE`, and `IMPLOT3D_FRAME_FREE` in `gen/generate.py` list them. `DrawList.*` needs no flag, because a draw list handle already expires at `Render` (section 5.6). | Outside a frame Dear ImGui has no current window. `Button` and `GetWindowPos` dereferenced the null window and crashed the host. Before this change only the three draw list getters checked for a frame, through call hooks that the flag replaces. |
+| An enum argument that the libraries use as an array index raises `psychimgui:Range` when it is out of range. The generator takes the range from the enum data: `[min, <Type>_COUNT - 1]` for each enum with a `_COUNT` member, plus `ImPlotScale` and `ImPlot3DScale`. Where the C default is `IMPLOT_AUTO`, `-1` is accepted too. `ImGuiKey` must be a named key or one `ImGuiMod_` modifier. An `ImGuiKeyChord` must be a named key with optional modifiers, or one modifier alone. A colormap index must be below `GetColormapCount`, and `-1` is accepted only where it is the C default. `GetColormapColor` refuses a negative `idx`. | Dear ImGui and ImPlot check these with `IM_ASSERT`, which returns (section 8.3), and then index an array with the value. For example, `ImAxis` 6 would index past `ImPlotPlot::Axes`, and a negative `idx` stays negative after `idx % size`. Colormaps are checked at run time because `AddColormap` changes the count. |
+| `ImPlot.EndPlot` and `ImPlot3D.EndPlot` raise `psychimgui:Usage` when no plot is open. Section 14.15 adds the same check to `ImPlot.EndSubplots`. | Both libraries dereference the current plot after an assert. A call after `BeginPlot` returned false, a common mistake, crashed the host. |
+| `TableGetColumnFlags`, `TableGetColumnName`, and `TableSetColumnEnabled` raise `psychimgui:Usage` outside a table. They raise `psychimgui:Range` for a column that is not in the table, and for `-1` before the first cell. `TableAngledHeadersRow` raises `psychimgui:Usage` outside a table. | Dear ImGui indexes its column array with the column after an assert, or dereferences the table without one. |
+| `DrawList.PathBezierCubicCurveTo` and `DrawList.PathBezierQuadraticCurveTo` raise `psychimgui:Usage` on an empty path. | They start at the last point of the path, and read before its buffer when there is none. |
+| `ImPlot3D.PixelsToPlotRay` returns two 1x3 outputs, `[origin, direction]`. `ImPlot3D.PixelsToPlotPlane` returns a 1x3 point. | `ImPlot3DRay` and `ImPlot3DPoint` have no MATLAB form in section 7.3. Two outputs keep the ray readable without a struct. |
+| The generator treats a `const char*` followed by a `size_t` as an ordinary string, and an `Im...Callback` typedef as a type with no marshaling rule. | `LoadIniSettingsFromMemory` was taken for an `InputText` buffer. `ImGuiSizeCallback` matched the enum name pattern, which would have turned a MATLAB number into a function pointer. |
+| `Vec4Vec` and `getVec4Array` moved from `implot_marshal.h` to `imgui_marshal.h`, which both ImPlot headers now include. | `ImPlot3D.AddColormap` needs them, and the generated ImPlot files need `drawListOut` for `GetPlotDrawList`. |
+
+### 14.15 Hand-written widget and plot subcommands
+
+These subcommands need code that the generator rules of section 7 cannot
+emit. They are entries of `BUILTINS` in `gen/generate.py`, and
+`BUILTIN_EXTRA` gives each one its frame flag and its build option, so a build
+without ImPlot or ImPlot3D raises `psychimgui:UnknownCommand` for them as for
+the generated subcommands.
+
+| Subcommand | File | Why it is hand-written |
+|---|---|---|
+| `SliderDouble`, `DragDouble` | `src/extras.cpp` | `SliderScalarN` and `DragScalarN` take `void*` data and a data type. One subcommand covers 1 to 16 components, from the length of `v`. |
+| `TableGetSortSpecs` | `src/extras.cpp` | Returns a struct array `columnIndex`, `sortOrder`, `direction`, and `dirty`. `direction` is `'ascend'` or `'descend'`, the words of MATLAB's `sort`. The call clears `SpecsDirty`, so `dirty` is true once per change. |
+| `ImPlot.PlotBarGroups` | `src/implot_extras.cpp` | Takes a cellstr of labels. `values` is groups by items, one column per item, as MATLAB's `bar` takes it; column major storage is the order ImPlot reads, so nothing is copied. |
+| `ImPlot.PlotPieChart` | `src/implot_extras.cpp` | Takes a cellstr of labels. `labelFmt = []` hides the slice labels. |
+| `ImPlot.PlotImage` | `src/implot_extras.cpp` | Takes a texture as `Image` does (section 5.7). ImPlot draws one uv pair, which cannot turn a transposed texture upright, so for one the item is added with a transparent tint, for the legend and the fit, and the image goes on top as a quad with one uv per corner. |
+| `ImPlot3D.PlotImage` | `src/implot3d_extras.cpp` | `corners` is 4x3, top left, top right, bottom right, bottom left of the image. ImPlot3D flips v of every corner; the handler flips it first so that the texture map reaches the GPU unchanged. The `'nearest'` filter of a texture struct is not applied, because ImPlot3D renders its triangles at `EndPlot`. |
+| `ImPlot.SetupAxisLinks`, `ImPlot.SetNextAxisLinks`, `ImPlot.AxisLink` | `src/implot_extras.cpp` | ImPlot keeps the two `double*` of a link across frames and writes through them at `EndPlot`. The MEX owns them: a link is a key, at most 47 characters, in a fixed table of 64 links that never frees an entry, so no pointer can dangle. The links are shared by every context. A new link from `SetupAxisLinks` starts at the axis's range; one from `SetNextAxisLinks` at ImPlot's default `[0 1]`. `AxisLink` reads or sets a range from MATLAB. |
+
+| Deviation | Reason |
+|---|---|
+| `src/implot_extras.cpp` includes `implot_internal.h`, with `IMGUI_DEFINE_MATH_OPERATORS` defined first. It defines `pig::implotSubplotOpen`. `ImPlot.EndSubplots` and the new `ImPlot.IsSubplotsHovered` raise `psychimgui:Usage` without open subplots. | This closes the `EndSubplots` gap of section 14.14. Both dereference the current subplot after an assert. |
+| `ImPlot.PlotBubbles` is bound, with the data names `xs, ys, sizes` and `values, sizes` from `PLOT_DATA_NAMES`. | The generic names of section 7.6 would call the sizes `ys2`. |
+| Every numeric format argument is checked: `format`, `formatMax`, and `labelFmt` of the generated subcommands, the `fmt` of `ImPlot.SetupAxisFormat`, and the formats of the hand-written ones. It may hold text and at most one conversion, with flags, width, and precision but no length modifier. An integer widget (`DragInt*`, `SliderInt*`, `VSliderInt`) takes `d`, `i`, `u`, `x`, or `o`; every other one `e`, `f`, `g`, or `a`. Anything else raises `psychimgui:Usage`. | Dear ImGui and ImPlot pass the format and the value to `snprintf`. `SliderFloat` with `'%s'` read the float as a char pointer and crashed the host. `IMGUI_DISABLE_OBSOLETE_FUNCTIONS` also removes Dear ImGui's rewrite of a float format for an integer widget. |
+| The texture helpers moved from `psychimgui.cpp` to `src/texture_marshal.h`. | The PlotImage subcommands share them with `Image`. |
+| `tests/test_extras.m` covers the subcommands above headless. `tests/gl/test_gl_plotimage.m` reads back the four quadrants of a transposed and an upright texture through `ImPlot.PlotImage`, and of a transposed one through `ImPlot3D.PlotImage`. | A transposed or mirrored image cannot be seen without a GPU. |

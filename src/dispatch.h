@@ -19,7 +19,8 @@ struct Entry {
 enum EntryFlag {
     kEntryNeedsInit = 1u << 0,  // raises psychimgui:NotInit before Init
     kEntryNeedsGL = 1u << 1,    // raises psychimgui:NoGLContext with no context
-    kEntryUnavailable = 1u << 2  // compiled out, raises psychimgui:UnknownCommand
+    kEntryUnavailable = 1u << 2,  // compiled out, raises psychimgui:UnknownCommand
+    kEntryNeedsFrame = 1u << 3    // raises psychimgui:Usage outside NewFrame to Render
 };
 
 // Generated in src/gen_dispatch.cpp.

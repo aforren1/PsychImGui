@@ -6,8 +6,8 @@ subcommand. [README.md](README.md) is for users of a release.
 [SPEC.md](SPEC.md) is the design reference. [RELEASING.md](RELEASING.md) is
 the release checklist.
 
-Status: phases 1, 1.5, 2, and 3 complete. 140 Dear ImGui subcommands, 12 draw
-list subcommands, 66 ImPlot subcommands, 37 ImPlot3D subcommands, and 33
+Status: phases 1, 1.5, 2, and 3 complete. 230 Dear ImGui subcommands, 33 draw
+list subcommands, 98 ImPlot subcommands, 52 ImPlot3D subcommands, and 43
 hand-written subcommands, against Dear ImGui 1.92.9b, ImPlot 1.1, ImPlot3D
 0.4, and ImGuiFileDialog 0.6.9. Phase 2 added tables, draw lists, and images
 from Psychtoolbox textures. Phase 3 added one context per window, both eyes
@@ -149,6 +149,7 @@ texture support.
 | `test_filedialog.m` | `FileDialog.` argument rules, the open and close cycle, a path outside ASCII |
 | `test_helpers_p3.m` | The helpers with two windows and with a stereo window, against the `Screen` stub |
 | `test_input.m` | `PsychImGuiInput` device indices, the wheel path of each system, the wheel sign, `in.events` fields and times, `PsychImGuiEvents('filter')`, `Devices`, against the input stubs in `tf_input_stub.m` |
+| `test_extras.m` | The hand-written widget and plot subcommands: double sliders, sort specs, bar groups, pie charts, plot images, subplots, and axis links |
 | `test_setup.m` | The two `PsychImGuiSetup` copies are identical; install, `remove` with the MEX locked, and a second `remove`, against a scratch package in `tempdir` |
 
 ### Tests that need a GPU
@@ -165,6 +166,8 @@ test_gl_contexts      % two windows, one context each, and the GPU timer
 test_gl_stereo        % the panel in both eyes of stereo modes 4 and 8
 test_gl_implot3d      % a 3D line plot, a surface, and a mesh
 test_gl_implot3d('opengl2')
+test_gl_plotimage     % ImPlot and ImPlot3D images, upright and transposed
+test_gl_plotimage('opengl2')
 ```
 
 Each one prints `SKIP` and returns when Psychtoolbox is not installed, or when

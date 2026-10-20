@@ -35,6 +35,7 @@ void h_EndPlot(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
     if (nargin != 0) { mrs::usage("EndPlot", kSig_EndPlot); return; }
     (void)nlhs; (void)plhs; (void)args;
     if (mrs::failed()) return;
+    if (!mrs::implotPlotOpen()) { mrs::fail("psychimgui:Usage", "ImPlot.EndPlot needs an open plot: call it between ImPlot.BeginPlot and ImPlot.EndPlot."); return; }
     ImPlot::EndPlot();
 }
 
@@ -65,7 +66,43 @@ void h_EndSubplots(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
     if (nargin != 0) { mrs::usage("EndSubplots", kSig_EndSubplots); return; }
     (void)nlhs; (void)plhs; (void)args;
     if (mrs::failed()) return;
+    if (!pig::implotSubplotOpen()) { mrs::fail("psychimgui:Usage", "ImPlot.EndSubplots without an open ImPlot.BeginSubplots. Call it only when BeginSubplots returned true."); return; }
     ImPlot::EndSubplots();
+}
+
+extern const char kSig_IsSubplotsHovered[] =
+    "ret = PsychImGui('ImPlot.IsSubplotsHovered')";
+void h_IsSubplotsHovered(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("IsSubplotsHovered", kSig_IsSubplotsHovered); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    if (!pig::implotSubplotOpen()) { mrs::fail("psychimgui:Usage", "ImPlot.IsSubplotsHovered needs open subplots: call it between ImPlot.BeginSubplots and ImPlot.EndSubplots."); return; }
+    bool ret = ImPlot::IsSubplotsHovered();
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
+extern const char kSig_BeginAlignedPlots[] =
+    "open = PsychImGui('ImPlot.BeginAlignedPlots', groupId [, vertical=true])";
+void h_BeginAlignedPlots(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 2) { mrs::usage("BeginAlignedPlots", kSig_BeginAlignedPlots); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_group_id;
+    const char* v_group_id = "";
+    v_group_id = mrs::toUtf8(args[0], "groupId", b_group_id);
+    bool v_vertical = true;
+    if (nargin > 1) v_vertical = mrs::getBool(args[1], "vertical");
+    if (mrs::failed()) return;
+    bool ret = ImPlot::BeginAlignedPlots(v_group_id, v_vertical);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
+extern const char kSig_EndAlignedPlots[] =
+    "PsychImGui('ImPlot.EndAlignedPlots')";
+void h_EndAlignedPlots(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("EndAlignedPlots", kSig_EndAlignedPlots); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    ImPlot::EndAlignedPlots();
 }
 
 extern const char kSig_SetupAxis[] =
@@ -74,7 +111,7 @@ void h_SetupAxis(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
     if (nargin < 1 || nargin > 3) { mrs::usage("SetupAxis", kSig_SetupAxis); return; }
     (void)nlhs; (void)plhs; (void)args;
     ImAxis v_axis = (ImAxis)(0);
-    v_axis = (ImAxis)mrs::getFlags(args[0], "axis");
+    v_axis = (ImAxis)mrs::getEnumRanged(args[0], "axis", 0, 5);
     mrs::StrBuf<256> b_label;
     const char* v_label = NULL;
     if (nargin > 1 && !mxIsEmpty(args[1])) v_label = mrs::toUtf8(args[1], "label", b_label);
@@ -111,7 +148,7 @@ void h_SetupAxisLimits(int nlhs, mxArray** plhs, int nargin, const mxArray** arg
     if (nargin < 3 || nargin > 4) { mrs::usage("SetupAxisLimits", kSig_SetupAxisLimits); return; }
     (void)nlhs; (void)plhs; (void)args;
     ImAxis v_axis = (ImAxis)(0);
-    v_axis = (ImAxis)mrs::getFlags(args[0], "axis");
+    v_axis = (ImAxis)mrs::getEnumRanged(args[0], "axis", 0, 5);
     double v_v_min = (double)(0);
     v_v_min = (double)mrs::getScalar(args[1], "vMin");
     double v_v_max = (double)(0);
@@ -149,10 +186,11 @@ void h_SetupAxisFormat(int nlhs, mxArray** plhs, int nargin, const mxArray** arg
     if (nargin < 2 || nargin > 2) { mrs::usage("SetupAxisFormat", kSig_SetupAxisFormat); return; }
     (void)nlhs; (void)plhs; (void)args;
     ImAxis v_axis = (ImAxis)(0);
-    v_axis = (ImAxis)mrs::getFlags(args[0], "axis");
+    v_axis = (ImAxis)mrs::getEnumRanged(args[0], "axis", 0, 5);
     mrs::StrBuf<256> b_fmt;
     const char* v_fmt = "";
     v_fmt = mrs::toUtf8(args[1], "fmt", b_fmt);
+    mrs::checkNumberFormat(v_fmt, "fmt", false);
     if (mrs::failed()) return;
     if (!mrs::implotPlotOpen()) { mrs::fail("psychimgui:Usage", "ImPlot.SetupAxisFormat needs an open plot: call it between ImPlot.BeginPlot and ImPlot.EndPlot."); return; }
     ImPlot::SetupAxisFormat(v_axis, v_fmt);
@@ -164,7 +202,7 @@ void h_SetupAxisTicks(int nlhs, mxArray** plhs, int nargin, const mxArray** args
     if (nargin < 2 || nargin > 4) { mrs::usage("SetupAxisTicks", kSig_SetupAxisTicks); return; }
     (void)nlhs; (void)plhs; (void)args;
     ImAxis v_axis = (ImAxis)(0);
-    v_axis = (ImAxis)mrs::getFlags(args[0], "axis");
+    v_axis = (ImAxis)mrs::getEnumRanged(args[0], "axis", 0, 5);
     int n_values = 0;
     const double* v_values = mrs::getDoubleArray(args[1], "values", &n_values);
     mrs::CellStr cs_labels;
@@ -179,6 +217,52 @@ void h_SetupAxisTicks(int nlhs, mxArray** plhs, int nargin, const mxArray** args
     if (mrs::failed()) return;
     if (!mrs::implotPlotOpen()) { mrs::fail("psychimgui:Usage", "ImPlot.SetupAxisTicks needs an open plot: call it between ImPlot.BeginPlot and ImPlot.EndPlot."); return; }
     ImPlot::SetupAxisTicks(v_axis, v_values, n_values, v_labels, v_keep_default);
+}
+
+extern const char kSig_SetupAxisScale[] =
+    "PsychImGui('ImPlot.SetupAxisScale', axis, scale)";
+void h_SetupAxisScale(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2 || nargin > 2) { mrs::usage("SetupAxisScale", kSig_SetupAxisScale); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    ImAxis v_axis = (ImAxis)(0);
+    v_axis = (ImAxis)mrs::getEnumRanged(args[0], "axis", 0, 5);
+    ImPlotScale v_scale = (ImPlotScale)(0);
+    v_scale = (ImPlotScale)mrs::getEnumRanged(args[1], "scale", 0, 3);
+    if (mrs::failed()) return;
+    if (!mrs::implotPlotOpen()) { mrs::fail("psychimgui:Usage", "ImPlot.SetupAxisScale needs an open plot: call it between ImPlot.BeginPlot and ImPlot.EndPlot."); return; }
+    ImPlot::SetupAxisScale(v_axis, v_scale);
+}
+
+extern const char kSig_SetupAxisLimitsConstraints[] =
+    "PsychImGui('ImPlot.SetupAxisLimitsConstraints', axis, vMin, vMax)";
+void h_SetupAxisLimitsConstraints(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 3 || nargin > 3) { mrs::usage("SetupAxisLimitsConstraints", kSig_SetupAxisLimitsConstraints); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    ImAxis v_axis = (ImAxis)(0);
+    v_axis = (ImAxis)mrs::getEnumRanged(args[0], "axis", 0, 5);
+    double v_v_min = (double)(0);
+    v_v_min = (double)mrs::getScalar(args[1], "vMin");
+    double v_v_max = (double)(0);
+    v_v_max = (double)mrs::getScalar(args[2], "vMax");
+    if (mrs::failed()) return;
+    if (!mrs::implotPlotOpen()) { mrs::fail("psychimgui:Usage", "ImPlot.SetupAxisLimitsConstraints needs an open plot: call it between ImPlot.BeginPlot and ImPlot.EndPlot."); return; }
+    ImPlot::SetupAxisLimitsConstraints(v_axis, v_v_min, v_v_max);
+}
+
+extern const char kSig_SetupAxisZoomConstraints[] =
+    "PsychImGui('ImPlot.SetupAxisZoomConstraints', axis, zMin, zMax)";
+void h_SetupAxisZoomConstraints(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 3 || nargin > 3) { mrs::usage("SetupAxisZoomConstraints", kSig_SetupAxisZoomConstraints); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    ImAxis v_axis = (ImAxis)(0);
+    v_axis = (ImAxis)mrs::getEnumRanged(args[0], "axis", 0, 5);
+    double v_z_min = (double)(0);
+    v_z_min = (double)mrs::getScalar(args[1], "zMin");
+    double v_z_max = (double)(0);
+    v_z_max = (double)mrs::getScalar(args[2], "zMax");
+    if (mrs::failed()) return;
+    if (!mrs::implotPlotOpen()) { mrs::fail("psychimgui:Usage", "ImPlot.SetupAxisZoomConstraints needs an open plot: call it between ImPlot.BeginPlot and ImPlot.EndPlot."); return; }
+    ImPlot::SetupAxisZoomConstraints(v_axis, v_z_min, v_z_max);
 }
 
 extern const char kSig_SetupLegend[] =
@@ -225,7 +309,7 @@ void h_SetNextAxisLimits(int nlhs, mxArray** plhs, int nargin, const mxArray** a
     if (nargin < 3 || nargin > 4) { mrs::usage("SetNextAxisLimits", kSig_SetNextAxisLimits); return; }
     (void)nlhs; (void)plhs; (void)args;
     ImAxis v_axis = (ImAxis)(0);
-    v_axis = (ImAxis)mrs::getFlags(args[0], "axis");
+    v_axis = (ImAxis)mrs::getEnumRanged(args[0], "axis", 0, 5);
     double v_v_min = (double)(0);
     v_v_min = (double)mrs::getScalar(args[1], "vMin");
     double v_v_max = (double)(0);
@@ -255,6 +339,17 @@ void h_SetNextAxesLimits(int nlhs, mxArray** plhs, int nargin, const mxArray** a
     ImPlot::SetNextAxesLimits(v_x_min, v_x_max, v_y_min, v_y_max, v_cond);
 }
 
+extern const char kSig_SetNextAxisToFit[] =
+    "PsychImGui('ImPlot.SetNextAxisToFit', axis)";
+void h_SetNextAxisToFit(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 1) { mrs::usage("SetNextAxisToFit", kSig_SetNextAxisToFit); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    ImAxis v_axis = (ImAxis)(0);
+    v_axis = (ImAxis)mrs::getEnumRanged(args[0], "axis", 0, 5);
+    if (mrs::failed()) return;
+    ImPlot::SetNextAxisToFit(v_axis);
+}
+
 extern const char kSig_SetNextAxesToFit[] =
     "PsychImGui('ImPlot.SetNextAxesToFit')";
 void h_SetNextAxesToFit(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
@@ -262,6 +357,45 @@ void h_SetNextAxesToFit(int nlhs, mxArray** plhs, int nargin, const mxArray** ar
     (void)nlhs; (void)plhs; (void)args;
     if (mrs::failed()) return;
     ImPlot::SetNextAxesToFit();
+}
+
+extern const char kSig_SetAxis[] =
+    "PsychImGui('ImPlot.SetAxis', axis)";
+void h_SetAxis(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 1) { mrs::usage("SetAxis", kSig_SetAxis); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    ImAxis v_axis = (ImAxis)(0);
+    v_axis = (ImAxis)mrs::getEnumRanged(args[0], "axis", 0, 5);
+    if (mrs::failed()) return;
+    if (!mrs::implotPlotOpen()) { mrs::fail("psychimgui:Usage", "ImPlot.SetAxis needs an open plot: call it between ImPlot.BeginPlot and ImPlot.EndPlot."); return; }
+    ImPlot::SetAxis(v_axis);
+}
+
+extern const char kSig_SetAxes[] =
+    "PsychImGui('ImPlot.SetAxes', xAxis, yAxis)";
+void h_SetAxes(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2 || nargin > 2) { mrs::usage("SetAxes", kSig_SetAxes); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    ImAxis v_x_axis = (ImAxis)(0);
+    v_x_axis = (ImAxis)mrs::getEnumRanged(args[0], "xAxis", 0, 5);
+    ImAxis v_y_axis = (ImAxis)(0);
+    v_y_axis = (ImAxis)mrs::getEnumRanged(args[1], "yAxis", 0, 5);
+    if (mrs::failed()) return;
+    if (!mrs::implotPlotOpen()) { mrs::fail("psychimgui:Usage", "ImPlot.SetAxes needs an open plot: call it between ImPlot.BeginPlot and ImPlot.EndPlot."); return; }
+    ImPlot::SetAxes(v_x_axis, v_y_axis);
+}
+
+extern const char kSig_HideNextItem[] =
+    "PsychImGui('ImPlot.HideNextItem' [, hidden=true] [, cond=ImPlotCond_Once])";
+void h_HideNextItem(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 0 || nargin > 2) { mrs::usage("HideNextItem", kSig_HideNextItem); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    bool v_hidden = true;
+    if (nargin > 0) v_hidden = mrs::getBool(args[0], "hidden");
+    ImPlotCond v_cond = (ImPlotCond)(ImPlotCond_Once);
+    if (nargin > 1) v_cond = (ImPlotCond)mrs::getFlags(args[1], "cond");
+    if (mrs::failed()) return;
+    ImPlot::HideNextItem(v_hidden, v_cond);
 }
 
 extern const char kSig_PlotLine[] =
@@ -956,6 +1090,7 @@ void h_PlotHeatmap(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
         mrs::StrBuf<128> b_label_fmt;
         const char* v_label_fmt = "%.1f";
         if (nargin > 4 && 4 < specAt) v_label_fmt = mrs::toUtf8(args[4], "labelFmt", b_label_fmt);
+        mrs::checkNumberFormat(v_label_fmt, "labelFmt", false);
         ImPlotPoint v_bounds_min = ImPlotPoint(0,0);
         if (nargin > 5 && 5 < specAt) v_bounds_min = mrs::getPoint2<ImPlotPoint>(args[5], "boundsMin");
         ImPlotPoint v_bounds_max = ImPlotPoint(1,1);
@@ -1056,6 +1191,115 @@ void h_PlotDummy(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
     if (mrs::failed()) return;
     if (!mrs::implotPlotOpen()) { mrs::fail("psychimgui:Usage", "ImPlot.PlotDummy needs an open plot: call it between ImPlot.BeginPlot and ImPlot.EndPlot."); return; }
     ImPlot::PlotDummy(v_label_id, v_spec);
+}
+
+extern const char kSig_PlotPolygon[] =
+    "PsychImGui('ImPlot.PlotPolygon', labelId, xs, ys [, spec...])";
+template <typename T_>
+static void tp_PlotPolygon_2(int nlhs, mxArray** plhs, const char* v_label, const mxArray** args, int nargin, int specAt, int count) {
+    (void)nlhs; (void)plhs;
+    ImPlotSpec v_spec;
+    mrs::getSpec(args, nargin, specAt, v_spec, sizeof(T_));
+    if (mrs::failed()) return;
+    ImPlot::PlotPolygon(v_label, (const T_*)mxGetData(args[1]), (const T_*)mxGetData(args[2]), count, v_spec);
+}
+
+void h_PlotPolygon(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2) { mrs::usage("ImPlot.PlotPolygon", kSig_PlotPolygon); return; }
+    mrs::StrBuf<256> b_label;
+    const char* v_label = mrs::toUtf8(args[0], "labelId", b_label);
+    int nData = mrs::dataArgCount(args, nargin, 1, 2);
+    int count = 0;
+    mxClassID cid = mrs::checkData(args, 1, nData, "ImPlot.PlotPolygon", &count);
+    if (mrs::failed()) return;
+    if (nData == 2) {
+        int specAt = mrs::specStart(args, nargin, 3);
+        if (mrs::failed()) return;
+        switch (cid) {
+        case mxDOUBLE_CLASS: tp_PlotPolygon_2<double>(nlhs, plhs, v_label, args, nargin, specAt, count); break;
+        case mxSINGLE_CLASS: tp_PlotPolygon_2<float>(nlhs, plhs, v_label, args, nargin, specAt, count); break;
+        case mxINT8_CLASS: tp_PlotPolygon_2<ImS8>(nlhs, plhs, v_label, args, nargin, specAt, count); break;
+        case mxUINT8_CLASS: tp_PlotPolygon_2<ImU8>(nlhs, plhs, v_label, args, nargin, specAt, count); break;
+        case mxINT16_CLASS: tp_PlotPolygon_2<ImS16>(nlhs, plhs, v_label, args, nargin, specAt, count); break;
+        case mxUINT16_CLASS: tp_PlotPolygon_2<ImU16>(nlhs, plhs, v_label, args, nargin, specAt, count); break;
+        case mxINT32_CLASS: tp_PlotPolygon_2<ImS32>(nlhs, plhs, v_label, args, nargin, specAt, count); break;
+        case mxUINT32_CLASS: tp_PlotPolygon_2<ImU32>(nlhs, plhs, v_label, args, nargin, specAt, count); break;
+        case mxINT64_CLASS: tp_PlotPolygon_2<ImS64>(nlhs, plhs, v_label, args, nargin, specAt, count); break;
+        case mxUINT64_CLASS: tp_PlotPolygon_2<ImU64>(nlhs, plhs, v_label, args, nargin, specAt, count); break;
+        default: mrs::fail("psychimgui:Type", "ImPlot.PlotPolygon: unsupported data class."); break;
+        }
+    } else {
+        mrs::usage("ImPlot.PlotPolygon", kSig_PlotPolygon);
+    }
+}
+
+extern const char kSig_PlotBubbles[] =
+    "PsychImGui('ImPlot.PlotBubbles', labelId, xs, ys, sizes [, spec...])\n    PsychImGui('ImPlot.PlotBubbles', labelId, values, sizes [, xscale=1] [, xstart=0] [, spec...])";
+template <typename T_>
+static void tp_PlotBubbles_3(int nlhs, mxArray** plhs, const char* v_label, const mxArray** args, int nargin, int specAt, int count) {
+    (void)nlhs; (void)plhs;
+    ImPlotSpec v_spec;
+    mrs::getSpec(args, nargin, specAt, v_spec, sizeof(T_));
+    if (mrs::failed()) return;
+    ImPlot::PlotBubbles(v_label, (const T_*)mxGetData(args[1]), (const T_*)mxGetData(args[2]), (const T_*)mxGetData(args[3]), count, v_spec);
+}
+
+template <typename T_>
+static void tp_PlotBubbles_2(int nlhs, mxArray** plhs, const char* v_label, const mxArray** args, int nargin, int specAt, int count, double v_xscale, double v_xstart) {
+    (void)nlhs; (void)plhs;
+    ImPlotSpec v_spec;
+    mrs::getSpec(args, nargin, specAt, v_spec, sizeof(T_));
+    if (mrs::failed()) return;
+    ImPlot::PlotBubbles(v_label, (const T_*)mxGetData(args[1]), (const T_*)mxGetData(args[2]), count, v_xscale, v_xstart, v_spec);
+}
+
+void h_PlotBubbles(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2) { mrs::usage("ImPlot.PlotBubbles", kSig_PlotBubbles); return; }
+    mrs::StrBuf<256> b_label;
+    const char* v_label = mrs::toUtf8(args[0], "labelId", b_label);
+    int nData = mrs::dataArgCount(args, nargin, 1, 3);
+    int count = 0;
+    mxClassID cid = mrs::checkData(args, 1, nData, "ImPlot.PlotBubbles", &count);
+    if (mrs::failed()) return;
+    if (nData == 3) {
+        int specAt = mrs::specStart(args, nargin, 4);
+        if (mrs::failed()) return;
+        switch (cid) {
+        case mxDOUBLE_CLASS: tp_PlotBubbles_3<double>(nlhs, plhs, v_label, args, nargin, specAt, count); break;
+        case mxSINGLE_CLASS: tp_PlotBubbles_3<float>(nlhs, plhs, v_label, args, nargin, specAt, count); break;
+        case mxINT8_CLASS: tp_PlotBubbles_3<ImS8>(nlhs, plhs, v_label, args, nargin, specAt, count); break;
+        case mxUINT8_CLASS: tp_PlotBubbles_3<ImU8>(nlhs, plhs, v_label, args, nargin, specAt, count); break;
+        case mxINT16_CLASS: tp_PlotBubbles_3<ImS16>(nlhs, plhs, v_label, args, nargin, specAt, count); break;
+        case mxUINT16_CLASS: tp_PlotBubbles_3<ImU16>(nlhs, plhs, v_label, args, nargin, specAt, count); break;
+        case mxINT32_CLASS: tp_PlotBubbles_3<ImS32>(nlhs, plhs, v_label, args, nargin, specAt, count); break;
+        case mxUINT32_CLASS: tp_PlotBubbles_3<ImU32>(nlhs, plhs, v_label, args, nargin, specAt, count); break;
+        case mxINT64_CLASS: tp_PlotBubbles_3<ImS64>(nlhs, plhs, v_label, args, nargin, specAt, count); break;
+        case mxUINT64_CLASS: tp_PlotBubbles_3<ImU64>(nlhs, plhs, v_label, args, nargin, specAt, count); break;
+        default: mrs::fail("psychimgui:Type", "ImPlot.PlotBubbles: unsupported data class."); break;
+        }
+    } else if (nData == 2) {
+        int specAt = mrs::specStart(args, nargin, 3);
+        double v_xscale = (double)(1);
+        if (nargin > 3 && 3 < specAt) v_xscale = (double)mrs::getScalar(args[3], "xscale");
+        double v_xstart = (double)(0);
+        if (nargin > 4 && 4 < specAt) v_xstart = (double)mrs::getScalar(args[4], "xstart");
+        if (mrs::failed()) return;
+        switch (cid) {
+        case mxDOUBLE_CLASS: tp_PlotBubbles_2<double>(nlhs, plhs, v_label, args, nargin, specAt, count, v_xscale, v_xstart); break;
+        case mxSINGLE_CLASS: tp_PlotBubbles_2<float>(nlhs, plhs, v_label, args, nargin, specAt, count, v_xscale, v_xstart); break;
+        case mxINT8_CLASS: tp_PlotBubbles_2<ImS8>(nlhs, plhs, v_label, args, nargin, specAt, count, v_xscale, v_xstart); break;
+        case mxUINT8_CLASS: tp_PlotBubbles_2<ImU8>(nlhs, plhs, v_label, args, nargin, specAt, count, v_xscale, v_xstart); break;
+        case mxINT16_CLASS: tp_PlotBubbles_2<ImS16>(nlhs, plhs, v_label, args, nargin, specAt, count, v_xscale, v_xstart); break;
+        case mxUINT16_CLASS: tp_PlotBubbles_2<ImU16>(nlhs, plhs, v_label, args, nargin, specAt, count, v_xscale, v_xstart); break;
+        case mxINT32_CLASS: tp_PlotBubbles_2<ImS32>(nlhs, plhs, v_label, args, nargin, specAt, count, v_xscale, v_xstart); break;
+        case mxUINT32_CLASS: tp_PlotBubbles_2<ImU32>(nlhs, plhs, v_label, args, nargin, specAt, count, v_xscale, v_xstart); break;
+        case mxINT64_CLASS: tp_PlotBubbles_2<ImS64>(nlhs, plhs, v_label, args, nargin, specAt, count, v_xscale, v_xstart); break;
+        case mxUINT64_CLASS: tp_PlotBubbles_2<ImU64>(nlhs, plhs, v_label, args, nargin, specAt, count, v_xscale, v_xstart); break;
+        default: mrs::fail("psychimgui:Type", "ImPlot.PlotBubbles: unsupported data class."); break;
+        }
+    } else {
+        mrs::usage("ImPlot.PlotBubbles", kSig_PlotBubbles);
+    }
 }
 
 extern const char kSig_DragPoint[] =
@@ -1253,6 +1497,78 @@ void h_TagY(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
     ImPlot::TagY(v_y, v_col, "%s", v_fmt);
 }
 
+extern const char kSig_GetPlotSelection[] =
+    "rect = PsychImGui('ImPlot.GetPlotSelection' [, xAxis=IMPLOT_AUTO] [, yAxis=IMPLOT_AUTO])";
+void h_GetPlotSelection(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 0 || nargin > 2) { mrs::usage("GetPlotSelection", kSig_GetPlotSelection); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    ImAxis v_x_axis = (ImAxis)(IMPLOT_AUTO);
+    if (nargin > 0) v_x_axis = (ImAxis)mrs::getEnumRanged(args[0], "xAxis", -1, 5);
+    ImAxis v_y_axis = (ImAxis)(IMPLOT_AUTO);
+    if (nargin > 1) v_y_axis = (ImAxis)mrs::getEnumRanged(args[1], "yAxis", -1, 5);
+    if (mrs::failed()) return;
+    if (!mrs::implotPlotOpen()) { mrs::fail("psychimgui:Usage", "ImPlot.GetPlotSelection needs an open plot: call it between ImPlot.BeginPlot and ImPlot.EndPlot."); return; }
+    ImPlotRect ret = ImPlot::GetPlotSelection(v_x_axis, v_y_axis);
+    if (nlhs > 0) { double t[4] = {ret.X.Min, ret.X.Max, ret.Y.Min, ret.Y.Max}; plhs[0] = mrs::outVec(t, 4); }
+}
+
+extern const char kSig_IsPlotSelected[] =
+    "ret = PsychImGui('ImPlot.IsPlotSelected')";
+void h_IsPlotSelected(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("IsPlotSelected", kSig_IsPlotSelected); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    if (!mrs::implotPlotOpen()) { mrs::fail("psychimgui:Usage", "ImPlot.IsPlotSelected needs an open plot: call it between ImPlot.BeginPlot and ImPlot.EndPlot."); return; }
+    bool ret = ImPlot::IsPlotSelected();
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
+extern const char kSig_CancelPlotSelection[] =
+    "PsychImGui('ImPlot.CancelPlotSelection')";
+void h_CancelPlotSelection(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("CancelPlotSelection", kSig_CancelPlotSelection); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    if (!mrs::implotPlotOpen()) { mrs::fail("psychimgui:Usage", "ImPlot.CancelPlotSelection needs an open plot: call it between ImPlot.BeginPlot and ImPlot.EndPlot."); return; }
+    ImPlot::CancelPlotSelection();
+}
+
+extern const char kSig_BeginLegendPopup[] =
+    "open = PsychImGui('ImPlot.BeginLegendPopup', labelId [, mouseButton=1])";
+void h_BeginLegendPopup(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 2) { mrs::usage("BeginLegendPopup", kSig_BeginLegendPopup); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_label_id;
+    const char* v_label_id = "";
+    v_label_id = mrs::toUtf8(args[0], "labelId", b_label_id);
+    ImGuiMouseButton v_mouse_button = (ImGuiMouseButton)(1);
+    if (nargin > 1) v_mouse_button = (ImGuiMouseButton)mrs::getEnumRanged(args[1], "mouseButton", 0, 4);
+    if (mrs::failed()) return;
+    if (!mrs::implotPlotOpen()) { mrs::fail("psychimgui:Usage", "ImPlot.BeginLegendPopup needs an open plot: call it between ImPlot.BeginPlot and ImPlot.EndPlot."); return; }
+    bool ret = ImPlot::BeginLegendPopup(v_label_id, v_mouse_button);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
+extern const char kSig_EndLegendPopup[] =
+    "PsychImGui('ImPlot.EndLegendPopup')";
+void h_EndLegendPopup(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("EndLegendPopup", kSig_EndLegendPopup); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    ImPlot::EndLegendPopup();
+}
+
+extern const char kSig_GetPlotDrawList[] =
+    "drawList = PsychImGui('ImPlot.GetPlotDrawList')";
+void h_GetPlotDrawList(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("GetPlotDrawList", kSig_GetPlotDrawList); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    double ret = mrs::drawListOut(ImPlot::GetPlotDrawList());
+    if (mrs::failed()) return;
+    if (nlhs > 0) plhs[0] = mrs::outDouble((double)(ret));
+}
+
 extern const char kSig_IsPlotHovered[] =
     "ret = PsychImGui('ImPlot.IsPlotHovered')";
 void h_IsPlotHovered(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
@@ -1270,7 +1586,7 @@ void h_IsAxisHovered(int nlhs, mxArray** plhs, int nargin, const mxArray** args)
     if (nargin < 1 || nargin > 1) { mrs::usage("IsAxisHovered", kSig_IsAxisHovered); return; }
     (void)nlhs; (void)plhs; (void)args;
     ImAxis v_axis = (ImAxis)(0);
-    v_axis = (ImAxis)mrs::getFlags(args[0], "axis");
+    v_axis = (ImAxis)mrs::getEnumRanged(args[0], "axis", 0, 5);
     if (mrs::failed()) return;
     if (!mrs::implotPlotOpen()) { mrs::fail("psychimgui:Usage", "ImPlot.IsAxisHovered needs an open plot: call it between ImPlot.BeginPlot and ImPlot.EndPlot."); return; }
     bool ret = ImPlot::IsAxisHovered(v_axis);
@@ -1297,9 +1613,9 @@ void h_GetPlotMousePos(int nlhs, mxArray** plhs, int nargin, const mxArray** arg
     if (nargin < 0 || nargin > 2) { mrs::usage("GetPlotMousePos", kSig_GetPlotMousePos); return; }
     (void)nlhs; (void)plhs; (void)args;
     ImAxis v_x_axis = (ImAxis)(IMPLOT_AUTO);
-    if (nargin > 0) v_x_axis = (ImAxis)mrs::getFlags(args[0], "xAxis");
+    if (nargin > 0) v_x_axis = (ImAxis)mrs::getEnumRanged(args[0], "xAxis", -1, 5);
     ImAxis v_y_axis = (ImAxis)(IMPLOT_AUTO);
-    if (nargin > 1) v_y_axis = (ImAxis)mrs::getFlags(args[1], "yAxis");
+    if (nargin > 1) v_y_axis = (ImAxis)mrs::getEnumRanged(args[1], "yAxis", -1, 5);
     if (mrs::failed()) return;
     if (!mrs::implotPlotOpen()) { mrs::fail("psychimgui:Usage", "ImPlot.GetPlotMousePos needs an open plot: call it between ImPlot.BeginPlot and ImPlot.EndPlot."); return; }
     ImPlotPoint ret = ImPlot::GetPlotMousePos(v_x_axis, v_y_axis);
@@ -1312,9 +1628,9 @@ void h_GetPlotLimits(int nlhs, mxArray** plhs, int nargin, const mxArray** args)
     if (nargin < 0 || nargin > 2) { mrs::usage("GetPlotLimits", kSig_GetPlotLimits); return; }
     (void)nlhs; (void)plhs; (void)args;
     ImAxis v_x_axis = (ImAxis)(IMPLOT_AUTO);
-    if (nargin > 0) v_x_axis = (ImAxis)mrs::getFlags(args[0], "xAxis");
+    if (nargin > 0) v_x_axis = (ImAxis)mrs::getEnumRanged(args[0], "xAxis", -1, 5);
     ImAxis v_y_axis = (ImAxis)(IMPLOT_AUTO);
-    if (nargin > 1) v_y_axis = (ImAxis)mrs::getFlags(args[1], "yAxis");
+    if (nargin > 1) v_y_axis = (ImAxis)mrs::getEnumRanged(args[1], "yAxis", -1, 5);
     if (mrs::failed()) return;
     if (!mrs::implotPlotOpen()) { mrs::fail("psychimgui:Usage", "ImPlot.GetPlotLimits needs an open plot: call it between ImPlot.BeginPlot and ImPlot.EndPlot."); return; }
     ImPlotRect ret = ImPlot::GetPlotLimits(v_x_axis, v_y_axis);
@@ -1353,9 +1669,9 @@ void h_PlotToPixels(int nlhs, mxArray** plhs, int nargin, const mxArray** args) 
     double v_y = (double)(0);
     v_y = (double)mrs::getScalar(args[1], "y");
     ImAxis v_x_axis = (ImAxis)(IMPLOT_AUTO);
-    if (nargin > 2) v_x_axis = (ImAxis)mrs::getFlags(args[2], "xAxis");
+    if (nargin > 2) v_x_axis = (ImAxis)mrs::getEnumRanged(args[2], "xAxis", -1, 5);
     ImAxis v_y_axis = (ImAxis)(IMPLOT_AUTO);
-    if (nargin > 3) v_y_axis = (ImAxis)mrs::getFlags(args[3], "yAxis");
+    if (nargin > 3) v_y_axis = (ImAxis)mrs::getEnumRanged(args[3], "yAxis", -1, 5);
     if (mrs::failed()) return;
     if (!mrs::implotPlotOpen()) { mrs::fail("psychimgui:Usage", "ImPlot.PlotToPixels needs an open plot: call it between ImPlot.BeginPlot and ImPlot.EndPlot."); return; }
     ImVec2 ret = ImPlot::PlotToPixels(v_x, v_y, v_x_axis, v_y_axis);
@@ -1372,9 +1688,9 @@ void h_PixelsToPlot(int nlhs, mxArray** plhs, int nargin, const mxArray** args) 
     float v_y = (float)(0);
     v_y = (float)mrs::getScalar(args[1], "y");
     ImAxis v_x_axis = (ImAxis)(IMPLOT_AUTO);
-    if (nargin > 2) v_x_axis = (ImAxis)mrs::getFlags(args[2], "xAxis");
+    if (nargin > 2) v_x_axis = (ImAxis)mrs::getEnumRanged(args[2], "xAxis", -1, 5);
     ImAxis v_y_axis = (ImAxis)(IMPLOT_AUTO);
-    if (nargin > 3) v_y_axis = (ImAxis)mrs::getFlags(args[3], "yAxis");
+    if (nargin > 3) v_y_axis = (ImAxis)mrs::getEnumRanged(args[3], "yAxis", -1, 5);
     if (mrs::failed()) return;
     if (!mrs::implotPlotOpen()) { mrs::fail("psychimgui:Usage", "ImPlot.PixelsToPlot needs an open plot: call it between ImPlot.BeginPlot and ImPlot.EndPlot."); return; }
     ImPlotPoint ret = ImPlot::PixelsToPlot(v_x, v_y, v_x_axis, v_y_axis);
@@ -1400,6 +1716,7 @@ void h_PushColormapIndex(int nlhs, mxArray** plhs, int nargin, const mxArray** a
     (void)nlhs; (void)plhs; (void)args;
     ImPlotColormap v_cmap = (ImPlotColormap)(0);
     v_cmap = (ImPlotColormap)mrs::getInt(args[0], "cmap");
+    mrs::checkColormap(v_cmap, false, "cmap");
     if (mrs::failed()) return;
     ImPlot::PushColormap(v_cmap);
 }
@@ -1453,6 +1770,8 @@ void h_ColormapScale(int nlhs, mxArray** plhs, int nargin, const mxArray** args)
     if (nargin > 5) v_flags = (ImPlotColormapScaleFlags)mrs::getFlags(args[5], "flags");
     ImPlotColormap v_cmap = (ImPlotColormap)(IMPLOT_AUTO);
     if (nargin > 6) v_cmap = (ImPlotColormap)mrs::getInt(args[6], "cmap");
+    if (nargin > 6) mrs::checkColormap(v_cmap, true, "cmap");
+    mrs::checkNumberFormat(v_format, "format", false);
     if (mrs::failed()) return;
     ImPlot::ColormapScale(v_label, v_scale_min, v_scale_max, v_size, v_format, v_flags, v_cmap);
 }
@@ -1466,6 +1785,7 @@ void h_SampleColormap(int nlhs, mxArray** plhs, int nargin, const mxArray** args
     v_t = (float)mrs::getScalar(args[0], "t");
     ImPlotColormap v_cmap = (ImPlotColormap)(IMPLOT_AUTO);
     if (nargin > 1) v_cmap = (ImPlotColormap)mrs::getInt(args[1], "cmap");
+    if (nargin > 1) mrs::checkColormap(v_cmap, true, "cmap");
     if (mrs::failed()) return;
     ImVec4 ret = ImPlot::SampleColormap(v_t, v_cmap);
     if (nlhs > 0) { double t[4] = {(double)ret.x, (double)ret.y, (double)ret.z, (double)ret.w}; plhs[0] = mrs::outVec(t, 4); }
@@ -1488,9 +1808,137 @@ void h_GetColormapName(int nlhs, mxArray** plhs, int nargin, const mxArray** arg
     (void)nlhs; (void)plhs; (void)args;
     ImPlotColormap v_cmap = (ImPlotColormap)(0);
     v_cmap = (ImPlotColormap)mrs::getInt(args[0], "cmap");
+    mrs::checkColormap(v_cmap, false, "cmap");
     if (mrs::failed()) return;
     const char* ret = ImPlot::GetColormapName(v_cmap);
     if (nlhs > 0) plhs[0] = mrs::fromUtf8(ret);
+}
+
+extern const char kSig_GetColormapIndex[] =
+    "ret = PsychImGui('ImPlot.GetColormapIndex', name)";
+void h_GetColormapIndex(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 1) { mrs::usage("GetColormapIndex", kSig_GetColormapIndex); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_name;
+    const char* v_name = "";
+    v_name = mrs::toUtf8(args[0], "name", b_name);
+    if (mrs::failed()) return;
+    ImPlotColormap ret = ImPlot::GetColormapIndex(v_name);
+    if (nlhs > 0) plhs[0] = mrs::outDouble((double)(ret));
+}
+
+extern const char kSig_GetColormapSize[] =
+    "ret = PsychImGui('ImPlot.GetColormapSize' [, cmap=IMPLOT_AUTO])";
+void h_GetColormapSize(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 0 || nargin > 1) { mrs::usage("GetColormapSize", kSig_GetColormapSize); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    ImPlotColormap v_cmap = (ImPlotColormap)(IMPLOT_AUTO);
+    if (nargin > 0) v_cmap = (ImPlotColormap)mrs::getInt(args[0], "cmap");
+    if (nargin > 0) mrs::checkColormap(v_cmap, true, "cmap");
+    if (mrs::failed()) return;
+    int ret = ImPlot::GetColormapSize(v_cmap);
+    if (nlhs > 0) plhs[0] = mrs::outDouble((double)(ret));
+}
+
+extern const char kSig_GetColormapColor[] =
+    "ret = PsychImGui('ImPlot.GetColormapColor', idx [, cmap=IMPLOT_AUTO])";
+void h_GetColormapColor(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 2) { mrs::usage("GetColormapColor", kSig_GetColormapColor); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int v_idx = (int)(0);
+    v_idx = (int)mrs::getInt(args[0], "idx");
+    ImPlotColormap v_cmap = (ImPlotColormap)(IMPLOT_AUTO);
+    if (nargin > 1) v_cmap = (ImPlotColormap)mrs::getInt(args[1], "cmap");
+    if (nargin > 1) mrs::checkColormap(v_cmap, true, "cmap");
+    if (mrs::failed()) return;
+    if (v_idx < 0) { mrs::fail("psychimgui:Range", "GetColormapColor: idx must not be negative, got %d.", v_idx); return; }
+    ImVec4 ret = ImPlot::GetColormapColor(v_idx, v_cmap);
+    if (nlhs > 0) { double t[4] = {(double)ret.x, (double)ret.y, (double)ret.z, (double)ret.w}; plhs[0] = mrs::outVec(t, 4); }
+}
+
+extern const char kSig_NextColormapColor[] =
+    "ret = PsychImGui('ImPlot.NextColormapColor')";
+void h_NextColormapColor(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("NextColormapColor", kSig_NextColormapColor); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    if (!mrs::implotPlotOpen()) { mrs::fail("psychimgui:Usage", "ImPlot.NextColormapColor needs an open plot: call it between ImPlot.BeginPlot and ImPlot.EndPlot."); return; }
+    ImVec4 ret = ImPlot::NextColormapColor();
+    if (nlhs > 0) { double t[4] = {(double)ret.x, (double)ret.y, (double)ret.z, (double)ret.w}; plhs[0] = mrs::outVec(t, 4); }
+}
+
+extern const char kSig_GetLastItemColor[] =
+    "ret = PsychImGui('ImPlot.GetLastItemColor')";
+void h_GetLastItemColor(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("GetLastItemColor", kSig_GetLastItemColor); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    ImVec4 ret = ImPlot::GetLastItemColor();
+    if (nlhs > 0) { double t[4] = {(double)ret.x, (double)ret.y, (double)ret.z, (double)ret.w}; plhs[0] = mrs::outVec(t, 4); }
+}
+
+extern const char kSig_BustColorCache[] =
+    "PsychImGui('ImPlot.BustColorCache' [, plotTitleId=[]])";
+void h_BustColorCache(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 0 || nargin > 1) { mrs::usage("BustColorCache", kSig_BustColorCache); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_plot_title_id;
+    const char* v_plot_title_id = NULL;
+    if (nargin > 0 && !mxIsEmpty(args[0])) v_plot_title_id = mrs::toUtf8(args[0], "plotTitleId", b_plot_title_id);
+    if (mrs::failed()) return;
+    ImPlot::BustColorCache(v_plot_title_id);
+}
+
+extern const char kSig_ColormapIcon[] =
+    "PsychImGui('ImPlot.ColormapIcon', cmap)";
+void h_ColormapIcon(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 1) { mrs::usage("ColormapIcon", kSig_ColormapIcon); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    ImPlotColormap v_cmap = (ImPlotColormap)(0);
+    v_cmap = (ImPlotColormap)mrs::getInt(args[0], "cmap");
+    mrs::checkColormap(v_cmap, false, "cmap");
+    if (mrs::failed()) return;
+    ImPlot::ColormapIcon(v_cmap);
+}
+
+extern const char kSig_ColormapButton[] =
+    "pressed = PsychImGui('ImPlot.ColormapButton', label [, size=[0 0]] [, cmap=IMPLOT_AUTO])";
+void h_ColormapButton(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 3) { mrs::usage("ColormapButton", kSig_ColormapButton); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_label;
+    const char* v_label = "";
+    v_label = mrs::toUtf8(args[0], "label", b_label);
+    ImVec2 v_size = ImVec2(0,0);
+    if (nargin > 1) { double t[2] = {0, 0}; mrs::getVec(args[1], "size", t, 2); v_size = ImVec2((float)t[0], (float)t[1]); }
+    ImPlotColormap v_cmap = (ImPlotColormap)(IMPLOT_AUTO);
+    if (nargin > 2) v_cmap = (ImPlotColormap)mrs::getInt(args[2], "cmap");
+    if (nargin > 2) mrs::checkColormap(v_cmap, true, "cmap");
+    if (mrs::failed()) return;
+    bool ret = ImPlot::ColormapButton(v_label, v_size, v_cmap);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
+extern const char kSig_ColormapSlider[] =
+    "[changed, t] = PsychImGui('ImPlot.ColormapSlider', label, t [, format=''] [, cmap=IMPLOT_AUTO])";
+void h_ColormapSlider(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2 || nargin > 4) { mrs::usage("ColormapSlider", kSig_ColormapSlider); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_label;
+    const char* v_label = "";
+    v_label = mrs::toUtf8(args[0], "label", b_label);
+    float v_t = (float)mrs::getScalar(args[1], "t");
+    mrs::StrBuf<256> b_format;
+    const char* v_format = "";
+    if (nargin > 2 && !mxIsEmpty(args[2])) v_format = mrs::toUtf8(args[2], "format", b_format);
+    ImPlotColormap v_cmap = (ImPlotColormap)(IMPLOT_AUTO);
+    if (nargin > 3) v_cmap = (ImPlotColormap)mrs::getInt(args[3], "cmap");
+    if (nargin > 3) mrs::checkColormap(v_cmap, true, "cmap");
+    mrs::checkNumberFormat(v_format, "format", false);
+    if (mrs::failed()) return;
+    bool ret = ImPlot::ColormapSlider(v_label, &v_t, NULL, v_format, v_cmap);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+    if (nlhs > 1) plhs[1] = mrs::outDouble((double)(v_t));
 }
 
 extern const char kSig_StyleColorsAuto[] =
@@ -1535,7 +1983,7 @@ void h_PushStyleColor(int nlhs, mxArray** plhs, int nargin, const mxArray** args
     if (nargin < 2 || nargin > 2) { mrs::usage("PushStyleColor", kSig_PushStyleColor); return; }
     (void)nlhs; (void)plhs; (void)args;
     ImPlotCol v_idx = (ImPlotCol)(0);
-    v_idx = (ImPlotCol)mrs::getFlags(args[0], "idx");
+    v_idx = (ImPlotCol)mrs::getEnumRanged(args[0], "idx", 0, 15);
     ImVec4 v_col = ImVec4(0,0,0,1);
     { double t[4] = {0, 0, 0, 0}; mrs::getVec(args[1], "col", t, 4); v_col = ImVec4((float)t[0], (float)t[1], (float)t[2], (float)t[3]); }
     if (mrs::failed()) return;
@@ -1559,7 +2007,7 @@ void h_PushStyleVar(int nlhs, mxArray** plhs, int nargin, const mxArray** args) 
     if (nargin < 2 || nargin > 2) { mrs::usage("PushStyleVar", kSig_PushStyleVar); return; }
     (void)nlhs; (void)plhs; (void)args;
     ImPlotStyleVar v_idx = (ImPlotStyleVar)(0);
-    v_idx = (ImPlotStyleVar)mrs::getFlags(args[0], "idx");
+    v_idx = (ImPlotStyleVar)mrs::getEnumRanged(args[0], "idx", 0, 19);
     float v_val = (float)(0);
     v_val = (float)mrs::getScalar(args[1], "val");
     if (mrs::failed()) return;
@@ -1572,7 +2020,7 @@ void h_PushStyleVarInt(int nlhs, mxArray** plhs, int nargin, const mxArray** arg
     if (nargin < 2 || nargin > 2) { mrs::usage("PushStyleVarInt", kSig_PushStyleVarInt); return; }
     (void)nlhs; (void)plhs; (void)args;
     ImPlotStyleVar v_idx = (ImPlotStyleVar)(0);
-    v_idx = (ImPlotStyleVar)mrs::getFlags(args[0], "idx");
+    v_idx = (ImPlotStyleVar)mrs::getEnumRanged(args[0], "idx", 0, 19);
     int v_val = (int)(0);
     v_val = (int)mrs::getInt(args[1], "val");
     if (mrs::failed()) return;
@@ -1585,7 +2033,7 @@ void h_PushStyleVarVec2(int nlhs, mxArray** plhs, int nargin, const mxArray** ar
     if (nargin < 2 || nargin > 2) { mrs::usage("PushStyleVarVec2", kSig_PushStyleVarVec2); return; }
     (void)nlhs; (void)plhs; (void)args;
     ImPlotStyleVar v_idx = (ImPlotStyleVar)(0);
-    v_idx = (ImPlotStyleVar)mrs::getFlags(args[0], "idx");
+    v_idx = (ImPlotStyleVar)mrs::getEnumRanged(args[0], "idx", 0, 19);
     ImVec2 v_val = ImVec2(0,0);
     { double t[2] = {0, 0}; mrs::getVec(args[1], "val", t, 2); v_val = ImVec2((float)t[0], (float)t[1]); }
     if (mrs::failed()) return;
@@ -1601,6 +2049,24 @@ void h_PopStyleVar(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
     if (nargin > 0) v_count = (int)mrs::getInt(args[0], "count");
     if (mrs::failed()) return;
     ImPlot::PopStyleVar(v_count);
+}
+
+extern const char kSig_MapInputDefault[] =
+    "PsychImGui('ImPlot.MapInputDefault')";
+void h_MapInputDefault(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("MapInputDefault", kSig_MapInputDefault); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    ImPlot::MapInputDefault(NULL);
+}
+
+extern const char kSig_MapInputReverse[] =
+    "PsychImGui('ImPlot.MapInputReverse')";
+void h_MapInputReverse(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("MapInputReverse", kSig_MapInputReverse); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    ImPlot::MapInputReverse(NULL);
 }
 
 extern const char kSig_ShowDemoWindow[] =
@@ -1627,6 +2093,37 @@ void h_ShowMetricsWindow(int nlhs, mxArray** plhs, int nargin, const mxArray** a
     if (mrs::failed()) return;
     ImPlot::ShowMetricsWindow(has_p_popen ? &v_p_popen : NULL);
     if (nlhs > 0) plhs[0] = mrs::outBool(v_p_popen);
+}
+
+extern const char kSig_ShowStyleEditor[] =
+    "PsychImGui('ImPlot.ShowStyleEditor')";
+void h_ShowStyleEditor(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("ShowStyleEditor", kSig_ShowStyleEditor); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    ImPlot::ShowStyleEditor(NULL);
+}
+
+extern const char kSig_ShowColormapSelector[] =
+    "ret = PsychImGui('ImPlot.ShowColormapSelector', label)";
+void h_ShowColormapSelector(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 1) { mrs::usage("ShowColormapSelector", kSig_ShowColormapSelector); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_label;
+    const char* v_label = "";
+    v_label = mrs::toUtf8(args[0], "label", b_label);
+    if (mrs::failed()) return;
+    bool ret = ImPlot::ShowColormapSelector(v_label);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
+extern const char kSig_ShowUserGuide[] =
+    "PsychImGui('ImPlot.ShowUserGuide')";
+void h_ShowUserGuide(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("ShowUserGuide", kSig_ShowUserGuide); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    ImPlot::ShowUserGuide();
 }
 
 }  // namespace pig_implot

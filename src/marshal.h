@@ -290,6 +290,59 @@ inline double getFlags(const mxArray* a, const char* argname) {
     return getScalar(a, argname);
 }
 
+// A printf format for one number: text with at most one conversion, with
+// optional flags, width, and precision and no length modifier. Dear ImGui and
+// ImPlot pass the format and the value straight to snprintf, so '%s' would
+// read the number as a pointer and crash the host. A double takes e, f, g, or
+// a; an int takes d, i, u, x, or o.
+inline bool checkNumberFormat(const char* fmt, const char* argname, bool integer) {
+    const char* convs = integer ? "diuxXo" : "eEfFgGaA";
+    if (failed() || !fmt) return !failed();
+    int conversions = 0;
+    for (const char* p = fmt; *p; ++p) {
+        if (*p != '%') continue;
+        if (p[1] == '%') {
+            ++p;
+            continue;
+        }
+        ++p;
+        while (*p && strchr("-+ #0'", *p)) ++p;
+        while (*p >= '0' && *p <= '9') ++p;
+        if (*p == '.') {
+            ++p;
+            while (*p >= '0' && *p <= '9') ++p;
+        }
+        if (!*p || !strchr(convs, *p) || ++conversions > 1) {
+            fail("psychimgui:Usage",
+                 integer ? "Argument '%s' ('%s') must have at most one conversion for an "
+                           "integer, such as %%d."
+                         : "Argument '%s' ('%s') must have at most one conversion for a "
+                           "double, such as %%.3f, %%g, or %%e.",
+                 argname, fmt);
+            return false;
+        }
+    }
+    return true;
+}
+
+inline bool checkDoubleFormat(const char* fmt, const char* argname) {
+    return checkNumberFormat(fmt, argname, false);
+}
+
+// An enum used as an array index. Dear ImGui and ImPlot check these with
+// IM_ASSERT, which returns here (SPEC.md 8.3), so an out of range value would
+// index past the array instead of stopping.
+inline double getEnumRanged(const mxArray* a, const char* argname, double lo, double hi) {
+    double v = getFlags(a, argname);
+    if (failed()) return 0.0;
+    if (v != v || v < lo || v > hi) {
+        fail("psychimgui:Range", "Argument '%s' (%g) is out of range [%g, %g].", argname, v,
+             lo, hi);
+        return 0.0;
+    }
+    return v;
+}
+
 // ------------------------------------------------------------- vectors ------
 
 inline void getVec(const mxArray* a, const char* argname, double* out, int n) {

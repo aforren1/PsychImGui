@@ -7,6 +7,7 @@
 #pragma once
 
 #include "implot3d.h"
+#include "imgui_marshal.h"
 #include "marshal.h"
 #include "plotdata_marshal.h"
 
@@ -21,6 +22,16 @@ namespace mrs {
 // True between ImPlot3D.BeginPlot and ImPlot3D.EndPlot.
 inline bool implot3dPlotOpen() {
     return ImPlot3D::GetCurrentContext() != nullptr && ImPlot3D::GetCurrentPlot() != nullptr;
+}
+
+// Same rule as checkColormap in implot_marshal.h.
+inline void checkColormap3D(int cmap, bool allowAuto, const char* argname) {
+    if (failed()) return;
+    if (allowAuto && cmap == IMPLOT3D_AUTO) return;
+    int n = ImPlot3D::GetColormapCount();
+    if (cmap < 0 || cmap >= n)
+        fail("psychimgui:Range", "Argument '%s' (%d) is not a colormap index in [0, %d]%s.",
+             argname, cmap, n - 1, allowAuto ? " or -1" : "");
 }
 
 inline bool isSpec3DName(const char* s) {

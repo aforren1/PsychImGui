@@ -523,6 +523,67 @@ A struct with the same field names works too. Colors are a 1x4 double in 0 to
 1 or the word `'Auto'`; `Marker` takes a name such as `'Circle'`; `Flags` takes
 a number, a name, or a cellstr of names.
 
+### Plot against a second y axis
+
+A plot has up to three x axes and three y axes. Enable an extra axis in the
+setup, then select it before the items that use it:
+
+```matlab
+if PsychImGui('ImPlot.BeginPlot', 'force and angle', [-1 250])
+    PsychImGui('ImPlot.SetupAxes', 'time (s)', 'force (N)');
+    PsychImGui('ImPlot.SetupAxis', 'ImAxis_Y2', 'angle (deg)', 'ImPlotAxisFlags_Opposite');
+    PsychImGui('ImPlot.PlotLine', 'force', t, force);          % X1 and Y1
+    PsychImGui('ImPlot.SetAxes', 'ImAxis_X1', 'ImAxis_Y2');
+    PsychImGui('ImPlot.PlotLine', 'angle', t, angle);          % X1 and Y2
+    PsychImGui('ImPlot.EndPlot');
+end
+```
+
+Call all the `Setup` subcommands before `SetAxes`. `SetAxes` ends the setup of
+the plot. `ImPlotAxisFlags_Opposite` puts the axis on the right side.
+
+To line up the axes of plots stacked in one window, put the plots between
+`ImPlot.BeginAlignedPlots` and `ImPlot.EndAlignedPlots`. Call
+`EndAlignedPlots` only when `BeginAlignedPlots` returned true.
+
+### Link the axes of several plots
+
+Plots that link an axis to the same key share its range. Pan or zoom one
+plot, and the others follow:
+
+```matlab
+for ch = 1:4
+    if PsychImGui('ImPlot.BeginPlot', sprintf('channel %d', ch), [-1 120])
+        PsychImGui('ImPlot.SetupAxisLimits', 'ImAxis_X1', 0, 2);
+        PsychImGui('ImPlot.SetupAxisLinks', 'ImAxis_X1', 'time');
+        PsychImGui('ImPlot.PlotLine', 'eeg', t, eeg(ch, :));
+        PsychImGui('ImPlot.EndPlot');
+    end
+end
+```
+
+A new key takes the range of the first axis that links to it, so call
+`SetupAxisLimits` before `SetupAxisLinks`. `PsychImGui('ImPlot.AxisLink',
+'time')` returns the shared range, and `PsychImGui('ImPlot.AxisLink', 'time',
+[0 2])` sets it, for example to reset the zoom. A key has 1 to 47 characters,
+and there can be 64 keys. The keys are shared by all windows.
+
+### Plot bar groups, pie charts, and images
+
+```matlab
+PsychImGui('ImPlot.PlotBarGroups', {'left', 'right'}, rt);    % rt: groups x 2
+PsychImGui('ImPlot.PlotPieChart', {'hit', 'miss'}, [hits misses], 0.5, 0.5, 0.4);
+PsychImGui('ImPlot.PlotImage', 'stimulus', tex, [0 0], [1 1]);
+```
+
+`PlotBarGroups` takes one label per column, as `bar(rt)` takes one series per
+column. Add `'Flags', 'ImPlotBarGroupsFlags_Stacked'` to stack the bars.
+`PlotImage` takes the texture of `PsychImGuiImage` (see "Show a
+Psychtoolbox texture") and the plot coordinates of its bottom left and top
+right corners, and shows the image upright. `ImPlot3D.PlotImage` takes a 4x3
+matrix of corners instead: top left, top right, bottom right, and bottom left
+of the image.
+
 A build without ImPlot (see [DEV.md](DEV.md)) raises
 `psychimgui:UnknownCommand` for these subcommands. `PsychImGui('Version').implot`
 tells you whether ImPlot is in.
@@ -552,12 +613,17 @@ ImPlot names except `Size`.
 | Group | Subcommands (`ImPlot3D.` prefix omitted) |
 |---|---|
 | Plot frame | `BeginPlot`, `EndPlot` |
-| Setup | `SetupAxis`, `SetupAxes`, `SetupAxisLimits`, `SetupAxesLimits`, `SetupAxisTicks`, `SetupBoxRotation`, `SetupBoxScale`, `SetupLegend` |
-| Items | `PlotLine`, `PlotScatter`, `PlotTriangle`, `PlotQuad`, `PlotSurface`, `PlotMesh`, `PlotText` |
-| Queries | `PlotToPixels`, `GetPlotRectPos`, `GetPlotRectSize` |
-| Colormaps | `PushColormap`, `PushColormapIndex`, `PopColormap`, `GetColormapCount`, `GetColormapName`, `SampleColormap` |
-| Style | `StyleColorsAuto`, `StyleColorsDark`, `StyleColorsLight`, `StyleColorsClassic`, `PushStyleColor`, `PopStyleColor`, `PushStyleVar`, `PushStyleVarVec2`, `PopStyleVar` |
-| Diagnostics | `ShowDemoWindow`, `ShowMetricsWindow` |
+| Setup | `SetupAxis`, `SetupAxes`, `SetupAxisLimits`, `SetupAxesLimits`, `SetupAxisTicks`, `SetupAxisScale`, `SetupAxisLimitsConstraints`, `SetupAxisZoomConstraints`, `SetupBoxRotation`, `SetupBoxInitialRotation`, `SetupBoxScale`, `SetupLegend` |
+| Items | `PlotLine`, `PlotScatter`, `PlotTriangle`, `PlotQuad`, `PlotSurface`, `PlotMesh`, `PlotText`, `PlotDummy` |
+| Queries | `PlotToPixels`, `PixelsToPlotRay`, `PixelsToPlotPlane`, `GetPlotRectPos`, `GetPlotRectSize`, `GetPlotDrawList` |
+| Colormaps | `PushColormap`, `PushColormapIndex`, `PopColormap`, `AddColormap`, `GetColormapCount`, `GetColormapName`, `GetColormapIndex`, `GetColormapSize`, `GetColormapColor`, `NextColormapColor`, `SampleColormap` |
+| Style | `StyleColorsAuto`, `StyleColorsDark`, `StyleColorsLight`, `StyleColorsClassic`, `PushStyleColor`, `PopStyleColor`, `PushStyleVar`, `PushStyleVarInt`, `PushStyleVarVec2`, `PopStyleVar` |
+| Diagnostics | `ShowDemoWindow`, `ShowMetricsWindow`, `ShowStyleEditor` |
+
+`PixelsToPlotRay` and `PixelsToPlotPlane` find the plot point under a pixel,
+for example the mouse position. `[origin, direction] = PsychImGui('ImPlot3D.PixelsToPlotRay', x, y)`
+gives the ray through the pixel. `PixelsToPlotPlane(x, y, plane)` gives the
+1x3 point where that ray meets a plane of the plot box, such as `'ImPlane3D_XY'`.
 
 A subcommand that needs an open plot raises `psychimgui:Usage` outside
 `BeginPlot` and `EndPlot`, for ImPlot and ImPlot3D both.
@@ -619,7 +685,24 @@ end
 | `BeginTable`, `EndTable` | Open and close a table. Call `EndTable` only when `BeginTable` returned true |
 | `TableSetupColumn`, `TableSetupScrollFreeze`, `TableHeadersRow`, `TableHeader` | Column names, frozen rows and columns, header cells |
 | `TableNextRow`, `TableNextColumn`, `TableSetColumnIndex` | Move to the next row or cell |
-| `TableGetColumnCount`, `TableGetColumnIndex` | Where you are |
+| `TableGetColumnCount`, `TableGetColumnIndex`, `TableGetRowIndex` | Where you are |
+| `TableGetHoveredColumn`, `TableGetColumnFlags`, `TableGetColumnName` | Which column has the mouse, and the state and name of a column |
+| `TableSetColumnEnabled` | Show or hide a column of a table made with `ImGuiTableFlags_Hideable` |
+| `TableAngledHeadersRow` | A header row with angled labels |
+| `TableGetSortSpecs` | `[specs, dirty]`: the columns to sort by, for a table made with `ImGuiTableFlags_Sortable` |
+
+To sort a table when the user clicks a header, read the sort specs after the
+headers. `dirty` is true once after each change:
+
+```matlab
+[specs, dirty] = PsychImGui('TableGetSortSpecs');
+if dirty && ~isempty(specs)
+    [~, order] = sort(data(:, specs(1).columnIndex + 1), specs(1).direction);
+    data = data(order, :);
+end
+```
+
+`columnIndex` counts from 0, as the other table subcommands do.
 | `TableSetBgColor` | Row or cell background, a 1x4 color |
 
 A table call in the wrong place, for example `TableNextRow` outside a table,
@@ -644,9 +727,22 @@ PsychImGui('DrawList.AddPolyline', fg, [x(:) y(:)], [0 1 0 1], 2);
 PsychImGui('DrawList.AddText', fg, [100 80], [1 1 1 1], 'target');
 ```
 
-The `DrawList.` subcommands are `AddLine`, `AddRect`, `AddRectFilled`,
-`AddCircle`, `AddCircleFilled`, `AddTriangle`, `AddTriangleFilled`, `AddText`,
-`AddPolyline`, `AddConvexPolyFilled`, `PushClipRect`, and `PopClipRect`.
+The `DrawList.` shape subcommands are `AddLine`, `AddRect`, `AddRectFilled`,
+`AddRectFilledMultiColor`, `AddCircle`, `AddCircleFilled`, `AddEllipse`,
+`AddEllipseFilled`, `AddNgon`, `AddNgonFilled`, `AddTriangle`,
+`AddTriangleFilled`, `AddQuad`, `AddQuadFilled`, `AddBezierCubic`,
+`AddBezierQuadratic`, `AddText`, `AddPolyline`, `AddConvexPolyFilled`, and
+`AddConcavePolyFilled`. `PushClipRect` and `PopClipRect` limit the drawing to
+a rectangle.
+
+For a shape made of lines and arcs, build a path, then stroke or fill it. Start
+with `PathLineTo`, add `PathLineTo`, `PathArcTo`, `PathEllipticalArcTo`,
+`PathBezierCubicCurveTo`, `PathBezierQuadraticCurveTo`, or `PathRect`, and end
+with `PathStroke`, `PathFillConvex`, or `PathFillConcave`. A curve continues
+from the last point, so it raises `psychimgui:Usage` on an empty path.
+
+To draw in plot coordinates, get the handle from `ImPlot.GetPlotDrawList`
+inside the plot, and convert each point with `ImPlot.PlotToPixels`.
 Points are `[x y]`, point lists are Nx2, and colors are `[r g b a]` from 0 to
 1. `PsychImGui('DrawList.AddLine?')` prints a full signature.
 
@@ -687,6 +783,20 @@ PsychImGui                     % list every subcommand
 PsychImGui('SliderFloat?')     % print the signature of one subcommand
 help PsychImGui                % every signature, from m/PsychImGui.m
 ```
+
+`SliderDouble` and `DragDouble` set a value in double precision, where
+`SliderFloat` rounds to single. Pass a vector of up to 16 elements for one
+widget per element: `[~, xy] = PsychImGui('DragDouble', 'position', xy, 0.001)`.
+
+A `format` argument, such as `'%.2f ms'`, may hold text and one conversion for
+the value: `%d` for an integer widget such as `SliderInt`, `%f`, `%g`, or `%e`
+for the others. Any other conversion raises `psychimgui:Usage`.
+
+Most subcommands work only between `NewFrame` and `Render`. Outside a frame
+they raise `psychimgui:Usage`. These work at any time after `Init`: the input
+queries such as `IsKeyDown` and `GetMousePos`, the `SetNextWindow`
+subcommands, the style and colormap push and pop subcommands, and
+`SaveIniSettingsToMemory` and `LoadIniSettingsFromMemory`.
 
 For the fast path, replace the name with an opcode:
 

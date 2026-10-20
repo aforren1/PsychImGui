@@ -8,6 +8,7 @@
 #pragma once
 
 #include "implot.h"
+#include "imgui_marshal.h"
 #include "marshal.h"
 #include "plotdata_marshal.h"
 
@@ -19,6 +20,12 @@ namespace ImPlot {
 IMPLOT_API ImPlotPlot* GetCurrentPlot();
 }
 
+namespace pig {
+// True between ImPlot.BeginSubplots and ImPlot.EndSubplots. Defined in
+// implot_extras.cpp, the one unit that includes implot_internal.h.
+bool implotSubplotOpen();
+}  // namespace pig
+
 namespace mrs {
 
 // True between ImPlot.BeginPlot and ImPlot.EndPlot. The generated handlers of
@@ -28,50 +35,15 @@ inline bool implotPlotOpen() {
     return ImPlot::GetCurrentContext() != nullptr && ImPlot::GetCurrentPlot() != nullptr;
 }
 
-// An Nx4 or Nx3 colormap matrix as ImVec4. Colormaps are set up once, not per
-// frame, so the copy here is not on the hot path.
-struct Vec4Vec {
-    ImVec4 inl[64];
-    ImVec4* heap;
-    int n;
-    Vec4Vec() : heap(nullptr), n(0) {}
-    ~Vec4Vec() {
-        if (heap) free(heap);
-    }
-    Vec4Vec(const Vec4Vec&) = delete;
-    Vec4Vec& operator=(const Vec4Vec&) = delete;
-};
-
-inline const ImVec4* getVec4Array(const mxArray* a, const char* argname, Vec4Vec& v) {
-    if (failed()) return nullptr;
-    if (!a || !mxIsDouble(a) || mxIsComplex(a)) {
-        fail("psychimgui:Type", "Argument '%s' must be a real Nx4 or Nx3 double matrix.",
-             argname);
-        return nullptr;
-    }
-    int rows = (int)mxGetM(a);
-    int cols = (int)mxGetN(a);
-    if (cols != 3 && cols != 4) {
-        fail("psychimgui:Type", "Argument '%s' must have 3 or 4 columns, not %d.", argname,
-             cols);
-        return nullptr;
-    }
-    ImVec4* d = v.inl;
-    if (rows > (int)(sizeof(v.inl) / sizeof(v.inl[0]))) {
-        v.heap = (ImVec4*)malloc((size_t)rows * sizeof(ImVec4));
-        if (!v.heap) {
-            fail("psychimgui:Usage", "Out of memory converting argument '%s'.", argname);
-            return nullptr;
-        }
-        d = v.heap;
-    }
-    const double* p = mxGetPr(a);
-    for (int i = 0; i < rows; ++i) {
-        d[i] = ImVec4((float)p[i], (float)p[rows + i], (float)p[2 * rows + i],
-                      cols == 4 ? (float)p[3 * rows + i] : 1.0f);
-    }
-    v.n = rows;
-    return d;
+// ImPlot asserts the colormap index and then reads the colormap table with
+// it. The count grows with AddColormap, so this check cannot be static.
+inline void checkColormap(int cmap, bool allowAuto, const char* argname) {
+    if (failed()) return;
+    if (allowAuto && cmap == IMPLOT_AUTO) return;
+    int n = ImPlot::GetColormapCount();
+    if (cmap < 0 || cmap >= n)
+        fail("psychimgui:Range", "Argument '%s' (%d) is not a colormap index in [0, %d]%s.",
+             argname, cmap, n - 1, allowAuto ? " or -1" : "");
 }
 
 // ImPlotPoint and ImPlotRange are a 1x2 double on the MATLAB side, ImPlotRect a

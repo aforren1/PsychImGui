@@ -16,6 +16,16 @@ void bi_AddFontFromFileTTF(int nlhs, mxArray** plhs, int nargin, const mxArray**
 void bi_EndFrame(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_Image(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_ImageButton(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+void bi_SliderDouble(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+void bi_DragDouble(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+void bi_TableGetSortSpecs(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+void bi_ImPlotPlotBarGroups(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+void bi_ImPlotPlotPieChart(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+void bi_ImPlotPlotImage(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+void bi_ImPlotSetupAxisLinks(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+void bi_ImPlotSetNextAxisLinks(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+void bi_ImPlotAxisLink(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+void bi_ImPlot3DPlotImage(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_Enum(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_FileDialogClose(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 void bi_FileDialogDisplay(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
@@ -221,6 +231,70 @@ static void h_IsWindowFocused(int nlhs, mxArray** plhs, int nargin, const mxArra
     if (nlhs > 0) plhs[0] = mrs::outBool(ret);
 }
 
+static const char kSig_GetWindowWidth[] =
+    "ret = PsychImGui('GetWindowWidth')";
+static void h_GetWindowWidth(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("GetWindowWidth", kSig_GetWindowWidth); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    float ret = ImGui::GetWindowWidth();
+    if (nlhs > 0) plhs[0] = mrs::outDouble((double)(ret));
+}
+
+static const char kSig_GetWindowHeight[] =
+    "ret = PsychImGui('GetWindowHeight')";
+static void h_GetWindowHeight(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("GetWindowHeight", kSig_GetWindowHeight); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    float ret = ImGui::GetWindowHeight();
+    if (nlhs > 0) plhs[0] = mrs::outDouble((double)(ret));
+}
+
+static const char kSig_IsWindowAppearing[] =
+    "ret = PsychImGui('IsWindowAppearing')";
+static void h_IsWindowAppearing(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("IsWindowAppearing", kSig_IsWindowAppearing); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    bool ret = ImGui::IsWindowAppearing();
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
+static const char kSig_IsWindowCollapsed[] =
+    "ret = PsychImGui('IsWindowCollapsed')";
+static void h_IsWindowCollapsed(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("IsWindowCollapsed", kSig_IsWindowCollapsed); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    bool ret = ImGui::IsWindowCollapsed();
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
+static const char kSig_SetNextWindowContentSize[] =
+    "PsychImGui('SetNextWindowContentSize', size)";
+static void h_SetNextWindowContentSize(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 1) { mrs::usage("SetNextWindowContentSize", kSig_SetNextWindowContentSize); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    ImVec2 v_size = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[0], "size", t, 2); v_size = ImVec2((float)t[0], (float)t[1]); }
+    if (mrs::failed()) return;
+    ImGui::SetNextWindowContentSize(v_size);
+}
+
+static const char kSig_SetNextWindowSizeConstraints[] =
+    "PsychImGui('SetNextWindowSizeConstraints', sizeMin, sizeMax)";
+static void h_SetNextWindowSizeConstraints(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2 || nargin > 2) { mrs::usage("SetNextWindowSizeConstraints", kSig_SetNextWindowSizeConstraints); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    ImVec2 v_size_min = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[0], "sizeMin", t, 2); v_size_min = ImVec2((float)t[0], (float)t[1]); }
+    ImVec2 v_size_max = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[1], "sizeMax", t, 2); v_size_max = ImVec2((float)t[0], (float)t[1]); }
+    if (mrs::failed()) return;
+    ImGui::SetNextWindowSizeConstraints(v_size_min, v_size_max, NULL, NULL);
+}
+
 static const char kSig_Separator[] =
     "PsychImGui('Separator')";
 static void h_Separator(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
@@ -413,6 +487,170 @@ static void h_GetItemRectMax(int nlhs, mxArray** plhs, int nargin, const mxArray
     if (nlhs > 0) { double t[2] = {(double)ret.x, (double)ret.y}; plhs[0] = mrs::outVec(t, 2); }
 }
 
+static const char kSig_AlignTextToFramePadding[] =
+    "PsychImGui('AlignTextToFramePadding')";
+static void h_AlignTextToFramePadding(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("AlignTextToFramePadding", kSig_AlignTextToFramePadding); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    ImGui::AlignTextToFramePadding();
+}
+
+static const char kSig_GetCursorPos[] =
+    "ret = PsychImGui('GetCursorPos')";
+static void h_GetCursorPos(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("GetCursorPos", kSig_GetCursorPos); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    ImVec2 ret = ImGui::GetCursorPos();
+    if (nlhs > 0) { double t[2] = {(double)ret.x, (double)ret.y}; plhs[0] = mrs::outVec(t, 2); }
+}
+
+static const char kSig_SetCursorPosX[] =
+    "PsychImGui('SetCursorPosX', localX)";
+static void h_SetCursorPosX(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 1) { mrs::usage("SetCursorPosX", kSig_SetCursorPosX); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    float v_local_x = (float)(0);
+    v_local_x = (float)mrs::getScalar(args[0], "localX");
+    if (mrs::failed()) return;
+    ImGui::SetCursorPosX(v_local_x);
+}
+
+static const char kSig_SetCursorPosY[] =
+    "PsychImGui('SetCursorPosY', localY)";
+static void h_SetCursorPosY(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 1) { mrs::usage("SetCursorPosY", kSig_SetCursorPosY); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    float v_local_y = (float)(0);
+    v_local_y = (float)mrs::getScalar(args[0], "localY");
+    if (mrs::failed()) return;
+    ImGui::SetCursorPosY(v_local_y);
+}
+
+static const char kSig_SetCursorScreenPos[] =
+    "PsychImGui('SetCursorScreenPos', pos)";
+static void h_SetCursorScreenPos(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 1) { mrs::usage("SetCursorScreenPos", kSig_SetCursorScreenPos); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    ImVec2 v_pos = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[0], "pos", t, 2); v_pos = ImVec2((float)t[0], (float)t[1]); }
+    if (mrs::failed()) return;
+    ImGui::SetCursorScreenPos(v_pos);
+}
+
+static const char kSig_GetFrameHeight[] =
+    "ret = PsychImGui('GetFrameHeight')";
+static void h_GetFrameHeight(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("GetFrameHeight", kSig_GetFrameHeight); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    float ret = ImGui::GetFrameHeight();
+    if (nlhs > 0) plhs[0] = mrs::outDouble((double)(ret));
+}
+
+static const char kSig_GetFrameHeightWithSpacing[] =
+    "ret = PsychImGui('GetFrameHeightWithSpacing')";
+static void h_GetFrameHeightWithSpacing(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("GetFrameHeightWithSpacing", kSig_GetFrameHeightWithSpacing); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    float ret = ImGui::GetFrameHeightWithSpacing();
+    if (nlhs > 0) plhs[0] = mrs::outDouble((double)(ret));
+}
+
+static const char kSig_GetTextLineHeight[] =
+    "ret = PsychImGui('GetTextLineHeight')";
+static void h_GetTextLineHeight(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("GetTextLineHeight", kSig_GetTextLineHeight); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    float ret = ImGui::GetTextLineHeight();
+    if (nlhs > 0) plhs[0] = mrs::outDouble((double)(ret));
+}
+
+static const char kSig_GetTextLineHeightWithSpacing[] =
+    "ret = PsychImGui('GetTextLineHeightWithSpacing')";
+static void h_GetTextLineHeightWithSpacing(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("GetTextLineHeightWithSpacing", kSig_GetTextLineHeightWithSpacing); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    float ret = ImGui::GetTextLineHeightWithSpacing();
+    if (nlhs > 0) plhs[0] = mrs::outDouble((double)(ret));
+}
+
+static const char kSig_GetFontSize[] =
+    "ret = PsychImGui('GetFontSize')";
+static void h_GetFontSize(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("GetFontSize", kSig_GetFontSize); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    float ret = ImGui::GetFontSize();
+    if (nlhs > 0) plhs[0] = mrs::outDouble((double)(ret));
+}
+
+static const char kSig_CalcItemWidth[] =
+    "ret = PsychImGui('CalcItemWidth')";
+static void h_CalcItemWidth(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("CalcItemWidth", kSig_CalcItemWidth); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    float ret = ImGui::CalcItemWidth();
+    if (nlhs > 0) plhs[0] = mrs::outDouble((double)(ret));
+}
+
+static const char kSig_PushTextWrapPos[] =
+    "PsychImGui('PushTextWrapPos' [, wrapLocalPosX=0.0])";
+static void h_PushTextWrapPos(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 0 || nargin > 1) { mrs::usage("PushTextWrapPos", kSig_PushTextWrapPos); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    float v_wrap_local_pos_x = (float)(0.0f);
+    if (nargin > 0) v_wrap_local_pos_x = (float)mrs::getScalar(args[0], "wrapLocalPosX");
+    if (mrs::failed()) return;
+    ImGui::PushTextWrapPos(v_wrap_local_pos_x);
+}
+
+static const char kSig_PopTextWrapPos[] =
+    "PsychImGui('PopTextWrapPos')";
+static void h_PopTextWrapPos(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("PopTextWrapPos", kSig_PopTextWrapPos); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    ImGui::PopTextWrapPos();
+}
+
+static const char kSig_PushItemFlag[] =
+    "PsychImGui('PushItemFlag', option, enabled)";
+static void h_PushItemFlag(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2 || nargin > 2) { mrs::usage("PushItemFlag", kSig_PushItemFlag); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    ImGuiItemFlags v_option = (ImGuiItemFlags)(0);
+    v_option = (ImGuiItemFlags)mrs::getFlags(args[0], "option");
+    bool v_enabled = false;
+    v_enabled = mrs::getBool(args[1], "enabled");
+    if (mrs::failed()) return;
+    ImGui::PushItemFlag(v_option, v_enabled);
+}
+
+static const char kSig_PopItemFlag[] =
+    "PsychImGui('PopItemFlag')";
+static void h_PopItemFlag(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("PopItemFlag", kSig_PopItemFlag); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    ImGui::PopItemFlag();
+}
+
+static const char kSig_GetItemRectSize[] =
+    "ret = PsychImGui('GetItemRectSize')";
+static void h_GetItemRectSize(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("GetItemRectSize", kSig_GetItemRectSize); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    ImVec2 ret = ImGui::GetItemRectSize();
+    if (nlhs > 0) { double t[2] = {(double)ret.x, (double)ret.y}; plhs[0] = mrs::outVec(t, 2); }
+}
+
 static const char kSig_PushID[] =
     "PsychImGui('PushID', strId)";
 static void h_PushID(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
@@ -522,6 +760,19 @@ static void h_BulletText(int nlhs, mxArray** plhs, int nargin, const mxArray** a
     ImGui::BulletText("%s", v_fmt);
 }
 
+static const char kSig_TextLink[] =
+    "pressed = PsychImGui('TextLink', label)";
+static void h_TextLink(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 1) { mrs::usage("TextLink", kSig_TextLink); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_label;
+    const char* v_label = "";
+    v_label = mrs::toUtf8(args[0], "label", b_label);
+    if (mrs::failed()) return;
+    bool ret = ImGui::TextLink(v_label);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
 static const char kSig_Button[] =
     "pressed = PsychImGui('Button', label [, size=[0 0]])";
 static void h_Button(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
@@ -576,7 +827,7 @@ static void h_ArrowButton(int nlhs, mxArray** plhs, int nargin, const mxArray** 
     const char* v_str_id = "";
     v_str_id = mrs::toUtf8(args[0], "strId", b_str_id);
     ImGuiDir v_dir = (ImGuiDir)(0);
-    v_dir = (ImGuiDir)mrs::getFlags(args[1], "dir");
+    v_dir = (ImGuiDir)mrs::getEnumRanged(args[1], "dir", -1, 3);
     if (mrs::failed()) return;
     bool ret = ImGui::ArrowButton(v_str_id, v_dir);
     if (nlhs > 0) plhs[0] = mrs::outBool(ret);
@@ -802,6 +1053,7 @@ static void h_DragFloat(int nlhs, mxArray** plhs, int nargin, const mxArray** ar
     if (nargin > 5 && !mxIsEmpty(args[5])) v_format = mrs::toUtf8(args[5], "format", b_format);
     ImGuiSliderFlags v_flags = (ImGuiSliderFlags)(0);
     if (nargin > 6) v_flags = (ImGuiSliderFlags)mrs::getFlags(args[6], "flags");
+    mrs::checkNumberFormat(v_format, "format", false);
     if (mrs::failed()) return;
     bool ret = ImGui::DragFloat(v_label, &v_v, v_v_speed, v_v_min, v_v_max, v_format, v_flags);
     if (nlhs > 0) plhs[0] = mrs::outBool(ret);
@@ -829,6 +1081,7 @@ static void h_DragFloat2(int nlhs, mxArray** plhs, int nargin, const mxArray** a
     if (nargin > 5 && !mxIsEmpty(args[5])) v_format = mrs::toUtf8(args[5], "format", b_format);
     ImGuiSliderFlags v_flags = (ImGuiSliderFlags)(0);
     if (nargin > 6) v_flags = (ImGuiSliderFlags)mrs::getFlags(args[6], "flags");
+    mrs::checkNumberFormat(v_format, "format", false);
     if (mrs::failed()) return;
     bool ret = ImGui::DragFloat2(v_label, v_v, v_v_speed, v_v_min, v_v_max, v_format, v_flags);
     if (nlhs > 0) plhs[0] = mrs::outBool(ret);
@@ -856,6 +1109,7 @@ static void h_DragFloat3(int nlhs, mxArray** plhs, int nargin, const mxArray** a
     if (nargin > 5 && !mxIsEmpty(args[5])) v_format = mrs::toUtf8(args[5], "format", b_format);
     ImGuiSliderFlags v_flags = (ImGuiSliderFlags)(0);
     if (nargin > 6) v_flags = (ImGuiSliderFlags)mrs::getFlags(args[6], "flags");
+    mrs::checkNumberFormat(v_format, "format", false);
     if (mrs::failed()) return;
     bool ret = ImGui::DragFloat3(v_label, v_v, v_v_speed, v_v_min, v_v_max, v_format, v_flags);
     if (nlhs > 0) plhs[0] = mrs::outBool(ret);
@@ -882,6 +1136,7 @@ static void h_DragInt(int nlhs, mxArray** plhs, int nargin, const mxArray** args
     if (nargin > 5 && !mxIsEmpty(args[5])) v_format = mrs::toUtf8(args[5], "format", b_format);
     ImGuiSliderFlags v_flags = (ImGuiSliderFlags)(0);
     if (nargin > 6) v_flags = (ImGuiSliderFlags)mrs::getFlags(args[6], "flags");
+    mrs::checkNumberFormat(v_format, "format", true);
     if (mrs::failed()) return;
     bool ret = ImGui::DragInt(v_label, (int*)&v_v, v_v_speed, v_v_min, v_v_max, v_format, v_flags);
     if (nlhs > 0) plhs[0] = mrs::outBool(ret);
@@ -906,6 +1161,7 @@ static void h_SliderFloat(int nlhs, mxArray** plhs, int nargin, const mxArray** 
     if (nargin > 4 && !mxIsEmpty(args[4])) v_format = mrs::toUtf8(args[4], "format", b_format);
     ImGuiSliderFlags v_flags = (ImGuiSliderFlags)(0);
     if (nargin > 5) v_flags = (ImGuiSliderFlags)mrs::getFlags(args[5], "flags");
+    mrs::checkNumberFormat(v_format, "format", false);
     if (mrs::failed()) return;
     bool ret = ImGui::SliderFloat(v_label, &v_v, v_v_min, v_v_max, v_format, v_flags);
     if (nlhs > 0) plhs[0] = mrs::outBool(ret);
@@ -931,6 +1187,7 @@ static void h_SliderFloat2(int nlhs, mxArray** plhs, int nargin, const mxArray**
     if (nargin > 4 && !mxIsEmpty(args[4])) v_format = mrs::toUtf8(args[4], "format", b_format);
     ImGuiSliderFlags v_flags = (ImGuiSliderFlags)(0);
     if (nargin > 5) v_flags = (ImGuiSliderFlags)mrs::getFlags(args[5], "flags");
+    mrs::checkNumberFormat(v_format, "format", false);
     if (mrs::failed()) return;
     bool ret = ImGui::SliderFloat2(v_label, v_v, v_v_min, v_v_max, v_format, v_flags);
     if (nlhs > 0) plhs[0] = mrs::outBool(ret);
@@ -956,6 +1213,7 @@ static void h_SliderFloat3(int nlhs, mxArray** plhs, int nargin, const mxArray**
     if (nargin > 4 && !mxIsEmpty(args[4])) v_format = mrs::toUtf8(args[4], "format", b_format);
     ImGuiSliderFlags v_flags = (ImGuiSliderFlags)(0);
     if (nargin > 5) v_flags = (ImGuiSliderFlags)mrs::getFlags(args[5], "flags");
+    mrs::checkNumberFormat(v_format, "format", false);
     if (mrs::failed()) return;
     bool ret = ImGui::SliderFloat3(v_label, v_v, v_v_min, v_v_max, v_format, v_flags);
     if (nlhs > 0) plhs[0] = mrs::outBool(ret);
@@ -980,6 +1238,7 @@ static void h_SliderInt(int nlhs, mxArray** plhs, int nargin, const mxArray** ar
     if (nargin > 4 && !mxIsEmpty(args[4])) v_format = mrs::toUtf8(args[4], "format", b_format);
     ImGuiSliderFlags v_flags = (ImGuiSliderFlags)(0);
     if (nargin > 5) v_flags = (ImGuiSliderFlags)mrs::getFlags(args[5], "flags");
+    mrs::checkNumberFormat(v_format, "format", true);
     if (mrs::failed()) return;
     bool ret = ImGui::SliderInt(v_label, (int*)&v_v, v_v_min, v_v_max, v_format, v_flags);
     if (nlhs > 0) plhs[0] = mrs::outBool(ret);
@@ -1004,6 +1263,7 @@ static void h_SliderAngle(int nlhs, mxArray** plhs, int nargin, const mxArray** 
     if (nargin > 4 && !mxIsEmpty(args[4])) v_format = mrs::toUtf8(args[4], "format", b_format);
     ImGuiSliderFlags v_flags = (ImGuiSliderFlags)(0);
     if (nargin > 5) v_flags = (ImGuiSliderFlags)mrs::getFlags(args[5], "flags");
+    mrs::checkNumberFormat(v_format, "format", false);
     if (mrs::failed()) return;
     bool ret = ImGui::SliderAngle(v_label, &v_v_rad, v_v_degrees_min, v_v_degrees_max, v_format, v_flags);
     if (nlhs > 0) plhs[0] = mrs::outBool(ret);
@@ -1030,6 +1290,7 @@ static void h_VSliderFloat(int nlhs, mxArray** plhs, int nargin, const mxArray**
     if (nargin > 5 && !mxIsEmpty(args[5])) v_format = mrs::toUtf8(args[5], "format", b_format);
     ImGuiSliderFlags v_flags = (ImGuiSliderFlags)(0);
     if (nargin > 6) v_flags = (ImGuiSliderFlags)mrs::getFlags(args[6], "flags");
+    mrs::checkNumberFormat(v_format, "format", false);
     if (mrs::failed()) return;
     bool ret = ImGui::VSliderFloat(v_label, v_size, &v_v, v_v_min, v_v_max, v_format, v_flags);
     if (nlhs > 0) plhs[0] = mrs::outBool(ret);
@@ -1056,10 +1317,293 @@ static void h_VSliderInt(int nlhs, mxArray** plhs, int nargin, const mxArray** a
     if (nargin > 5 && !mxIsEmpty(args[5])) v_format = mrs::toUtf8(args[5], "format", b_format);
     ImGuiSliderFlags v_flags = (ImGuiSliderFlags)(0);
     if (nargin > 6) v_flags = (ImGuiSliderFlags)mrs::getFlags(args[6], "flags");
+    mrs::checkNumberFormat(v_format, "format", true);
     if (mrs::failed()) return;
     bool ret = ImGui::VSliderInt(v_label, v_size, (int*)&v_v, v_v_min, v_v_max, v_format, v_flags);
     if (nlhs > 0) plhs[0] = mrs::outBool(ret);
     if (nlhs > 1) plhs[1] = mrs::outDouble((double)(v_v));
+}
+
+static const char kSig_DragFloat4[] =
+    "[changed, v] = PsychImGui('DragFloat4', label, v [, vSpeed=1.0] [, vMin=0.0] [, vMax=0.0] [, format='%.3f'] [, flags=0])";
+static void h_DragFloat4(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2 || nargin > 7) { mrs::usage("DragFloat4", kSig_DragFloat4); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_label;
+    const char* v_label = "";
+    v_label = mrs::toUtf8(args[0], "label", b_label);
+    float v_v[4] = {0};
+    mrs::getVecF(args[1], "v", v_v, 4);
+    float v_v_speed = (float)(1.0f);
+    if (nargin > 2) v_v_speed = (float)mrs::getScalar(args[2], "vSpeed");
+    float v_v_min = (float)(0.0f);
+    if (nargin > 3) v_v_min = (float)mrs::getScalar(args[3], "vMin");
+    float v_v_max = (float)(0.0f);
+    if (nargin > 4) v_v_max = (float)mrs::getScalar(args[4], "vMax");
+    mrs::StrBuf<256> b_format;
+    const char* v_format = "%.3f";
+    if (nargin > 5 && !mxIsEmpty(args[5])) v_format = mrs::toUtf8(args[5], "format", b_format);
+    ImGuiSliderFlags v_flags = (ImGuiSliderFlags)(0);
+    if (nargin > 6) v_flags = (ImGuiSliderFlags)mrs::getFlags(args[6], "flags");
+    mrs::checkNumberFormat(v_format, "format", false);
+    if (mrs::failed()) return;
+    bool ret = ImGui::DragFloat4(v_label, v_v, v_v_speed, v_v_min, v_v_max, v_format, v_flags);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+    if (nlhs > 1) plhs[1] = mrs::outVecF(v_v, 4);
+}
+
+static const char kSig_DragInt2[] =
+    "[changed, v] = PsychImGui('DragInt2', label, v [, vSpeed=1.0] [, vMin=0] [, vMax=0] [, format='%d'] [, flags=0])";
+static void h_DragInt2(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2 || nargin > 7) { mrs::usage("DragInt2", kSig_DragInt2); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_label;
+    const char* v_label = "";
+    v_label = mrs::toUtf8(args[0], "label", b_label);
+    int v_v[2] = {0};
+    mrs::getVecI(args[1], "v", v_v, 2);
+    float v_v_speed = (float)(1.0f);
+    if (nargin > 2) v_v_speed = (float)mrs::getScalar(args[2], "vSpeed");
+    int v_v_min = (int)(0);
+    if (nargin > 3) v_v_min = (int)mrs::getInt(args[3], "vMin");
+    int v_v_max = (int)(0);
+    if (nargin > 4) v_v_max = (int)mrs::getInt(args[4], "vMax");
+    mrs::StrBuf<256> b_format;
+    const char* v_format = "%d";
+    if (nargin > 5 && !mxIsEmpty(args[5])) v_format = mrs::toUtf8(args[5], "format", b_format);
+    ImGuiSliderFlags v_flags = (ImGuiSliderFlags)(0);
+    if (nargin > 6) v_flags = (ImGuiSliderFlags)mrs::getFlags(args[6], "flags");
+    mrs::checkNumberFormat(v_format, "format", true);
+    if (mrs::failed()) return;
+    bool ret = ImGui::DragInt2(v_label, v_v, v_v_speed, v_v_min, v_v_max, v_format, v_flags);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+    if (nlhs > 1) plhs[1] = mrs::outVecI(v_v, 2);
+}
+
+static const char kSig_DragInt3[] =
+    "[changed, v] = PsychImGui('DragInt3', label, v [, vSpeed=1.0] [, vMin=0] [, vMax=0] [, format='%d'] [, flags=0])";
+static void h_DragInt3(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2 || nargin > 7) { mrs::usage("DragInt3", kSig_DragInt3); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_label;
+    const char* v_label = "";
+    v_label = mrs::toUtf8(args[0], "label", b_label);
+    int v_v[3] = {0};
+    mrs::getVecI(args[1], "v", v_v, 3);
+    float v_v_speed = (float)(1.0f);
+    if (nargin > 2) v_v_speed = (float)mrs::getScalar(args[2], "vSpeed");
+    int v_v_min = (int)(0);
+    if (nargin > 3) v_v_min = (int)mrs::getInt(args[3], "vMin");
+    int v_v_max = (int)(0);
+    if (nargin > 4) v_v_max = (int)mrs::getInt(args[4], "vMax");
+    mrs::StrBuf<256> b_format;
+    const char* v_format = "%d";
+    if (nargin > 5 && !mxIsEmpty(args[5])) v_format = mrs::toUtf8(args[5], "format", b_format);
+    ImGuiSliderFlags v_flags = (ImGuiSliderFlags)(0);
+    if (nargin > 6) v_flags = (ImGuiSliderFlags)mrs::getFlags(args[6], "flags");
+    mrs::checkNumberFormat(v_format, "format", true);
+    if (mrs::failed()) return;
+    bool ret = ImGui::DragInt3(v_label, v_v, v_v_speed, v_v_min, v_v_max, v_format, v_flags);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+    if (nlhs > 1) plhs[1] = mrs::outVecI(v_v, 3);
+}
+
+static const char kSig_DragInt4[] =
+    "[changed, v] = PsychImGui('DragInt4', label, v [, vSpeed=1.0] [, vMin=0] [, vMax=0] [, format='%d'] [, flags=0])";
+static void h_DragInt4(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2 || nargin > 7) { mrs::usage("DragInt4", kSig_DragInt4); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_label;
+    const char* v_label = "";
+    v_label = mrs::toUtf8(args[0], "label", b_label);
+    int v_v[4] = {0};
+    mrs::getVecI(args[1], "v", v_v, 4);
+    float v_v_speed = (float)(1.0f);
+    if (nargin > 2) v_v_speed = (float)mrs::getScalar(args[2], "vSpeed");
+    int v_v_min = (int)(0);
+    if (nargin > 3) v_v_min = (int)mrs::getInt(args[3], "vMin");
+    int v_v_max = (int)(0);
+    if (nargin > 4) v_v_max = (int)mrs::getInt(args[4], "vMax");
+    mrs::StrBuf<256> b_format;
+    const char* v_format = "%d";
+    if (nargin > 5 && !mxIsEmpty(args[5])) v_format = mrs::toUtf8(args[5], "format", b_format);
+    ImGuiSliderFlags v_flags = (ImGuiSliderFlags)(0);
+    if (nargin > 6) v_flags = (ImGuiSliderFlags)mrs::getFlags(args[6], "flags");
+    mrs::checkNumberFormat(v_format, "format", true);
+    if (mrs::failed()) return;
+    bool ret = ImGui::DragInt4(v_label, v_v, v_v_speed, v_v_min, v_v_max, v_format, v_flags);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+    if (nlhs > 1) plhs[1] = mrs::outVecI(v_v, 4);
+}
+
+static const char kSig_DragFloatRange2[] =
+    "[changed, vCurrentMin, vCurrentMax] = PsychImGui('DragFloatRange2', label, vCurrentMin, vCurrentMax [, vSpeed=1.0] [, vMin=0.0] [, vMax=0.0] [, format='%.3f'] [, formatMax=[]] [, flags=0])";
+static void h_DragFloatRange2(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 3 || nargin > 9) { mrs::usage("DragFloatRange2", kSig_DragFloatRange2); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_label;
+    const char* v_label = "";
+    v_label = mrs::toUtf8(args[0], "label", b_label);
+    float v_v_current_min = (float)mrs::getScalar(args[1], "vCurrentMin");
+    float v_v_current_max = (float)mrs::getScalar(args[2], "vCurrentMax");
+    float v_v_speed = (float)(1.0f);
+    if (nargin > 3) v_v_speed = (float)mrs::getScalar(args[3], "vSpeed");
+    float v_v_min = (float)(0.0f);
+    if (nargin > 4) v_v_min = (float)mrs::getScalar(args[4], "vMin");
+    float v_v_max = (float)(0.0f);
+    if (nargin > 5) v_v_max = (float)mrs::getScalar(args[5], "vMax");
+    mrs::StrBuf<256> b_format;
+    const char* v_format = "%.3f";
+    if (nargin > 6 && !mxIsEmpty(args[6])) v_format = mrs::toUtf8(args[6], "format", b_format);
+    mrs::StrBuf<256> b_format_max;
+    const char* v_format_max = NULL;
+    if (nargin > 7 && !mxIsEmpty(args[7])) v_format_max = mrs::toUtf8(args[7], "formatMax", b_format_max);
+    ImGuiSliderFlags v_flags = (ImGuiSliderFlags)(0);
+    if (nargin > 8) v_flags = (ImGuiSliderFlags)mrs::getFlags(args[8], "flags");
+    mrs::checkNumberFormat(v_format, "format", false);
+    mrs::checkNumberFormat(v_format_max, "formatMax", false);
+    if (mrs::failed()) return;
+    bool ret = ImGui::DragFloatRange2(v_label, &v_v_current_min, &v_v_current_max, v_v_speed, v_v_min, v_v_max, v_format, v_format_max, v_flags);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+    if (nlhs > 1) plhs[1] = mrs::outDouble((double)(v_v_current_min));
+    if (nlhs > 2) plhs[2] = mrs::outDouble((double)(v_v_current_max));
+}
+
+static const char kSig_DragIntRange2[] =
+    "[changed, vCurrentMin, vCurrentMax] = PsychImGui('DragIntRange2', label, vCurrentMin, vCurrentMax [, vSpeed=1.0] [, vMin=0] [, vMax=0] [, format='%d'] [, formatMax=[]] [, flags=0])";
+static void h_DragIntRange2(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 3 || nargin > 9) { mrs::usage("DragIntRange2", kSig_DragIntRange2); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_label;
+    const char* v_label = "";
+    v_label = mrs::toUtf8(args[0], "label", b_label);
+    int v_v_current_min = mrs::getInt(args[1], "vCurrentMin");
+    int v_v_current_max = mrs::getInt(args[2], "vCurrentMax");
+    float v_v_speed = (float)(1.0f);
+    if (nargin > 3) v_v_speed = (float)mrs::getScalar(args[3], "vSpeed");
+    int v_v_min = (int)(0);
+    if (nargin > 4) v_v_min = (int)mrs::getInt(args[4], "vMin");
+    int v_v_max = (int)(0);
+    if (nargin > 5) v_v_max = (int)mrs::getInt(args[5], "vMax");
+    mrs::StrBuf<256> b_format;
+    const char* v_format = "%d";
+    if (nargin > 6 && !mxIsEmpty(args[6])) v_format = mrs::toUtf8(args[6], "format", b_format);
+    mrs::StrBuf<256> b_format_max;
+    const char* v_format_max = NULL;
+    if (nargin > 7 && !mxIsEmpty(args[7])) v_format_max = mrs::toUtf8(args[7], "formatMax", b_format_max);
+    ImGuiSliderFlags v_flags = (ImGuiSliderFlags)(0);
+    if (nargin > 8) v_flags = (ImGuiSliderFlags)mrs::getFlags(args[8], "flags");
+    mrs::checkNumberFormat(v_format, "format", true);
+    mrs::checkNumberFormat(v_format_max, "formatMax", true);
+    if (mrs::failed()) return;
+    bool ret = ImGui::DragIntRange2(v_label, (int*)&v_v_current_min, (int*)&v_v_current_max, v_v_speed, v_v_min, v_v_max, v_format, v_format_max, v_flags);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+    if (nlhs > 1) plhs[1] = mrs::outDouble((double)(v_v_current_min));
+    if (nlhs > 2) plhs[2] = mrs::outDouble((double)(v_v_current_max));
+}
+
+static const char kSig_SliderFloat4[] =
+    "[changed, v] = PsychImGui('SliderFloat4', label, v, vMin, vMax [, format='%.3f'] [, flags=0])";
+static void h_SliderFloat4(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 4 || nargin > 6) { mrs::usage("SliderFloat4", kSig_SliderFloat4); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_label;
+    const char* v_label = "";
+    v_label = mrs::toUtf8(args[0], "label", b_label);
+    float v_v[4] = {0};
+    mrs::getVecF(args[1], "v", v_v, 4);
+    float v_v_min = (float)(0);
+    v_v_min = (float)mrs::getScalar(args[2], "vMin");
+    float v_v_max = (float)(0);
+    v_v_max = (float)mrs::getScalar(args[3], "vMax");
+    mrs::StrBuf<256> b_format;
+    const char* v_format = "%.3f";
+    if (nargin > 4 && !mxIsEmpty(args[4])) v_format = mrs::toUtf8(args[4], "format", b_format);
+    ImGuiSliderFlags v_flags = (ImGuiSliderFlags)(0);
+    if (nargin > 5) v_flags = (ImGuiSliderFlags)mrs::getFlags(args[5], "flags");
+    mrs::checkNumberFormat(v_format, "format", false);
+    if (mrs::failed()) return;
+    bool ret = ImGui::SliderFloat4(v_label, v_v, v_v_min, v_v_max, v_format, v_flags);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+    if (nlhs > 1) plhs[1] = mrs::outVecF(v_v, 4);
+}
+
+static const char kSig_SliderInt2[] =
+    "[changed, v] = PsychImGui('SliderInt2', label, v, vMin, vMax [, format='%d'] [, flags=0])";
+static void h_SliderInt2(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 4 || nargin > 6) { mrs::usage("SliderInt2", kSig_SliderInt2); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_label;
+    const char* v_label = "";
+    v_label = mrs::toUtf8(args[0], "label", b_label);
+    int v_v[2] = {0};
+    mrs::getVecI(args[1], "v", v_v, 2);
+    int v_v_min = (int)(0);
+    v_v_min = (int)mrs::getInt(args[2], "vMin");
+    int v_v_max = (int)(0);
+    v_v_max = (int)mrs::getInt(args[3], "vMax");
+    mrs::StrBuf<256> b_format;
+    const char* v_format = "%d";
+    if (nargin > 4 && !mxIsEmpty(args[4])) v_format = mrs::toUtf8(args[4], "format", b_format);
+    ImGuiSliderFlags v_flags = (ImGuiSliderFlags)(0);
+    if (nargin > 5) v_flags = (ImGuiSliderFlags)mrs::getFlags(args[5], "flags");
+    mrs::checkNumberFormat(v_format, "format", true);
+    if (mrs::failed()) return;
+    bool ret = ImGui::SliderInt2(v_label, v_v, v_v_min, v_v_max, v_format, v_flags);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+    if (nlhs > 1) plhs[1] = mrs::outVecI(v_v, 2);
+}
+
+static const char kSig_SliderInt3[] =
+    "[changed, v] = PsychImGui('SliderInt3', label, v, vMin, vMax [, format='%d'] [, flags=0])";
+static void h_SliderInt3(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 4 || nargin > 6) { mrs::usage("SliderInt3", kSig_SliderInt3); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_label;
+    const char* v_label = "";
+    v_label = mrs::toUtf8(args[0], "label", b_label);
+    int v_v[3] = {0};
+    mrs::getVecI(args[1], "v", v_v, 3);
+    int v_v_min = (int)(0);
+    v_v_min = (int)mrs::getInt(args[2], "vMin");
+    int v_v_max = (int)(0);
+    v_v_max = (int)mrs::getInt(args[3], "vMax");
+    mrs::StrBuf<256> b_format;
+    const char* v_format = "%d";
+    if (nargin > 4 && !mxIsEmpty(args[4])) v_format = mrs::toUtf8(args[4], "format", b_format);
+    ImGuiSliderFlags v_flags = (ImGuiSliderFlags)(0);
+    if (nargin > 5) v_flags = (ImGuiSliderFlags)mrs::getFlags(args[5], "flags");
+    mrs::checkNumberFormat(v_format, "format", true);
+    if (mrs::failed()) return;
+    bool ret = ImGui::SliderInt3(v_label, v_v, v_v_min, v_v_max, v_format, v_flags);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+    if (nlhs > 1) plhs[1] = mrs::outVecI(v_v, 3);
+}
+
+static const char kSig_SliderInt4[] =
+    "[changed, v] = PsychImGui('SliderInt4', label, v, vMin, vMax [, format='%d'] [, flags=0])";
+static void h_SliderInt4(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 4 || nargin > 6) { mrs::usage("SliderInt4", kSig_SliderInt4); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_label;
+    const char* v_label = "";
+    v_label = mrs::toUtf8(args[0], "label", b_label);
+    int v_v[4] = {0};
+    mrs::getVecI(args[1], "v", v_v, 4);
+    int v_v_min = (int)(0);
+    v_v_min = (int)mrs::getInt(args[2], "vMin");
+    int v_v_max = (int)(0);
+    v_v_max = (int)mrs::getInt(args[3], "vMax");
+    mrs::StrBuf<256> b_format;
+    const char* v_format = "%d";
+    if (nargin > 4 && !mxIsEmpty(args[4])) v_format = mrs::toUtf8(args[4], "format", b_format);
+    ImGuiSliderFlags v_flags = (ImGuiSliderFlags)(0);
+    if (nargin > 5) v_flags = (ImGuiSliderFlags)mrs::getFlags(args[5], "flags");
+    mrs::checkNumberFormat(v_format, "format", true);
+    if (mrs::failed()) return;
+    bool ret = ImGui::SliderInt4(v_label, v_v, v_v_min, v_v_max, v_format, v_flags);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+    if (nlhs > 1) plhs[1] = mrs::outVecI(v_v, 4);
 }
 
 static const char kSig_InputText[] =
@@ -1145,6 +1689,7 @@ static void h_InputFloat(int nlhs, mxArray** plhs, int nargin, const mxArray** a
     if (nargin > 4 && !mxIsEmpty(args[4])) v_format = mrs::toUtf8(args[4], "format", b_format);
     ImGuiInputTextFlags v_flags = (ImGuiInputTextFlags)(0);
     if (nargin > 5) v_flags = (ImGuiInputTextFlags)mrs::getFlags(args[5], "flags");
+    mrs::checkNumberFormat(v_format, "format", false);
     if (mrs::failed()) return;
     bool ret = ImGui::InputFloat(v_label, &v_v, v_step, v_step_fast, v_format, v_flags);
     if (nlhs > 0) plhs[0] = mrs::outBool(ret);
@@ -1190,10 +1735,131 @@ static void h_InputDouble(int nlhs, mxArray** plhs, int nargin, const mxArray** 
     if (nargin > 4 && !mxIsEmpty(args[4])) v_format = mrs::toUtf8(args[4], "format", b_format);
     ImGuiInputTextFlags v_flags = (ImGuiInputTextFlags)(0);
     if (nargin > 5) v_flags = (ImGuiInputTextFlags)mrs::getFlags(args[5], "flags");
+    mrs::checkNumberFormat(v_format, "format", false);
     if (mrs::failed()) return;
     bool ret = ImGui::InputDouble(v_label, &v_v, v_step, v_step_fast, v_format, v_flags);
     if (nlhs > 0) plhs[0] = mrs::outBool(ret);
     if (nlhs > 1) plhs[1] = mrs::outDouble((double)(v_v));
+}
+
+static const char kSig_InputFloat2[] =
+    "[changed, v] = PsychImGui('InputFloat2', label, v [, format='%.3f'] [, flags=0])";
+static void h_InputFloat2(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2 || nargin > 4) { mrs::usage("InputFloat2", kSig_InputFloat2); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_label;
+    const char* v_label = "";
+    v_label = mrs::toUtf8(args[0], "label", b_label);
+    float v_v[2] = {0};
+    mrs::getVecF(args[1], "v", v_v, 2);
+    mrs::StrBuf<256> b_format;
+    const char* v_format = "%.3f";
+    if (nargin > 2 && !mxIsEmpty(args[2])) v_format = mrs::toUtf8(args[2], "format", b_format);
+    ImGuiInputTextFlags v_flags = (ImGuiInputTextFlags)(0);
+    if (nargin > 3) v_flags = (ImGuiInputTextFlags)mrs::getFlags(args[3], "flags");
+    mrs::checkNumberFormat(v_format, "format", false);
+    if (mrs::failed()) return;
+    bool ret = ImGui::InputFloat2(v_label, v_v, v_format, v_flags);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+    if (nlhs > 1) plhs[1] = mrs::outVecF(v_v, 2);
+}
+
+static const char kSig_InputFloat3[] =
+    "[changed, v] = PsychImGui('InputFloat3', label, v [, format='%.3f'] [, flags=0])";
+static void h_InputFloat3(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2 || nargin > 4) { mrs::usage("InputFloat3", kSig_InputFloat3); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_label;
+    const char* v_label = "";
+    v_label = mrs::toUtf8(args[0], "label", b_label);
+    float v_v[3] = {0};
+    mrs::getVecF(args[1], "v", v_v, 3);
+    mrs::StrBuf<256> b_format;
+    const char* v_format = "%.3f";
+    if (nargin > 2 && !mxIsEmpty(args[2])) v_format = mrs::toUtf8(args[2], "format", b_format);
+    ImGuiInputTextFlags v_flags = (ImGuiInputTextFlags)(0);
+    if (nargin > 3) v_flags = (ImGuiInputTextFlags)mrs::getFlags(args[3], "flags");
+    mrs::checkNumberFormat(v_format, "format", false);
+    if (mrs::failed()) return;
+    bool ret = ImGui::InputFloat3(v_label, v_v, v_format, v_flags);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+    if (nlhs > 1) plhs[1] = mrs::outVecF(v_v, 3);
+}
+
+static const char kSig_InputFloat4[] =
+    "[changed, v] = PsychImGui('InputFloat4', label, v [, format='%.3f'] [, flags=0])";
+static void h_InputFloat4(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2 || nargin > 4) { mrs::usage("InputFloat4", kSig_InputFloat4); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_label;
+    const char* v_label = "";
+    v_label = mrs::toUtf8(args[0], "label", b_label);
+    float v_v[4] = {0};
+    mrs::getVecF(args[1], "v", v_v, 4);
+    mrs::StrBuf<256> b_format;
+    const char* v_format = "%.3f";
+    if (nargin > 2 && !mxIsEmpty(args[2])) v_format = mrs::toUtf8(args[2], "format", b_format);
+    ImGuiInputTextFlags v_flags = (ImGuiInputTextFlags)(0);
+    if (nargin > 3) v_flags = (ImGuiInputTextFlags)mrs::getFlags(args[3], "flags");
+    mrs::checkNumberFormat(v_format, "format", false);
+    if (mrs::failed()) return;
+    bool ret = ImGui::InputFloat4(v_label, v_v, v_format, v_flags);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+    if (nlhs > 1) plhs[1] = mrs::outVecF(v_v, 4);
+}
+
+static const char kSig_InputInt2[] =
+    "[changed, v] = PsychImGui('InputInt2', label, v [, flags=0])";
+static void h_InputInt2(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2 || nargin > 3) { mrs::usage("InputInt2", kSig_InputInt2); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_label;
+    const char* v_label = "";
+    v_label = mrs::toUtf8(args[0], "label", b_label);
+    int v_v[2] = {0};
+    mrs::getVecI(args[1], "v", v_v, 2);
+    ImGuiInputTextFlags v_flags = (ImGuiInputTextFlags)(0);
+    if (nargin > 2) v_flags = (ImGuiInputTextFlags)mrs::getFlags(args[2], "flags");
+    if (mrs::failed()) return;
+    bool ret = ImGui::InputInt2(v_label, v_v, v_flags);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+    if (nlhs > 1) plhs[1] = mrs::outVecI(v_v, 2);
+}
+
+static const char kSig_InputInt3[] =
+    "[changed, v] = PsychImGui('InputInt3', label, v [, flags=0])";
+static void h_InputInt3(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2 || nargin > 3) { mrs::usage("InputInt3", kSig_InputInt3); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_label;
+    const char* v_label = "";
+    v_label = mrs::toUtf8(args[0], "label", b_label);
+    int v_v[3] = {0};
+    mrs::getVecI(args[1], "v", v_v, 3);
+    ImGuiInputTextFlags v_flags = (ImGuiInputTextFlags)(0);
+    if (nargin > 2) v_flags = (ImGuiInputTextFlags)mrs::getFlags(args[2], "flags");
+    if (mrs::failed()) return;
+    bool ret = ImGui::InputInt3(v_label, v_v, v_flags);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+    if (nlhs > 1) plhs[1] = mrs::outVecI(v_v, 3);
+}
+
+static const char kSig_InputInt4[] =
+    "[changed, v] = PsychImGui('InputInt4', label, v [, flags=0])";
+static void h_InputInt4(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2 || nargin > 3) { mrs::usage("InputInt4", kSig_InputInt4); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_label;
+    const char* v_label = "";
+    v_label = mrs::toUtf8(args[0], "label", b_label);
+    int v_v[4] = {0};
+    mrs::getVecI(args[1], "v", v_v, 4);
+    ImGuiInputTextFlags v_flags = (ImGuiInputTextFlags)(0);
+    if (nargin > 2) v_flags = (ImGuiInputTextFlags)mrs::getFlags(args[2], "flags");
+    if (mrs::failed()) return;
+    bool ret = ImGui::InputInt4(v_label, v_v, v_flags);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+    if (nlhs > 1) plhs[1] = mrs::outVecI(v_v, 4);
 }
 
 static const char kSig_ColorEdit3[] =
@@ -1251,6 +1917,42 @@ static void h_ColorButton(int nlhs, mxArray** plhs, int nargin, const mxArray** 
     if (nlhs > 0) plhs[0] = mrs::outBool(ret);
 }
 
+static const char kSig_ColorPicker3[] =
+    "[changed, col] = PsychImGui('ColorPicker3', label, col [, flags=0])";
+static void h_ColorPicker3(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2 || nargin > 3) { mrs::usage("ColorPicker3", kSig_ColorPicker3); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_label;
+    const char* v_label = "";
+    v_label = mrs::toUtf8(args[0], "label", b_label);
+    float v_col[3] = {0};
+    mrs::getVecF(args[1], "col", v_col, 3);
+    ImGuiColorEditFlags v_flags = (ImGuiColorEditFlags)(0);
+    if (nargin > 2) v_flags = (ImGuiColorEditFlags)mrs::getFlags(args[2], "flags");
+    if (mrs::failed()) return;
+    bool ret = ImGui::ColorPicker3(v_label, v_col, v_flags);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+    if (nlhs > 1) plhs[1] = mrs::outVecF(v_col, 3);
+}
+
+static const char kSig_ColorPicker4[] =
+    "[changed, col] = PsychImGui('ColorPicker4', label, col [, flags=0])";
+static void h_ColorPicker4(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2 || nargin > 3) { mrs::usage("ColorPicker4", kSig_ColorPicker4); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_label;
+    const char* v_label = "";
+    v_label = mrs::toUtf8(args[0], "label", b_label);
+    float v_col[4] = {0};
+    mrs::getVecF(args[1], "col", v_col, 4);
+    ImGuiColorEditFlags v_flags = (ImGuiColorEditFlags)(0);
+    if (nargin > 2) v_flags = (ImGuiColorEditFlags)mrs::getFlags(args[2], "flags");
+    if (mrs::failed()) return;
+    bool ret = ImGui::ColorPicker4(v_label, v_col, v_flags, NULL);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+    if (nlhs > 1) plhs[1] = mrs::outVecF(v_col, 4);
+}
+
 static const char kSig_TreeNode[] =
     "open = PsychImGui('TreeNode', label)";
 static void h_TreeNode(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
@@ -1299,6 +2001,39 @@ static void h_SetNextItemOpen(int nlhs, mxArray** plhs, int nargin, const mxArra
     if (nargin > 1) v_cond = (ImGuiCond)mrs::getFlags(args[1], "cond");
     if (mrs::failed()) return;
     ImGui::SetNextItemOpen(v_is_open, v_cond);
+}
+
+static const char kSig_TreeNodeEx[] =
+    "open = PsychImGui('TreeNodeEx', label [, flags=0])";
+static void h_TreeNodeEx(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 2) { mrs::usage("TreeNodeEx", kSig_TreeNodeEx); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_label;
+    const char* v_label = "";
+    v_label = mrs::toUtf8(args[0], "label", b_label);
+    ImGuiTreeNodeFlags v_flags = (ImGuiTreeNodeFlags)(0);
+    if (nargin > 1) v_flags = (ImGuiTreeNodeFlags)mrs::getFlags(args[1], "flags");
+    if (mrs::failed()) return;
+    bool ret = ImGui::TreeNodeEx(v_label, v_flags);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
+static const char kSig_CollapsingHeaderClosable[] =
+    "[open, visible] = PsychImGui('CollapsingHeaderClosable', label, visible [, flags=0])";
+static void h_CollapsingHeaderClosable(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2 || nargin > 3) { mrs::usage("CollapsingHeaderClosable", kSig_CollapsingHeaderClosable); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_label;
+    const char* v_label = "";
+    v_label = mrs::toUtf8(args[0], "label", b_label);
+    bool v_p_visible = false;
+    v_p_visible = mrs::getBool(args[1], "visible");
+    ImGuiTreeNodeFlags v_flags = (ImGuiTreeNodeFlags)(0);
+    if (nargin > 2) v_flags = (ImGuiTreeNodeFlags)mrs::getFlags(args[2], "flags");
+    if (mrs::failed()) return;
+    bool ret = ImGui::CollapsingHeader(v_label, &v_p_visible, v_flags);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+    if (nlhs > 1) plhs[1] = mrs::outBool(v_p_visible);
 }
 
 static const char kSig_PlotLines[] =
@@ -1408,6 +2143,25 @@ static void h_MenuItem(int nlhs, mxArray** plhs, int nargin, const mxArray** arg
     if (mrs::failed()) return;
     bool ret = ImGui::MenuItem(v_label, v_shortcut, v_selected, v_enabled);
     if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
+static const char kSig_BeginMainMenuBar[] =
+    "open = PsychImGui('BeginMainMenuBar')";
+static void h_BeginMainMenuBar(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("BeginMainMenuBar", kSig_BeginMainMenuBar); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    bool ret = ImGui::BeginMainMenuBar();
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
+static const char kSig_EndMainMenuBar[] =
+    "PsychImGui('EndMainMenuBar')";
+static void h_EndMainMenuBar(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("EndMainMenuBar", kSig_EndMainMenuBar); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    ImGui::EndMainMenuBar();
 }
 
 static const char kSig_BeginTooltip[] =
@@ -1520,6 +2274,91 @@ static void h_CloseCurrentPopup(int nlhs, mxArray** plhs, int nargin, const mxAr
     ImGui::CloseCurrentPopup();
 }
 
+static const char kSig_BeginItemTooltip[] =
+    "open = PsychImGui('BeginItemTooltip')";
+static void h_BeginItemTooltip(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("BeginItemTooltip", kSig_BeginItemTooltip); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    bool ret = ImGui::BeginItemTooltip();
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
+static const char kSig_BeginPopupContextItem[] =
+    "open = PsychImGui('BeginPopupContextItem' [, strId=[]] [, popupFlags=0])";
+static void h_BeginPopupContextItem(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 0 || nargin > 2) { mrs::usage("BeginPopupContextItem", kSig_BeginPopupContextItem); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_str_id;
+    const char* v_str_id = NULL;
+    if (nargin > 0 && !mxIsEmpty(args[0])) v_str_id = mrs::toUtf8(args[0], "strId", b_str_id);
+    ImGuiPopupFlags v_popup_flags = (ImGuiPopupFlags)(0);
+    if (nargin > 1) v_popup_flags = (ImGuiPopupFlags)mrs::getFlags(args[1], "popupFlags");
+    if (mrs::failed()) return;
+    bool ret = ImGui::BeginPopupContextItem(v_str_id, v_popup_flags);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
+static const char kSig_BeginPopupContextWindow[] =
+    "open = PsychImGui('BeginPopupContextWindow' [, strId=[]] [, popupFlags=0])";
+static void h_BeginPopupContextWindow(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 0 || nargin > 2) { mrs::usage("BeginPopupContextWindow", kSig_BeginPopupContextWindow); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_str_id;
+    const char* v_str_id = NULL;
+    if (nargin > 0 && !mxIsEmpty(args[0])) v_str_id = mrs::toUtf8(args[0], "strId", b_str_id);
+    ImGuiPopupFlags v_popup_flags = (ImGuiPopupFlags)(0);
+    if (nargin > 1) v_popup_flags = (ImGuiPopupFlags)mrs::getFlags(args[1], "popupFlags");
+    if (mrs::failed()) return;
+    bool ret = ImGui::BeginPopupContextWindow(v_str_id, v_popup_flags);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
+static const char kSig_BeginPopupContextVoid[] =
+    "open = PsychImGui('BeginPopupContextVoid' [, strId=[]] [, popupFlags=0])";
+static void h_BeginPopupContextVoid(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 0 || nargin > 2) { mrs::usage("BeginPopupContextVoid", kSig_BeginPopupContextVoid); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_str_id;
+    const char* v_str_id = NULL;
+    if (nargin > 0 && !mxIsEmpty(args[0])) v_str_id = mrs::toUtf8(args[0], "strId", b_str_id);
+    ImGuiPopupFlags v_popup_flags = (ImGuiPopupFlags)(0);
+    if (nargin > 1) v_popup_flags = (ImGuiPopupFlags)mrs::getFlags(args[1], "popupFlags");
+    if (mrs::failed()) return;
+    bool ret = ImGui::BeginPopupContextVoid(v_str_id, v_popup_flags);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
+static const char kSig_OpenPopupOnItemClick[] =
+    "ret = PsychImGui('OpenPopupOnItemClick' [, strId=[]] [, popupFlags=0])";
+static void h_OpenPopupOnItemClick(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 0 || nargin > 2) { mrs::usage("OpenPopupOnItemClick", kSig_OpenPopupOnItemClick); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_str_id;
+    const char* v_str_id = NULL;
+    if (nargin > 0 && !mxIsEmpty(args[0])) v_str_id = mrs::toUtf8(args[0], "strId", b_str_id);
+    ImGuiPopupFlags v_popup_flags = (ImGuiPopupFlags)(0);
+    if (nargin > 1) v_popup_flags = (ImGuiPopupFlags)mrs::getFlags(args[1], "popupFlags");
+    if (mrs::failed()) return;
+    bool ret = ImGui::OpenPopupOnItemClick(v_str_id, v_popup_flags);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
+static const char kSig_IsPopupOpen[] =
+    "ret = PsychImGui('IsPopupOpen', strId [, flags=0])";
+static void h_IsPopupOpen(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 2) { mrs::usage("IsPopupOpen", kSig_IsPopupOpen); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_str_id;
+    const char* v_str_id = "";
+    v_str_id = mrs::toUtf8(args[0], "strId", b_str_id);
+    ImGuiPopupFlags v_flags = (ImGuiPopupFlags)(0);
+    if (nargin > 1) v_flags = (ImGuiPopupFlags)mrs::getFlags(args[1], "flags");
+    if (mrs::failed()) return;
+    bool ret = ImGui::IsPopupOpen(v_str_id, v_flags);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
 static const char kSig_BeginTabBar[] =
     "open = PsychImGui('BeginTabBar', strId [, flags=0])";
 static void h_BeginTabBar(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
@@ -1572,6 +2411,21 @@ static void h_EndTabItem(int nlhs, mxArray** plhs, int nargin, const mxArray** a
     ImGui::EndTabItem();
 }
 
+static const char kSig_TabItemButton[] =
+    "pressed = PsychImGui('TabItemButton', label [, flags=0])";
+static void h_TabItemButton(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 2) { mrs::usage("TabItemButton", kSig_TabItemButton); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_label;
+    const char* v_label = "";
+    v_label = mrs::toUtf8(args[0], "label", b_label);
+    ImGuiTabItemFlags v_flags = (ImGuiTabItemFlags)(0);
+    if (nargin > 1) v_flags = (ImGuiTabItemFlags)mrs::getFlags(args[1], "flags");
+    if (mrs::failed()) return;
+    bool ret = ImGui::TabItemButton(v_label, v_flags);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
 static const char kSig_IsItemHovered[] =
     "ret = PsychImGui('IsItemHovered' [, flags=0])";
 static void h_IsItemHovered(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
@@ -1600,7 +2454,7 @@ static void h_IsItemClicked(int nlhs, mxArray** plhs, int nargin, const mxArray*
     if (nargin < 0 || nargin > 1) { mrs::usage("IsItemClicked", kSig_IsItemClicked); return; }
     (void)nlhs; (void)plhs; (void)args;
     ImGuiMouseButton v_mouse_button = (ImGuiMouseButton)(0);
-    if (nargin > 0) v_mouse_button = (ImGuiMouseButton)mrs::getFlags(args[0], "mouseButton");
+    if (nargin > 0) v_mouse_button = (ImGuiMouseButton)mrs::getEnumRanged(args[0], "mouseButton", 0, 4);
     if (mrs::failed()) return;
     bool ret = ImGui::IsItemClicked(v_mouse_button);
     if (nlhs > 0) plhs[0] = mrs::outBool(ret);
@@ -1636,13 +2490,73 @@ static void h_IsAnyItemActive(int nlhs, mxArray** plhs, int nargin, const mxArra
     if (nlhs > 0) plhs[0] = mrs::outBool(ret);
 }
 
+static const char kSig_IsItemActivated[] =
+    "ret = PsychImGui('IsItemActivated')";
+static void h_IsItemActivated(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("IsItemActivated", kSig_IsItemActivated); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    bool ret = ImGui::IsItemActivated();
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
+static const char kSig_IsItemDeactivated[] =
+    "ret = PsychImGui('IsItemDeactivated')";
+static void h_IsItemDeactivated(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("IsItemDeactivated", kSig_IsItemDeactivated); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    bool ret = ImGui::IsItemDeactivated();
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
+static const char kSig_IsItemFocused[] =
+    "ret = PsychImGui('IsItemFocused')";
+static void h_IsItemFocused(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("IsItemFocused", kSig_IsItemFocused); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    bool ret = ImGui::IsItemFocused();
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
+static const char kSig_IsItemVisible[] =
+    "ret = PsychImGui('IsItemVisible')";
+static void h_IsItemVisible(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("IsItemVisible", kSig_IsItemVisible); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    bool ret = ImGui::IsItemVisible();
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
+static const char kSig_IsItemToggledOpen[] =
+    "ret = PsychImGui('IsItemToggledOpen')";
+static void h_IsItemToggledOpen(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("IsItemToggledOpen", kSig_IsItemToggledOpen); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    bool ret = ImGui::IsItemToggledOpen();
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
+static const char kSig_IsAnyItemHovered[] =
+    "ret = PsychImGui('IsAnyItemHovered')";
+static void h_IsAnyItemHovered(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("IsAnyItemHovered", kSig_IsAnyItemHovered); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    bool ret = ImGui::IsAnyItemHovered();
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
 static const char kSig_IsMouseClicked[] =
     "ret = PsychImGui('IsMouseClicked', button [, repeat=false])";
 static void h_IsMouseClicked(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
     if (nargin < 1 || nargin > 2) { mrs::usage("IsMouseClicked", kSig_IsMouseClicked); return; }
     (void)nlhs; (void)plhs; (void)args;
     ImGuiMouseButton v_button = (ImGuiMouseButton)(0);
-    v_button = (ImGuiMouseButton)mrs::getFlags(args[0], "button");
+    v_button = (ImGuiMouseButton)mrs::getEnumRanged(args[0], "button", 0, 4);
     bool v_repeat = false;
     if (nargin > 1) v_repeat = mrs::getBool(args[1], "repeat");
     if (mrs::failed()) return;
@@ -1656,7 +2570,7 @@ static void h_IsMouseDown(int nlhs, mxArray** plhs, int nargin, const mxArray** 
     if (nargin < 1 || nargin > 1) { mrs::usage("IsMouseDown", kSig_IsMouseDown); return; }
     (void)nlhs; (void)plhs; (void)args;
     ImGuiMouseButton v_button = (ImGuiMouseButton)(0);
-    v_button = (ImGuiMouseButton)mrs::getFlags(args[0], "button");
+    v_button = (ImGuiMouseButton)mrs::getEnumRanged(args[0], "button", 0, 4);
     if (mrs::failed()) return;
     bool ret = ImGui::IsMouseDown(v_button);
     if (nlhs > 0) plhs[0] = mrs::outBool(ret);
@@ -1668,7 +2582,7 @@ static void h_IsKeyPressed(int nlhs, mxArray** plhs, int nargin, const mxArray**
     if (nargin < 1 || nargin > 2) { mrs::usage("IsKeyPressed", kSig_IsKeyPressed); return; }
     (void)nlhs; (void)plhs; (void)args;
     ImGuiKey v_key = (ImGuiKey)(0);
-    v_key = (ImGuiKey)mrs::getFlags(args[0], "key");
+    v_key = mrs::getKey(args[0], "key");
     bool v_repeat = true;
     if (nargin > 1) v_repeat = mrs::getBool(args[1], "repeat");
     if (mrs::failed()) return;
@@ -1682,7 +2596,7 @@ static void h_IsKeyDown(int nlhs, mxArray** plhs, int nargin, const mxArray** ar
     if (nargin < 1 || nargin > 1) { mrs::usage("IsKeyDown", kSig_IsKeyDown); return; }
     (void)nlhs; (void)plhs; (void)args;
     ImGuiKey v_key = (ImGuiKey)(0);
-    v_key = (ImGuiKey)mrs::getFlags(args[0], "key");
+    v_key = mrs::getKey(args[0], "key");
     if (mrs::failed()) return;
     bool ret = ImGui::IsKeyDown(v_key);
     if (nlhs > 0) plhs[0] = mrs::outBool(ret);
@@ -1698,13 +2612,138 @@ static void h_GetMousePos(int nlhs, mxArray** plhs, int nargin, const mxArray** 
     if (nlhs > 0) { double t[2] = {(double)ret.x, (double)ret.y}; plhs[0] = mrs::outVec(t, 2); }
 }
 
+static const char kSig_IsMouseReleased[] =
+    "ret = PsychImGui('IsMouseReleased', button)";
+static void h_IsMouseReleased(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 1) { mrs::usage("IsMouseReleased", kSig_IsMouseReleased); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    ImGuiMouseButton v_button = (ImGuiMouseButton)(0);
+    v_button = (ImGuiMouseButton)mrs::getEnumRanged(args[0], "button", 0, 4);
+    if (mrs::failed()) return;
+    bool ret = ImGui::IsMouseReleased(v_button);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
+static const char kSig_IsMouseDoubleClicked[] =
+    "ret = PsychImGui('IsMouseDoubleClicked', button)";
+static void h_IsMouseDoubleClicked(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 1) { mrs::usage("IsMouseDoubleClicked", kSig_IsMouseDoubleClicked); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    ImGuiMouseButton v_button = (ImGuiMouseButton)(0);
+    v_button = (ImGuiMouseButton)mrs::getEnumRanged(args[0], "button", 0, 4);
+    if (mrs::failed()) return;
+    bool ret = ImGui::IsMouseDoubleClicked(v_button);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
+static const char kSig_IsMouseDragging[] =
+    "ret = PsychImGui('IsMouseDragging', button [, lockThreshold=-1.0])";
+static void h_IsMouseDragging(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 2) { mrs::usage("IsMouseDragging", kSig_IsMouseDragging); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    ImGuiMouseButton v_button = (ImGuiMouseButton)(0);
+    v_button = (ImGuiMouseButton)mrs::getEnumRanged(args[0], "button", 0, 4);
+    float v_lock_threshold = (float)(-1.0f);
+    if (nargin > 1) v_lock_threshold = (float)mrs::getScalar(args[1], "lockThreshold");
+    if (mrs::failed()) return;
+    bool ret = ImGui::IsMouseDragging(v_button, v_lock_threshold);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
+static const char kSig_GetMouseDragDelta[] =
+    "ret = PsychImGui('GetMouseDragDelta' [, button=0] [, lockThreshold=-1.0])";
+static void h_GetMouseDragDelta(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 0 || nargin > 2) { mrs::usage("GetMouseDragDelta", kSig_GetMouseDragDelta); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    ImGuiMouseButton v_button = (ImGuiMouseButton)(0);
+    if (nargin > 0) v_button = (ImGuiMouseButton)mrs::getEnumRanged(args[0], "button", 0, 4);
+    float v_lock_threshold = (float)(-1.0f);
+    if (nargin > 1) v_lock_threshold = (float)mrs::getScalar(args[1], "lockThreshold");
+    if (mrs::failed()) return;
+    ImVec2 ret = ImGui::GetMouseDragDelta(v_button, v_lock_threshold);
+    if (nlhs > 0) { double t[2] = {(double)ret.x, (double)ret.y}; plhs[0] = mrs::outVec(t, 2); }
+}
+
+static const char kSig_ResetMouseDragDelta[] =
+    "PsychImGui('ResetMouseDragDelta' [, button=0])";
+static void h_ResetMouseDragDelta(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 0 || nargin > 1) { mrs::usage("ResetMouseDragDelta", kSig_ResetMouseDragDelta); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    ImGuiMouseButton v_button = (ImGuiMouseButton)(0);
+    if (nargin > 0) v_button = (ImGuiMouseButton)mrs::getEnumRanged(args[0], "button", 0, 4);
+    if (mrs::failed()) return;
+    ImGui::ResetMouseDragDelta(v_button);
+}
+
+static const char kSig_GetMouseClickedCount[] =
+    "ret = PsychImGui('GetMouseClickedCount', button)";
+static void h_GetMouseClickedCount(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 1) { mrs::usage("GetMouseClickedCount", kSig_GetMouseClickedCount); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    ImGuiMouseButton v_button = (ImGuiMouseButton)(0);
+    v_button = (ImGuiMouseButton)mrs::getEnumRanged(args[0], "button", 0, 4);
+    if (mrs::failed()) return;
+    int ret = ImGui::GetMouseClickedCount(v_button);
+    if (nlhs > 0) plhs[0] = mrs::outDouble((double)(ret));
+}
+
+static const char kSig_IsKeyReleased[] =
+    "ret = PsychImGui('IsKeyReleased', key)";
+static void h_IsKeyReleased(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 1) { mrs::usage("IsKeyReleased", kSig_IsKeyReleased); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    ImGuiKey v_key = (ImGuiKey)(0);
+    v_key = mrs::getKey(args[0], "key");
+    if (mrs::failed()) return;
+    bool ret = ImGui::IsKeyReleased(v_key);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
+static const char kSig_IsKeyChordPressed[] =
+    "ret = PsychImGui('IsKeyChordPressed', keyChord)";
+static void h_IsKeyChordPressed(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 1) { mrs::usage("IsKeyChordPressed", kSig_IsKeyChordPressed); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    ImGuiKeyChord v_key_chord = (ImGuiKeyChord)(0);
+    v_key_chord = mrs::getKeyChord(args[0], "keyChord");
+    if (mrs::failed()) return;
+    bool ret = ImGui::IsKeyChordPressed(v_key_chord);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
+static const char kSig_Shortcut[] =
+    "ret = PsychImGui('Shortcut', keyChord [, flags=0])";
+static void h_Shortcut(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 2) { mrs::usage("Shortcut", kSig_Shortcut); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    ImGuiKeyChord v_key_chord = (ImGuiKeyChord)(0);
+    v_key_chord = mrs::getKeyChord(args[0], "keyChord");
+    ImGuiInputFlags v_flags = (ImGuiInputFlags)(0);
+    if (nargin > 1) v_flags = (ImGuiInputFlags)mrs::getFlags(args[1], "flags");
+    if (mrs::failed()) return;
+    bool ret = ImGui::Shortcut(v_key_chord, v_flags);
+    if (nlhs > 0) plhs[0] = mrs::outBool(ret);
+}
+
+static const char kSig_GetKeyName[] =
+    "name = PsychImGui('GetKeyName', key)";
+static void h_GetKeyName(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 1) { mrs::usage("GetKeyName", kSig_GetKeyName); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    ImGuiKey v_key = (ImGuiKey)(0);
+    v_key = mrs::getKey(args[0], "key");
+    if (mrs::failed()) return;
+    const char* ret = ImGui::GetKeyName(v_key);
+    if (nlhs > 0) plhs[0] = mrs::fromUtf8(ret);
+}
+
 static const char kSig_PushStyleColor[] =
     "PsychImGui('PushStyleColor', idx, col)";
 static void h_PushStyleColor(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
     if (nargin < 2 || nargin > 2) { mrs::usage("PushStyleColor", kSig_PushStyleColor); return; }
     (void)nlhs; (void)plhs; (void)args;
     ImGuiCol v_idx = (ImGuiCol)(0);
-    v_idx = (ImGuiCol)mrs::getFlags(args[0], "idx");
+    v_idx = (ImGuiCol)mrs::getEnumRanged(args[0], "idx", 0, 62);
     ImVec4 v_col = ImVec4(0,0,0,1);
     { double t[4] = {0, 0, 0, 0}; mrs::getVec(args[1], "col", t, 4); v_col = ImVec4((float)t[0], (float)t[1], (float)t[2], (float)t[3]); }
     if (mrs::failed()) return;
@@ -1728,7 +2767,7 @@ static void h_PushStyleVar(int nlhs, mxArray** plhs, int nargin, const mxArray**
     if (nargin < 2 || nargin > 2) { mrs::usage("PushStyleVar", kSig_PushStyleVar); return; }
     (void)nlhs; (void)plhs; (void)args;
     ImGuiStyleVar v_idx = (ImGuiStyleVar)(0);
-    v_idx = (ImGuiStyleVar)mrs::getFlags(args[0], "idx");
+    v_idx = (ImGuiStyleVar)mrs::getEnumRanged(args[0], "idx", 0, 44);
     float v_val = (float)(0);
     v_val = (float)mrs::getScalar(args[1], "val");
     if (mrs::failed()) return;
@@ -1741,7 +2780,7 @@ static void h_PushStyleVarVec2(int nlhs, mxArray** plhs, int nargin, const mxArr
     if (nargin < 2 || nargin > 2) { mrs::usage("PushStyleVarVec2", kSig_PushStyleVarVec2); return; }
     (void)nlhs; (void)plhs; (void)args;
     ImGuiStyleVar v_idx = (ImGuiStyleVar)(0);
-    v_idx = (ImGuiStyleVar)mrs::getFlags(args[0], "idx");
+    v_idx = (ImGuiStyleVar)mrs::getEnumRanged(args[0], "idx", 0, 44);
     ImVec2 v_val = ImVec2(0,0);
     { double t[2] = {0, 0}; mrs::getVec(args[1], "val", t, 2); v_val = ImVec2((float)t[0], (float)t[1]); }
     if (mrs::failed()) return;
@@ -1779,6 +2818,32 @@ static void h_EndDisabled(int nlhs, mxArray** plhs, int nargin, const mxArray** 
     ImGui::EndDisabled();
 }
 
+static const char kSig_PushStyleVarX[] =
+    "PsychImGui('PushStyleVarX', idx, valX)";
+static void h_PushStyleVarX(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2 || nargin > 2) { mrs::usage("PushStyleVarX", kSig_PushStyleVarX); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    ImGuiStyleVar v_idx = (ImGuiStyleVar)(0);
+    v_idx = (ImGuiStyleVar)mrs::getEnumRanged(args[0], "idx", 0, 44);
+    float v_val_x = (float)(0);
+    v_val_x = (float)mrs::getScalar(args[1], "valX");
+    if (mrs::failed()) return;
+    ImGui::PushStyleVarX(v_idx, v_val_x);
+}
+
+static const char kSig_PushStyleVarY[] =
+    "PsychImGui('PushStyleVarY', idx, valY)";
+static void h_PushStyleVarY(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2 || nargin > 2) { mrs::usage("PushStyleVarY", kSig_PushStyleVarY); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    ImGuiStyleVar v_idx = (ImGuiStyleVar)(0);
+    v_idx = (ImGuiStyleVar)mrs::getEnumRanged(args[0], "idx", 0, 44);
+    float v_val_y = (float)(0);
+    v_val_y = (float)mrs::getScalar(args[1], "valY");
+    if (mrs::failed()) return;
+    ImGui::PushStyleVarY(v_idx, v_val_y);
+}
+
 static const char kSig_SetKeyboardFocusHere[] =
     "PsychImGui('SetKeyboardFocusHere' [, offset=0])";
 static void h_SetKeyboardFocusHere(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
@@ -1810,6 +2875,105 @@ static void h_SetItemDefaultFocus(int nlhs, mxArray** plhs, int nargin, const mx
     ImGui::SetItemDefaultFocus();
 }
 
+static const char kSig_GetScrollX[] =
+    "ret = PsychImGui('GetScrollX')";
+static void h_GetScrollX(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("GetScrollX", kSig_GetScrollX); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    float ret = ImGui::GetScrollX();
+    if (nlhs > 0) plhs[0] = mrs::outDouble((double)(ret));
+}
+
+static const char kSig_GetScrollY[] =
+    "ret = PsychImGui('GetScrollY')";
+static void h_GetScrollY(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("GetScrollY", kSig_GetScrollY); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    float ret = ImGui::GetScrollY();
+    if (nlhs > 0) plhs[0] = mrs::outDouble((double)(ret));
+}
+
+static const char kSig_SetScrollX[] =
+    "PsychImGui('SetScrollX', scrollX)";
+static void h_SetScrollX(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 1) { mrs::usage("SetScrollX", kSig_SetScrollX); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    float v_scroll_x = (float)(0);
+    v_scroll_x = (float)mrs::getScalar(args[0], "scrollX");
+    if (mrs::failed()) return;
+    ImGui::SetScrollX(v_scroll_x);
+}
+
+static const char kSig_SetScrollY[] =
+    "PsychImGui('SetScrollY', scrollY)";
+static void h_SetScrollY(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 1) { mrs::usage("SetScrollY", kSig_SetScrollY); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    float v_scroll_y = (float)(0);
+    v_scroll_y = (float)mrs::getScalar(args[0], "scrollY");
+    if (mrs::failed()) return;
+    ImGui::SetScrollY(v_scroll_y);
+}
+
+static const char kSig_GetScrollMaxX[] =
+    "ret = PsychImGui('GetScrollMaxX')";
+static void h_GetScrollMaxX(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("GetScrollMaxX", kSig_GetScrollMaxX); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    float ret = ImGui::GetScrollMaxX();
+    if (nlhs > 0) plhs[0] = mrs::outDouble((double)(ret));
+}
+
+static const char kSig_GetScrollMaxY[] =
+    "ret = PsychImGui('GetScrollMaxY')";
+static void h_GetScrollMaxY(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("GetScrollMaxY", kSig_GetScrollMaxY); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    float ret = ImGui::GetScrollMaxY();
+    if (nlhs > 0) plhs[0] = mrs::outDouble((double)(ret));
+}
+
+static const char kSig_SetScrollHereX[] =
+    "PsychImGui('SetScrollHereX' [, centerXRatio=0.5])";
+static void h_SetScrollHereX(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 0 || nargin > 1) { mrs::usage("SetScrollHereX", kSig_SetScrollHereX); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    float v_center_x_ratio = (float)(0.5f);
+    if (nargin > 0) v_center_x_ratio = (float)mrs::getScalar(args[0], "centerXRatio");
+    if (mrs::failed()) return;
+    ImGui::SetScrollHereX(v_center_x_ratio);
+}
+
+static const char kSig_SetScrollFromPosX[] =
+    "PsychImGui('SetScrollFromPosX', localX [, centerXRatio=0.5])";
+static void h_SetScrollFromPosX(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 2) { mrs::usage("SetScrollFromPosX", kSig_SetScrollFromPosX); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    float v_local_x = (float)(0);
+    v_local_x = (float)mrs::getScalar(args[0], "localX");
+    float v_center_x_ratio = (float)(0.5f);
+    if (nargin > 1) v_center_x_ratio = (float)mrs::getScalar(args[1], "centerXRatio");
+    if (mrs::failed()) return;
+    ImGui::SetScrollFromPosX(v_local_x, v_center_x_ratio);
+}
+
+static const char kSig_SetScrollFromPosY[] =
+    "PsychImGui('SetScrollFromPosY', localY [, centerYRatio=0.5])";
+static void h_SetScrollFromPosY(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 2) { mrs::usage("SetScrollFromPosY", kSig_SetScrollFromPosY); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    float v_local_y = (float)(0);
+    v_local_y = (float)mrs::getScalar(args[0], "localY");
+    float v_center_y_ratio = (float)(0.5f);
+    if (nargin > 1) v_center_y_ratio = (float)mrs::getScalar(args[1], "centerYRatio");
+    if (mrs::failed()) return;
+    ImGui::SetScrollFromPosY(v_local_y, v_center_y_ratio);
+}
+
 static const char kSig_GetFrameCount[] =
     "ret = PsychImGui('GetFrameCount')";
 static void h_GetFrameCount(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
@@ -1828,6 +2992,63 @@ static void h_GetTime(int nlhs, mxArray** plhs, int nargin, const mxArray** args
     if (mrs::failed()) return;
     double ret = ImGui::GetTime();
     if (nlhs > 0) plhs[0] = mrs::outDouble((double)(ret));
+}
+
+static const char kSig_SaveIniSettingsToMemory[] =
+    "ini = PsychImGui('SaveIniSettingsToMemory')";
+static void h_SaveIniSettingsToMemory(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("SaveIniSettingsToMemory", kSig_SaveIniSettingsToMemory); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    const char* ret = ImGui::SaveIniSettingsToMemory(NULL);
+    if (nlhs > 0) plhs[0] = mrs::fromUtf8(ret);
+}
+
+static const char kSig_LoadIniSettingsFromMemory[] =
+    "PsychImGui('LoadIniSettingsFromMemory', iniData)";
+static void h_LoadIniSettingsFromMemory(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 1) { mrs::usage("LoadIniSettingsFromMemory", kSig_LoadIniSettingsFromMemory); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    mrs::StrBuf<256> b_ini_data;
+    const char* v_ini_data = "";
+    v_ini_data = mrs::toUtf8(args[0], "iniData", b_ini_data);
+    if (mrs::failed()) return;
+    ImGui::LoadIniSettingsFromMemory(v_ini_data, 0);
+}
+
+static const char kSig_ShowStyleEditor[] =
+    "PsychImGui('ShowStyleEditor')";
+static void h_ShowStyleEditor(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("ShowStyleEditor", kSig_ShowStyleEditor); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    ImGui::ShowStyleEditor(NULL);
+}
+
+static const char kSig_ShowIDStackToolWindow[] =
+    "open = PsychImGui('ShowIDStackToolWindow' [, open=[]])";
+static void h_ShowIDStackToolWindow(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 0 || nargin > 1) { mrs::usage("ShowIDStackToolWindow", kSig_ShowIDStackToolWindow); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    bool v_p_open = false;
+    bool has_p_open = (nargin > 0) && !mxIsEmpty(args[0]);
+    if (has_p_open) v_p_open = mrs::getBool(args[0], "open");
+    if (mrs::failed()) return;
+    ImGui::ShowIDStackToolWindow(has_p_open ? &v_p_open : NULL);
+    if (nlhs > 0) plhs[0] = mrs::outBool(v_p_open);
+}
+
+static const char kSig_ShowDebugLogWindow[] =
+    "open = PsychImGui('ShowDebugLogWindow' [, open=[]])";
+static void h_ShowDebugLogWindow(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 0 || nargin > 1) { mrs::usage("ShowDebugLogWindow", kSig_ShowDebugLogWindow); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    bool v_p_open = false;
+    bool has_p_open = (nargin > 0) && !mxIsEmpty(args[0]);
+    if (has_p_open) v_p_open = mrs::getBool(args[0], "open");
+    if (mrs::failed()) return;
+    ImGui::ShowDebugLogWindow(has_p_open ? &v_p_open : NULL);
+    if (nlhs > 0) plhs[0] = mrs::outBool(v_p_open);
 }
 
 static const char kSig_BeginTable[] =
@@ -1991,13 +3212,82 @@ static void h_TableSetBgColor(int nlhs, mxArray** plhs, int nargin, const mxArra
     ImGui::TableSetBgColor(v_target, v_color, v_column_n);
 }
 
+static const char kSig_TableGetRowIndex[] =
+    "ret = PsychImGui('TableGetRowIndex')";
+static void h_TableGetRowIndex(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("TableGetRowIndex", kSig_TableGetRowIndex); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    int ret = ImGui::TableGetRowIndex();
+    if (nlhs > 0) plhs[0] = mrs::outDouble((double)(ret));
+}
+
+static const char kSig_TableGetHoveredColumn[] =
+    "ret = PsychImGui('TableGetHoveredColumn')";
+static void h_TableGetHoveredColumn(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("TableGetHoveredColumn", kSig_TableGetHoveredColumn); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    int ret = ImGui::TableGetHoveredColumn();
+    if (nlhs > 0) plhs[0] = mrs::outDouble((double)(ret));
+}
+
+static const char kSig_TableGetColumnFlags[] =
+    "ret = PsychImGui('TableGetColumnFlags' [, columnN=-1])";
+static void h_TableGetColumnFlags(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 0 || nargin > 1) { mrs::usage("TableGetColumnFlags", kSig_TableGetColumnFlags); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int v_column_n = (int)(-1);
+    if (nargin > 0) v_column_n = (int)mrs::getInt(args[0], "columnN");
+    if (mrs::failed()) return;
+    if (!mrs::checkTableColumn(v_column_n, "TableGetColumnFlags")) return;
+    ImGuiTableColumnFlags ret = ImGui::TableGetColumnFlags(v_column_n);
+    if (nlhs > 0) plhs[0] = mrs::outDouble((double)(ret));
+}
+
+static const char kSig_TableGetColumnName[] =
+    "ret = PsychImGui('TableGetColumnName' [, columnN=-1])";
+static void h_TableGetColumnName(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 0 || nargin > 1) { mrs::usage("TableGetColumnName", kSig_TableGetColumnName); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int v_column_n = (int)(-1);
+    if (nargin > 0) v_column_n = (int)mrs::getInt(args[0], "columnN");
+    if (mrs::failed()) return;
+    if (!mrs::checkTableColumn(v_column_n, "TableGetColumnName")) return;
+    const char* ret = ImGui::TableGetColumnName(v_column_n);
+    if (nlhs > 0) plhs[0] = mrs::fromUtf8(ret);
+}
+
+static const char kSig_TableSetColumnEnabled[] =
+    "PsychImGui('TableSetColumnEnabled', columnN, v)";
+static void h_TableSetColumnEnabled(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2 || nargin > 2) { mrs::usage("TableSetColumnEnabled", kSig_TableSetColumnEnabled); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int v_column_n = (int)(0);
+    v_column_n = (int)mrs::getInt(args[0], "columnN");
+    bool v_v = false;
+    v_v = mrs::getBool(args[1], "v");
+    if (mrs::failed()) return;
+    if (!mrs::checkTableColumn(v_column_n, "TableSetColumnEnabled")) return;
+    ImGui::TableSetColumnEnabled(v_column_n, v_v);
+}
+
+static const char kSig_TableAngledHeadersRow[] =
+    "PsychImGui('TableAngledHeadersRow')";
+static void h_TableAngledHeadersRow(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin != 0) { mrs::usage("TableAngledHeadersRow", kSig_TableAngledHeadersRow); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    if (mrs::failed()) return;
+    if (ImGui::TableGetColumnCount() == 0) { mrs::fail("psychimgui:Usage", "TableAngledHeadersRow needs an open table: call it between BeginTable and EndTable."); return; }
+    ImGui::TableAngledHeadersRow();
+}
+
 static const char kSig_GetWindowDrawList[] =
     "drawList = PsychImGui('GetWindowDrawList')";
 static void h_GetWindowDrawList(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
     if (nargin != 0) { mrs::usage("GetWindowDrawList", kSig_GetWindowDrawList); return; }
     (void)nlhs; (void)plhs; (void)args;
     if (mrs::failed()) return;
-    if (!pig::frameOpen()) { mrs::fail("psychimgui:Usage", "GetWindowDrawList needs an open frame: call it between NewFrame and Render."); return; }
     double ret = mrs::drawListOut(ImGui::GetWindowDrawList());
     if (mrs::failed()) return;
     if (nlhs > 0) plhs[0] = mrs::outDouble((double)(ret));
@@ -2009,7 +3299,6 @@ static void h_GetBackgroundDrawList(int nlhs, mxArray** plhs, int nargin, const 
     if (nargin != 0) { mrs::usage("GetBackgroundDrawList", kSig_GetBackgroundDrawList); return; }
     (void)nlhs; (void)plhs; (void)args;
     if (mrs::failed()) return;
-    if (!pig::frameOpen()) { mrs::fail("psychimgui:Usage", "GetBackgroundDrawList needs an open frame: call it between NewFrame and Render."); return; }
     double ret = mrs::drawListOut(ImGui::GetBackgroundDrawList(NULL));
     if (mrs::failed()) return;
     if (nlhs > 0) plhs[0] = mrs::outDouble((double)(ret));
@@ -2021,7 +3310,6 @@ static void h_GetForegroundDrawList(int nlhs, mxArray** plhs, int nargin, const 
     if (nargin != 0) { mrs::usage("GetForegroundDrawList", kSig_GetForegroundDrawList); return; }
     (void)nlhs; (void)plhs; (void)args;
     if (mrs::failed()) return;
-    if (!pig::frameOpen()) { mrs::fail("psychimgui:Usage", "GetForegroundDrawList needs an open frame: call it between NewFrame and Render."); return; }
     double ret = mrs::drawListOut(ImGui::GetForegroundDrawList(NULL));
     if (mrs::failed()) return;
     if (nlhs > 0) plhs[0] = mrs::outDouble((double)(ret));
@@ -2264,6 +3552,422 @@ static void h_DrawList_PopClipRect(int nlhs, mxArray** plhs, int nargin, const m
     v_self->PopClipRect();
 }
 
+static const char kSig_DrawList_AddQuad[] =
+    "PsychImGui('DrawList.AddQuad', drawList, p1, p2, p3, p4, col [, thickness=1.0])";
+static void h_DrawList_AddQuad(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 6 || nargin > 7) { mrs::usage("DrawList.AddQuad", kSig_DrawList_AddQuad); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    ImVec2 v_p1 = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[1], "p1", t, 2); v_p1 = ImVec2((float)t[0], (float)t[1]); }
+    ImVec2 v_p2 = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[2], "p2", t, 2); v_p2 = ImVec2((float)t[0], (float)t[1]); }
+    ImVec2 v_p3 = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[3], "p3", t, 2); v_p3 = ImVec2((float)t[0], (float)t[1]); }
+    ImVec2 v_p4 = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[4], "p4", t, 2); v_p4 = ImVec2((float)t[0], (float)t[1]); }
+    ImU32 v_col = (ImU32)(0);
+    v_col = mrs::getColorU32(args[5], "col");
+    float v_thickness = (float)(1.0f);
+    if (nargin > 6) v_thickness = (float)mrs::getScalar(args[6], "thickness");
+    if (mrs::failed()) return;
+    v_self->AddQuad(v_p1, v_p2, v_p3, v_p4, v_col, v_thickness);
+}
+
+static const char kSig_DrawList_AddQuadFilled[] =
+    "PsychImGui('DrawList.AddQuadFilled', drawList, p1, p2, p3, p4, col)";
+static void h_DrawList_AddQuadFilled(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 6 || nargin > 6) { mrs::usage("DrawList.AddQuadFilled", kSig_DrawList_AddQuadFilled); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    ImVec2 v_p1 = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[1], "p1", t, 2); v_p1 = ImVec2((float)t[0], (float)t[1]); }
+    ImVec2 v_p2 = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[2], "p2", t, 2); v_p2 = ImVec2((float)t[0], (float)t[1]); }
+    ImVec2 v_p3 = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[3], "p3", t, 2); v_p3 = ImVec2((float)t[0], (float)t[1]); }
+    ImVec2 v_p4 = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[4], "p4", t, 2); v_p4 = ImVec2((float)t[0], (float)t[1]); }
+    ImU32 v_col = (ImU32)(0);
+    v_col = mrs::getColorU32(args[5], "col");
+    if (mrs::failed()) return;
+    v_self->AddQuadFilled(v_p1, v_p2, v_p3, v_p4, v_col);
+}
+
+static const char kSig_DrawList_AddNgon[] =
+    "PsychImGui('DrawList.AddNgon', drawList, center, radius, col, numSegments [, thickness=1.0])";
+static void h_DrawList_AddNgon(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 5 || nargin > 6) { mrs::usage("DrawList.AddNgon", kSig_DrawList_AddNgon); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    ImVec2 v_center = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[1], "center", t, 2); v_center = ImVec2((float)t[0], (float)t[1]); }
+    float v_radius = (float)(0);
+    v_radius = (float)mrs::getScalar(args[2], "radius");
+    ImU32 v_col = (ImU32)(0);
+    v_col = mrs::getColorU32(args[3], "col");
+    int v_num_segments = (int)(0);
+    v_num_segments = (int)mrs::getInt(args[4], "numSegments");
+    float v_thickness = (float)(1.0f);
+    if (nargin > 5) v_thickness = (float)mrs::getScalar(args[5], "thickness");
+    if (mrs::failed()) return;
+    v_self->AddNgon(v_center, v_radius, v_col, v_num_segments, v_thickness);
+}
+
+static const char kSig_DrawList_AddNgonFilled[] =
+    "PsychImGui('DrawList.AddNgonFilled', drawList, center, radius, col, numSegments)";
+static void h_DrawList_AddNgonFilled(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 5 || nargin > 5) { mrs::usage("DrawList.AddNgonFilled", kSig_DrawList_AddNgonFilled); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    ImVec2 v_center = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[1], "center", t, 2); v_center = ImVec2((float)t[0], (float)t[1]); }
+    float v_radius = (float)(0);
+    v_radius = (float)mrs::getScalar(args[2], "radius");
+    ImU32 v_col = (ImU32)(0);
+    v_col = mrs::getColorU32(args[3], "col");
+    int v_num_segments = (int)(0);
+    v_num_segments = (int)mrs::getInt(args[4], "numSegments");
+    if (mrs::failed()) return;
+    v_self->AddNgonFilled(v_center, v_radius, v_col, v_num_segments);
+}
+
+static const char kSig_DrawList_AddEllipse[] =
+    "PsychImGui('DrawList.AddEllipse', drawList, center, radius, col [, rot=0.0] [, numSegments=0] [, thickness=1.0])";
+static void h_DrawList_AddEllipse(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 4 || nargin > 7) { mrs::usage("DrawList.AddEllipse", kSig_DrawList_AddEllipse); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    ImVec2 v_center = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[1], "center", t, 2); v_center = ImVec2((float)t[0], (float)t[1]); }
+    ImVec2 v_radius = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[2], "radius", t, 2); v_radius = ImVec2((float)t[0], (float)t[1]); }
+    ImU32 v_col = (ImU32)(0);
+    v_col = mrs::getColorU32(args[3], "col");
+    float v_rot = (float)(0.0f);
+    if (nargin > 4) v_rot = (float)mrs::getScalar(args[4], "rot");
+    int v_num_segments = (int)(0);
+    if (nargin > 5) v_num_segments = (int)mrs::getInt(args[5], "numSegments");
+    float v_thickness = (float)(1.0f);
+    if (nargin > 6) v_thickness = (float)mrs::getScalar(args[6], "thickness");
+    if (mrs::failed()) return;
+    v_self->AddEllipse(v_center, v_radius, v_col, v_rot, v_num_segments, v_thickness);
+}
+
+static const char kSig_DrawList_AddEllipseFilled[] =
+    "PsychImGui('DrawList.AddEllipseFilled', drawList, center, radius, col [, rot=0.0] [, numSegments=0])";
+static void h_DrawList_AddEllipseFilled(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 4 || nargin > 6) { mrs::usage("DrawList.AddEllipseFilled", kSig_DrawList_AddEllipseFilled); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    ImVec2 v_center = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[1], "center", t, 2); v_center = ImVec2((float)t[0], (float)t[1]); }
+    ImVec2 v_radius = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[2], "radius", t, 2); v_radius = ImVec2((float)t[0], (float)t[1]); }
+    ImU32 v_col = (ImU32)(0);
+    v_col = mrs::getColorU32(args[3], "col");
+    float v_rot = (float)(0.0f);
+    if (nargin > 4) v_rot = (float)mrs::getScalar(args[4], "rot");
+    int v_num_segments = (int)(0);
+    if (nargin > 5) v_num_segments = (int)mrs::getInt(args[5], "numSegments");
+    if (mrs::failed()) return;
+    v_self->AddEllipseFilled(v_center, v_radius, v_col, v_rot, v_num_segments);
+}
+
+static const char kSig_DrawList_AddBezierCubic[] =
+    "PsychImGui('DrawList.AddBezierCubic', drawList, p1, p2, p3, p4, col, thickness [, numSegments=0])";
+static void h_DrawList_AddBezierCubic(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 7 || nargin > 8) { mrs::usage("DrawList.AddBezierCubic", kSig_DrawList_AddBezierCubic); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    ImVec2 v_p1 = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[1], "p1", t, 2); v_p1 = ImVec2((float)t[0], (float)t[1]); }
+    ImVec2 v_p2 = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[2], "p2", t, 2); v_p2 = ImVec2((float)t[0], (float)t[1]); }
+    ImVec2 v_p3 = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[3], "p3", t, 2); v_p3 = ImVec2((float)t[0], (float)t[1]); }
+    ImVec2 v_p4 = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[4], "p4", t, 2); v_p4 = ImVec2((float)t[0], (float)t[1]); }
+    ImU32 v_col = (ImU32)(0);
+    v_col = mrs::getColorU32(args[5], "col");
+    float v_thickness = (float)(0);
+    v_thickness = (float)mrs::getScalar(args[6], "thickness");
+    int v_num_segments = (int)(0);
+    if (nargin > 7) v_num_segments = (int)mrs::getInt(args[7], "numSegments");
+    if (mrs::failed()) return;
+    v_self->AddBezierCubic(v_p1, v_p2, v_p3, v_p4, v_col, v_thickness, v_num_segments);
+}
+
+static const char kSig_DrawList_AddBezierQuadratic[] =
+    "PsychImGui('DrawList.AddBezierQuadratic', drawList, p1, p2, p3, col, thickness [, numSegments=0])";
+static void h_DrawList_AddBezierQuadratic(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 6 || nargin > 7) { mrs::usage("DrawList.AddBezierQuadratic", kSig_DrawList_AddBezierQuadratic); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    ImVec2 v_p1 = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[1], "p1", t, 2); v_p1 = ImVec2((float)t[0], (float)t[1]); }
+    ImVec2 v_p2 = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[2], "p2", t, 2); v_p2 = ImVec2((float)t[0], (float)t[1]); }
+    ImVec2 v_p3 = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[3], "p3", t, 2); v_p3 = ImVec2((float)t[0], (float)t[1]); }
+    ImU32 v_col = (ImU32)(0);
+    v_col = mrs::getColorU32(args[4], "col");
+    float v_thickness = (float)(0);
+    v_thickness = (float)mrs::getScalar(args[5], "thickness");
+    int v_num_segments = (int)(0);
+    if (nargin > 6) v_num_segments = (int)mrs::getInt(args[6], "numSegments");
+    if (mrs::failed()) return;
+    v_self->AddBezierQuadratic(v_p1, v_p2, v_p3, v_col, v_thickness, v_num_segments);
+}
+
+static const char kSig_DrawList_AddConcavePolyFilled[] =
+    "PsychImGui('DrawList.AddConcavePolyFilled', drawList, points, col)";
+static void h_DrawList_AddConcavePolyFilled(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 3 || nargin > 3) { mrs::usage("DrawList.AddConcavePolyFilled", kSig_DrawList_AddConcavePolyFilled); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    mrs::Vec2Vec pv_points;
+    const ImVec2* v_points = mrs::getVec2Array(args[1], "points", pv_points);
+    ImU32 v_col = (ImU32)(0);
+    v_col = mrs::getColorU32(args[2], "col");
+    if (mrs::failed()) return;
+    v_self->AddConcavePolyFilled(v_points, pv_points.n, v_col);
+}
+
+static const char kSig_DrawList_AddRectFilledMultiColor[] =
+    "PsychImGui('DrawList.AddRectFilledMultiColor', drawList, pMin, pMax, colUprLeft, colUprRight, colBotRight, colBotLeft)";
+static void h_DrawList_AddRectFilledMultiColor(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 7 || nargin > 7) { mrs::usage("DrawList.AddRectFilledMultiColor", kSig_DrawList_AddRectFilledMultiColor); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    ImVec2 v_p_min = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[1], "pMin", t, 2); v_p_min = ImVec2((float)t[0], (float)t[1]); }
+    ImVec2 v_p_max = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[2], "pMax", t, 2); v_p_max = ImVec2((float)t[0], (float)t[1]); }
+    ImU32 v_col_upr_left = (ImU32)(0);
+    v_col_upr_left = mrs::getColorU32(args[3], "colUprLeft");
+    ImU32 v_col_upr_right = (ImU32)(0);
+    v_col_upr_right = mrs::getColorU32(args[4], "colUprRight");
+    ImU32 v_col_bot_right = (ImU32)(0);
+    v_col_bot_right = mrs::getColorU32(args[5], "colBotRight");
+    ImU32 v_col_bot_left = (ImU32)(0);
+    v_col_bot_left = mrs::getColorU32(args[6], "colBotLeft");
+    if (mrs::failed()) return;
+    v_self->AddRectFilledMultiColor(v_p_min, v_p_max, v_col_upr_left, v_col_upr_right, v_col_bot_right, v_col_bot_left);
+}
+
+static const char kSig_DrawList_PathClear[] =
+    "PsychImGui('DrawList.PathClear', drawList)";
+static void h_DrawList_PathClear(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 1 || nargin > 1) { mrs::usage("DrawList.PathClear", kSig_DrawList_PathClear); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    if (mrs::failed()) return;
+    v_self->PathClear();
+}
+
+static const char kSig_DrawList_PathLineTo[] =
+    "PsychImGui('DrawList.PathLineTo', drawList, pos)";
+static void h_DrawList_PathLineTo(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2 || nargin > 2) { mrs::usage("DrawList.PathLineTo", kSig_DrawList_PathLineTo); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    ImVec2 v_pos = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[1], "pos", t, 2); v_pos = ImVec2((float)t[0], (float)t[1]); }
+    if (mrs::failed()) return;
+    v_self->PathLineTo(v_pos);
+}
+
+static const char kSig_DrawList_PathLineToMergeDuplicate[] =
+    "PsychImGui('DrawList.PathLineToMergeDuplicate', drawList, pos)";
+static void h_DrawList_PathLineToMergeDuplicate(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2 || nargin > 2) { mrs::usage("DrawList.PathLineToMergeDuplicate", kSig_DrawList_PathLineToMergeDuplicate); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    ImVec2 v_pos = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[1], "pos", t, 2); v_pos = ImVec2((float)t[0], (float)t[1]); }
+    if (mrs::failed()) return;
+    v_self->PathLineToMergeDuplicate(v_pos);
+}
+
+static const char kSig_DrawList_PathArcTo[] =
+    "PsychImGui('DrawList.PathArcTo', drawList, center, radius, aMin, aMax [, numSegments=0])";
+static void h_DrawList_PathArcTo(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 5 || nargin > 6) { mrs::usage("DrawList.PathArcTo", kSig_DrawList_PathArcTo); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    ImVec2 v_center = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[1], "center", t, 2); v_center = ImVec2((float)t[0], (float)t[1]); }
+    float v_radius = (float)(0);
+    v_radius = (float)mrs::getScalar(args[2], "radius");
+    float v_a_min = (float)(0);
+    v_a_min = (float)mrs::getScalar(args[3], "aMin");
+    float v_a_max = (float)(0);
+    v_a_max = (float)mrs::getScalar(args[4], "aMax");
+    int v_num_segments = (int)(0);
+    if (nargin > 5) v_num_segments = (int)mrs::getInt(args[5], "numSegments");
+    if (mrs::failed()) return;
+    v_self->PathArcTo(v_center, v_radius, v_a_min, v_a_max, v_num_segments);
+}
+
+static const char kSig_DrawList_PathEllipticalArcTo[] =
+    "PsychImGui('DrawList.PathEllipticalArcTo', drawList, center, radius, rot, aMin, aMax [, numSegments=0])";
+static void h_DrawList_PathEllipticalArcTo(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 6 || nargin > 7) { mrs::usage("DrawList.PathEllipticalArcTo", kSig_DrawList_PathEllipticalArcTo); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    ImVec2 v_center = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[1], "center", t, 2); v_center = ImVec2((float)t[0], (float)t[1]); }
+    ImVec2 v_radius = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[2], "radius", t, 2); v_radius = ImVec2((float)t[0], (float)t[1]); }
+    float v_rot = (float)(0);
+    v_rot = (float)mrs::getScalar(args[3], "rot");
+    float v_a_min = (float)(0);
+    v_a_min = (float)mrs::getScalar(args[4], "aMin");
+    float v_a_max = (float)(0);
+    v_a_max = (float)mrs::getScalar(args[5], "aMax");
+    int v_num_segments = (int)(0);
+    if (nargin > 6) v_num_segments = (int)mrs::getInt(args[6], "numSegments");
+    if (mrs::failed()) return;
+    v_self->PathEllipticalArcTo(v_center, v_radius, v_rot, v_a_min, v_a_max, v_num_segments);
+}
+
+static const char kSig_DrawList_PathBezierCubicCurveTo[] =
+    "PsychImGui('DrawList.PathBezierCubicCurveTo', drawList, p2, p3, p4 [, numSegments=0])";
+static void h_DrawList_PathBezierCubicCurveTo(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 4 || nargin > 5) { mrs::usage("DrawList.PathBezierCubicCurveTo", kSig_DrawList_PathBezierCubicCurveTo); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    ImVec2 v_p2 = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[1], "p2", t, 2); v_p2 = ImVec2((float)t[0], (float)t[1]); }
+    ImVec2 v_p3 = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[2], "p3", t, 2); v_p3 = ImVec2((float)t[0], (float)t[1]); }
+    ImVec2 v_p4 = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[3], "p4", t, 2); v_p4 = ImVec2((float)t[0], (float)t[1]); }
+    int v_num_segments = (int)(0);
+    if (nargin > 4) v_num_segments = (int)mrs::getInt(args[4], "numSegments");
+    if (mrs::failed()) return;
+    if (v_self->_Path.Size == 0) { mrs::fail("psychimgui:Usage", "DrawList.PathBezierCubicCurveTo needs a current point: call DrawList.PathLineTo first."); return; }
+    v_self->PathBezierCubicCurveTo(v_p2, v_p3, v_p4, v_num_segments);
+}
+
+static const char kSig_DrawList_PathBezierQuadraticCurveTo[] =
+    "PsychImGui('DrawList.PathBezierQuadraticCurveTo', drawList, p2, p3 [, numSegments=0])";
+static void h_DrawList_PathBezierQuadraticCurveTo(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 3 || nargin > 4) { mrs::usage("DrawList.PathBezierQuadraticCurveTo", kSig_DrawList_PathBezierQuadraticCurveTo); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    ImVec2 v_p2 = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[1], "p2", t, 2); v_p2 = ImVec2((float)t[0], (float)t[1]); }
+    ImVec2 v_p3 = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[2], "p3", t, 2); v_p3 = ImVec2((float)t[0], (float)t[1]); }
+    int v_num_segments = (int)(0);
+    if (nargin > 3) v_num_segments = (int)mrs::getInt(args[3], "numSegments");
+    if (mrs::failed()) return;
+    if (v_self->_Path.Size == 0) { mrs::fail("psychimgui:Usage", "DrawList.PathBezierQuadraticCurveTo needs a current point: call DrawList.PathLineTo first."); return; }
+    v_self->PathBezierQuadraticCurveTo(v_p2, v_p3, v_num_segments);
+}
+
+static const char kSig_DrawList_PathRect[] =
+    "PsychImGui('DrawList.PathRect', drawList, rectMin, rectMax [, rounding=0.0] [, flags=0])";
+static void h_DrawList_PathRect(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 3 || nargin > 5) { mrs::usage("DrawList.PathRect", kSig_DrawList_PathRect); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    ImVec2 v_rect_min = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[1], "rectMin", t, 2); v_rect_min = ImVec2((float)t[0], (float)t[1]); }
+    ImVec2 v_rect_max = ImVec2(0,0);
+    { double t[2] = {0, 0}; mrs::getVec(args[2], "rectMax", t, 2); v_rect_max = ImVec2((float)t[0], (float)t[1]); }
+    float v_rounding = (float)(0.0f);
+    if (nargin > 3) v_rounding = (float)mrs::getScalar(args[3], "rounding");
+    ImDrawFlags v_flags = (ImDrawFlags)(0);
+    if (nargin > 4) v_flags = (ImDrawFlags)mrs::getFlags(args[4], "flags");
+    if (mrs::failed()) return;
+    v_self->PathRect(v_rect_min, v_rect_max, v_rounding, v_flags);
+}
+
+static const char kSig_DrawList_PathStroke[] =
+    "PsychImGui('DrawList.PathStroke', drawList, col [, thickness=1.0] [, flags=0])";
+static void h_DrawList_PathStroke(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2 || nargin > 4) { mrs::usage("DrawList.PathStroke", kSig_DrawList_PathStroke); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    ImU32 v_col = (ImU32)(0);
+    v_col = mrs::getColorU32(args[1], "col");
+    float v_thickness = (float)(1.0f);
+    if (nargin > 2) v_thickness = (float)mrs::getScalar(args[2], "thickness");
+    ImDrawFlags v_flags = (ImDrawFlags)(0);
+    if (nargin > 3) v_flags = (ImDrawFlags)mrs::getFlags(args[3], "flags");
+    if (mrs::failed()) return;
+    v_self->PathStroke(v_col, v_thickness, v_flags);
+}
+
+static const char kSig_DrawList_PathFillConvex[] =
+    "PsychImGui('DrawList.PathFillConvex', drawList, col)";
+static void h_DrawList_PathFillConvex(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2 || nargin > 2) { mrs::usage("DrawList.PathFillConvex", kSig_DrawList_PathFillConvex); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    ImU32 v_col = (ImU32)(0);
+    v_col = mrs::getColorU32(args[1], "col");
+    if (mrs::failed()) return;
+    v_self->PathFillConvex(v_col);
+}
+
+static const char kSig_DrawList_PathFillConcave[] =
+    "PsychImGui('DrawList.PathFillConcave', drawList, col)";
+static void h_DrawList_PathFillConcave(int nlhs, mxArray** plhs, int nargin, const mxArray** args) {
+    if (nargin < 2 || nargin > 2) { mrs::usage("DrawList.PathFillConcave", kSig_DrawList_PathFillConcave); return; }
+    (void)nlhs; (void)plhs; (void)args;
+    int slot_self = -1;
+    ImDrawList* v_self = mrs::getDrawList(args[0], "drawList", &slot_self);
+    (void)slot_self;
+    ImU32 v_col = (ImU32)(0);
+    v_col = mrs::getColorU32(args[1], "col");
+    if (mrs::failed()) return;
+    v_self->PathFillConcave(v_col);
+}
+
 #ifdef PSYCHIMGUI_IMPLOT
 namespace pig_implot {
 void h_BeginPlot(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
@@ -2274,6 +3978,12 @@ void h_BeginSubplots(int nlhs, mxArray** plhs, int nargin, const mxArray** args)
 extern const char kSig_BeginSubplots[];
 void h_EndSubplots(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_EndSubplots[];
+void h_IsSubplotsHovered(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_IsSubplotsHovered[];
+void h_BeginAlignedPlots(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_BeginAlignedPlots[];
+void h_EndAlignedPlots(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_EndAlignedPlots[];
 void h_SetupAxis(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_SetupAxis[];
 void h_SetupAxes(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
@@ -2286,6 +3996,12 @@ void h_SetupAxisFormat(int nlhs, mxArray** plhs, int nargin, const mxArray** arg
 extern const char kSig_SetupAxisFormat[];
 void h_SetupAxisTicks(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_SetupAxisTicks[];
+void h_SetupAxisScale(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_SetupAxisScale[];
+void h_SetupAxisLimitsConstraints(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_SetupAxisLimitsConstraints[];
+void h_SetupAxisZoomConstraints(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_SetupAxisZoomConstraints[];
 void h_SetupLegend(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_SetupLegend[];
 void h_SetupMouseText(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
@@ -2296,8 +4012,16 @@ void h_SetNextAxisLimits(int nlhs, mxArray** plhs, int nargin, const mxArray** a
 extern const char kSig_SetNextAxisLimits[];
 void h_SetNextAxesLimits(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_SetNextAxesLimits[];
+void h_SetNextAxisToFit(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_SetNextAxisToFit[];
 void h_SetNextAxesToFit(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_SetNextAxesToFit[];
+void h_SetAxis(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_SetAxis[];
+void h_SetAxes(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_SetAxes[];
+void h_HideNextItem(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_HideNextItem[];
 void h_PlotLine(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_PlotLine[];
 void h_PlotScatter(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
@@ -2326,6 +4050,10 @@ void h_PlotText(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_PlotText[];
 void h_PlotDummy(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_PlotDummy[];
+void h_PlotPolygon(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_PlotPolygon[];
+void h_PlotBubbles(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_PlotBubbles[];
 void h_DragPoint(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_DragPoint[];
 void h_DragLineX(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
@@ -2340,6 +4068,18 @@ void h_TagX(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_TagX[];
 void h_TagY(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_TagY[];
+void h_GetPlotSelection(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_GetPlotSelection[];
+void h_IsPlotSelected(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_IsPlotSelected[];
+void h_CancelPlotSelection(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_CancelPlotSelection[];
+void h_BeginLegendPopup(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_BeginLegendPopup[];
+void h_EndLegendPopup(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_EndLegendPopup[];
+void h_GetPlotDrawList(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_GetPlotDrawList[];
 void h_IsPlotHovered(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_IsPlotHovered[];
 void h_IsAxisHovered(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
@@ -2374,6 +4114,24 @@ void h_GetColormapCount(int nlhs, mxArray** plhs, int nargin, const mxArray** ar
 extern const char kSig_GetColormapCount[];
 void h_GetColormapName(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_GetColormapName[];
+void h_GetColormapIndex(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_GetColormapIndex[];
+void h_GetColormapSize(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_GetColormapSize[];
+void h_GetColormapColor(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_GetColormapColor[];
+void h_NextColormapColor(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_NextColormapColor[];
+void h_GetLastItemColor(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_GetLastItemColor[];
+void h_BustColorCache(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_BustColorCache[];
+void h_ColormapIcon(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_ColormapIcon[];
+void h_ColormapButton(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_ColormapButton[];
+void h_ColormapSlider(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_ColormapSlider[];
 void h_StyleColorsAuto(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_StyleColorsAuto[];
 void h_StyleColorsDark(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
@@ -2394,10 +4152,20 @@ void h_PushStyleVarVec2(int nlhs, mxArray** plhs, int nargin, const mxArray** ar
 extern const char kSig_PushStyleVarVec2[];
 void h_PopStyleVar(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_PopStyleVar[];
+void h_MapInputDefault(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_MapInputDefault[];
+void h_MapInputReverse(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_MapInputReverse[];
 void h_ShowDemoWindow(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_ShowDemoWindow[];
 void h_ShowMetricsWindow(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_ShowMetricsWindow[];
+void h_ShowStyleEditor(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_ShowStyleEditor[];
+void h_ShowColormapSelector(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_ShowColormapSelector[];
+void h_ShowUserGuide(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_ShowUserGuide[];
 }  // namespace pig_implot
 #else
 static void h_pig_implot_unavailable(int, mxArray**, int, const mxArray**) {
@@ -2409,18 +4177,28 @@ static const char kSig_BeginPlot[] = "ImPlot.BeginPlot: not compiled in";
 static const char kSig_EndPlot[] = "ImPlot.EndPlot: not compiled in";
 static const char kSig_BeginSubplots[] = "ImPlot.BeginSubplots: not compiled in";
 static const char kSig_EndSubplots[] = "ImPlot.EndSubplots: not compiled in";
+static const char kSig_IsSubplotsHovered[] = "ImPlot.IsSubplotsHovered: not compiled in";
+static const char kSig_BeginAlignedPlots[] = "ImPlot.BeginAlignedPlots: not compiled in";
+static const char kSig_EndAlignedPlots[] = "ImPlot.EndAlignedPlots: not compiled in";
 static const char kSig_SetupAxis[] = "ImPlot.SetupAxis: not compiled in";
 static const char kSig_SetupAxes[] = "ImPlot.SetupAxes: not compiled in";
 static const char kSig_SetupAxisLimits[] = "ImPlot.SetupAxisLimits: not compiled in";
 static const char kSig_SetupAxesLimits[] = "ImPlot.SetupAxesLimits: not compiled in";
 static const char kSig_SetupAxisFormat[] = "ImPlot.SetupAxisFormat: not compiled in";
 static const char kSig_SetupAxisTicks[] = "ImPlot.SetupAxisTicks: not compiled in";
+static const char kSig_SetupAxisScale[] = "ImPlot.SetupAxisScale: not compiled in";
+static const char kSig_SetupAxisLimitsConstraints[] = "ImPlot.SetupAxisLimitsConstraints: not compiled in";
+static const char kSig_SetupAxisZoomConstraints[] = "ImPlot.SetupAxisZoomConstraints: not compiled in";
 static const char kSig_SetupLegend[] = "ImPlot.SetupLegend: not compiled in";
 static const char kSig_SetupMouseText[] = "ImPlot.SetupMouseText: not compiled in";
 static const char kSig_SetupFinish[] = "ImPlot.SetupFinish: not compiled in";
 static const char kSig_SetNextAxisLimits[] = "ImPlot.SetNextAxisLimits: not compiled in";
 static const char kSig_SetNextAxesLimits[] = "ImPlot.SetNextAxesLimits: not compiled in";
+static const char kSig_SetNextAxisToFit[] = "ImPlot.SetNextAxisToFit: not compiled in";
 static const char kSig_SetNextAxesToFit[] = "ImPlot.SetNextAxesToFit: not compiled in";
+static const char kSig_SetAxis[] = "ImPlot.SetAxis: not compiled in";
+static const char kSig_SetAxes[] = "ImPlot.SetAxes: not compiled in";
+static const char kSig_HideNextItem[] = "ImPlot.HideNextItem: not compiled in";
 static const char kSig_PlotLine[] = "ImPlot.PlotLine: not compiled in";
 static const char kSig_PlotScatter[] = "ImPlot.PlotScatter: not compiled in";
 static const char kSig_PlotStairs[] = "ImPlot.PlotStairs: not compiled in";
@@ -2435,6 +4213,8 @@ static const char kSig_PlotHeatmap[] = "ImPlot.PlotHeatmap: not compiled in";
 static const char kSig_PlotDigital[] = "ImPlot.PlotDigital: not compiled in";
 static const char kSig_PlotText[] = "ImPlot.PlotText: not compiled in";
 static const char kSig_PlotDummy[] = "ImPlot.PlotDummy: not compiled in";
+static const char kSig_PlotPolygon[] = "ImPlot.PlotPolygon: not compiled in";
+static const char kSig_PlotBubbles[] = "ImPlot.PlotBubbles: not compiled in";
 static const char kSig_DragPoint[] = "ImPlot.DragPoint: not compiled in";
 static const char kSig_DragLineX[] = "ImPlot.DragLineX: not compiled in";
 static const char kSig_DragLineY[] = "ImPlot.DragLineY: not compiled in";
@@ -2442,6 +4222,12 @@ static const char kSig_DragRect[] = "ImPlot.DragRect: not compiled in";
 static const char kSig_Annotation[] = "ImPlot.Annotation: not compiled in";
 static const char kSig_TagX[] = "ImPlot.TagX: not compiled in";
 static const char kSig_TagY[] = "ImPlot.TagY: not compiled in";
+static const char kSig_GetPlotSelection[] = "ImPlot.GetPlotSelection: not compiled in";
+static const char kSig_IsPlotSelected[] = "ImPlot.IsPlotSelected: not compiled in";
+static const char kSig_CancelPlotSelection[] = "ImPlot.CancelPlotSelection: not compiled in";
+static const char kSig_BeginLegendPopup[] = "ImPlot.BeginLegendPopup: not compiled in";
+static const char kSig_EndLegendPopup[] = "ImPlot.EndLegendPopup: not compiled in";
+static const char kSig_GetPlotDrawList[] = "ImPlot.GetPlotDrawList: not compiled in";
 static const char kSig_IsPlotHovered[] = "ImPlot.IsPlotHovered: not compiled in";
 static const char kSig_IsAxisHovered[] = "ImPlot.IsAxisHovered: not compiled in";
 static const char kSig_IsLegendEntryHovered[] = "ImPlot.IsLegendEntryHovered: not compiled in";
@@ -2459,6 +4245,15 @@ static const char kSig_ColormapScale[] = "ImPlot.ColormapScale: not compiled in"
 static const char kSig_SampleColormap[] = "ImPlot.SampleColormap: not compiled in";
 static const char kSig_GetColormapCount[] = "ImPlot.GetColormapCount: not compiled in";
 static const char kSig_GetColormapName[] = "ImPlot.GetColormapName: not compiled in";
+static const char kSig_GetColormapIndex[] = "ImPlot.GetColormapIndex: not compiled in";
+static const char kSig_GetColormapSize[] = "ImPlot.GetColormapSize: not compiled in";
+static const char kSig_GetColormapColor[] = "ImPlot.GetColormapColor: not compiled in";
+static const char kSig_NextColormapColor[] = "ImPlot.NextColormapColor: not compiled in";
+static const char kSig_GetLastItemColor[] = "ImPlot.GetLastItemColor: not compiled in";
+static const char kSig_BustColorCache[] = "ImPlot.BustColorCache: not compiled in";
+static const char kSig_ColormapIcon[] = "ImPlot.ColormapIcon: not compiled in";
+static const char kSig_ColormapButton[] = "ImPlot.ColormapButton: not compiled in";
+static const char kSig_ColormapSlider[] = "ImPlot.ColormapSlider: not compiled in";
 static const char kSig_StyleColorsAuto[] = "ImPlot.StyleColorsAuto: not compiled in";
 static const char kSig_StyleColorsDark[] = "ImPlot.StyleColorsDark: not compiled in";
 static const char kSig_StyleColorsLight[] = "ImPlot.StyleColorsLight: not compiled in";
@@ -2469,8 +4264,13 @@ static const char kSig_PushStyleVar[] = "ImPlot.PushStyleVar: not compiled in";
 static const char kSig_PushStyleVarInt[] = "ImPlot.PushStyleVarInt: not compiled in";
 static const char kSig_PushStyleVarVec2[] = "ImPlot.PushStyleVarVec2: not compiled in";
 static const char kSig_PopStyleVar[] = "ImPlot.PopStyleVar: not compiled in";
+static const char kSig_MapInputDefault[] = "ImPlot.MapInputDefault: not compiled in";
+static const char kSig_MapInputReverse[] = "ImPlot.MapInputReverse: not compiled in";
 static const char kSig_ShowDemoWindow[] = "ImPlot.ShowDemoWindow: not compiled in";
 static const char kSig_ShowMetricsWindow[] = "ImPlot.ShowMetricsWindow: not compiled in";
+static const char kSig_ShowStyleEditor[] = "ImPlot.ShowStyleEditor: not compiled in";
+static const char kSig_ShowColormapSelector[] = "ImPlot.ShowColormapSelector: not compiled in";
+static const char kSig_ShowUserGuide[] = "ImPlot.ShowUserGuide: not compiled in";
 }  // namespace pig_implot
 #endif
 
@@ -2496,6 +4296,14 @@ void h_SetupBoxScale(int nlhs, mxArray** plhs, int nargin, const mxArray** args)
 extern const char kSig_SetupBoxScale[];
 void h_SetupLegend(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_SetupLegend[];
+void h_SetupAxisScale(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_SetupAxisScale[];
+void h_SetupAxisLimitsConstraints(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_SetupAxisLimitsConstraints[];
+void h_SetupAxisZoomConstraints(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_SetupAxisZoomConstraints[];
+void h_SetupBoxInitialRotation(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_SetupBoxInitialRotation[];
 void h_PlotLine(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_PlotLine[];
 void h_PlotScatter(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
@@ -2510,12 +4318,20 @@ void h_PlotMesh(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_PlotMesh[];
 void h_PlotText(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_PlotText[];
+void h_PlotDummy(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_PlotDummy[];
 void h_PlotToPixels(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_PlotToPixels[];
 void h_GetPlotRectPos(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_GetPlotRectPos[];
 void h_GetPlotRectSize(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_GetPlotRectSize[];
+void h_PixelsToPlotRay(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_PixelsToPlotRay[];
+void h_PixelsToPlotPlane(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_PixelsToPlotPlane[];
+void h_GetPlotDrawList(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_GetPlotDrawList[];
 void h_PushColormap(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_PushColormap[];
 void h_PushColormapIndex(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
@@ -2528,6 +4344,16 @@ void h_GetColormapName(int nlhs, mxArray** plhs, int nargin, const mxArray** arg
 extern const char kSig_GetColormapName[];
 void h_SampleColormap(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_SampleColormap[];
+void h_AddColormap(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_AddColormap[];
+void h_GetColormapIndex(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_GetColormapIndex[];
+void h_GetColormapSize(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_GetColormapSize[];
+void h_GetColormapColor(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_GetColormapColor[];
+void h_NextColormapColor(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_NextColormapColor[];
 void h_StyleColorsAuto(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_StyleColorsAuto[];
 void h_StyleColorsDark(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
@@ -2546,10 +4372,14 @@ void h_PushStyleVarVec2(int nlhs, mxArray** plhs, int nargin, const mxArray** ar
 extern const char kSig_PushStyleVarVec2[];
 void h_PopStyleVar(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_PopStyleVar[];
+void h_PushStyleVarInt(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_PushStyleVarInt[];
 void h_ShowDemoWindow(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_ShowDemoWindow[];
 void h_ShowMetricsWindow(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
 extern const char kSig_ShowMetricsWindow[];
+void h_ShowStyleEditor(int nlhs, mxArray** plhs, int nargin, const mxArray** args);
+extern const char kSig_ShowStyleEditor[];
 }  // namespace pig_implot3d
 #else
 static void h_pig_implot3d_unavailable(int, mxArray**, int, const mxArray**) {
@@ -2567,6 +4397,10 @@ static const char kSig_SetupAxisTicks[] = "ImPlot3D.SetupAxisTicks: not compiled
 static const char kSig_SetupBoxRotation[] = "ImPlot3D.SetupBoxRotation: not compiled in";
 static const char kSig_SetupBoxScale[] = "ImPlot3D.SetupBoxScale: not compiled in";
 static const char kSig_SetupLegend[] = "ImPlot3D.SetupLegend: not compiled in";
+static const char kSig_SetupAxisScale[] = "ImPlot3D.SetupAxisScale: not compiled in";
+static const char kSig_SetupAxisLimitsConstraints[] = "ImPlot3D.SetupAxisLimitsConstraints: not compiled in";
+static const char kSig_SetupAxisZoomConstraints[] = "ImPlot3D.SetupAxisZoomConstraints: not compiled in";
+static const char kSig_SetupBoxInitialRotation[] = "ImPlot3D.SetupBoxInitialRotation: not compiled in";
 static const char kSig_PlotLine[] = "ImPlot3D.PlotLine: not compiled in";
 static const char kSig_PlotScatter[] = "ImPlot3D.PlotScatter: not compiled in";
 static const char kSig_PlotTriangle[] = "ImPlot3D.PlotTriangle: not compiled in";
@@ -2574,15 +4408,24 @@ static const char kSig_PlotQuad[] = "ImPlot3D.PlotQuad: not compiled in";
 static const char kSig_PlotSurface[] = "ImPlot3D.PlotSurface: not compiled in";
 static const char kSig_PlotMesh[] = "ImPlot3D.PlotMesh: not compiled in";
 static const char kSig_PlotText[] = "ImPlot3D.PlotText: not compiled in";
+static const char kSig_PlotDummy[] = "ImPlot3D.PlotDummy: not compiled in";
 static const char kSig_PlotToPixels[] = "ImPlot3D.PlotToPixels: not compiled in";
 static const char kSig_GetPlotRectPos[] = "ImPlot3D.GetPlotRectPos: not compiled in";
 static const char kSig_GetPlotRectSize[] = "ImPlot3D.GetPlotRectSize: not compiled in";
+static const char kSig_PixelsToPlotRay[] = "ImPlot3D.PixelsToPlotRay: not compiled in";
+static const char kSig_PixelsToPlotPlane[] = "ImPlot3D.PixelsToPlotPlane: not compiled in";
+static const char kSig_GetPlotDrawList[] = "ImPlot3D.GetPlotDrawList: not compiled in";
 static const char kSig_PushColormap[] = "ImPlot3D.PushColormap: not compiled in";
 static const char kSig_PushColormapIndex[] = "ImPlot3D.PushColormapIndex: not compiled in";
 static const char kSig_PopColormap[] = "ImPlot3D.PopColormap: not compiled in";
 static const char kSig_GetColormapCount[] = "ImPlot3D.GetColormapCount: not compiled in";
 static const char kSig_GetColormapName[] = "ImPlot3D.GetColormapName: not compiled in";
 static const char kSig_SampleColormap[] = "ImPlot3D.SampleColormap: not compiled in";
+static const char kSig_AddColormap[] = "ImPlot3D.AddColormap: not compiled in";
+static const char kSig_GetColormapIndex[] = "ImPlot3D.GetColormapIndex: not compiled in";
+static const char kSig_GetColormapSize[] = "ImPlot3D.GetColormapSize: not compiled in";
+static const char kSig_GetColormapColor[] = "ImPlot3D.GetColormapColor: not compiled in";
+static const char kSig_NextColormapColor[] = "ImPlot3D.NextColormapColor: not compiled in";
 static const char kSig_StyleColorsAuto[] = "ImPlot3D.StyleColorsAuto: not compiled in";
 static const char kSig_StyleColorsDark[] = "ImPlot3D.StyleColorsDark: not compiled in";
 static const char kSig_StyleColorsLight[] = "ImPlot3D.StyleColorsLight: not compiled in";
@@ -2592,8 +4435,10 @@ static const char kSig_PopStyleColor[] = "ImPlot3D.PopStyleColor: not compiled i
 static const char kSig_PushStyleVar[] = "ImPlot3D.PushStyleVar: not compiled in";
 static const char kSig_PushStyleVarVec2[] = "ImPlot3D.PushStyleVarVec2: not compiled in";
 static const char kSig_PopStyleVar[] = "ImPlot3D.PopStyleVar: not compiled in";
+static const char kSig_PushStyleVarInt[] = "ImPlot3D.PushStyleVarInt: not compiled in";
 static const char kSig_ShowDemoWindow[] = "ImPlot3D.ShowDemoWindow: not compiled in";
 static const char kSig_ShowMetricsWindow[] = "ImPlot3D.ShowMetricsWindow: not compiled in";
+static const char kSig_ShowStyleEditor[] = "ImPlot3D.ShowStyleEditor: not compiled in";
 }  // namespace pig_implot3d
 #endif
 
@@ -3779,6 +5624,16 @@ static const char kSigBi_AddFontFromFileTTF[] = "idx = PsychImGui('AddFontFromFi
 static const char kSigBi_EndFrame[] = "PsychImGui('EndFrame')";
 static const char kSigBi_Image[] = "PsychImGui('Image', tex, size [, uv0=[0 0]] [, uv1=[1 1]] [, bgCol=[0 0 0 0]] [, tintCol=[1 1 1 1]])";
 static const char kSigBi_ImageButton[] = "pressed = PsychImGui('ImageButton', strId, tex, size [, uv0=[0 0]] [, uv1=[1 1]] [, bgCol=[0 0 0 0]] [, tintCol=[1 1 1 1]])";
+static const char kSigBi_SliderDouble[] = "[changed, v] = PsychImGui('SliderDouble', label, v, vMin, vMax [, format='%.3f'] [, flags=0])";
+static const char kSigBi_DragDouble[] = "[changed, v] = PsychImGui('DragDouble', label, v [, vSpeed=1.0] [, vMin=0.0] [, vMax=0.0] [, format='%.3f'] [, flags=0])";
+static const char kSigBi_TableGetSortSpecs[] = "[specs, dirty] = PsychImGui('TableGetSortSpecs')";
+static const char kSigBi_ImPlot_PlotBarGroups[] = "PsychImGui('ImPlot.PlotBarGroups', labels, values [, groupSize=0.67] [, shift=0] [, spec...])";
+static const char kSigBi_ImPlot_PlotPieChart[] = "PsychImGui('ImPlot.PlotPieChart', labels, values, x, y, radius [, labelFmt='%.1f'] [, angle0=90] [, spec...])";
+static const char kSigBi_ImPlot_PlotImage[] = "PsychImGui('ImPlot.PlotImage', labelId, tex, boundsMin, boundsMax [, uv0=[0 0]] [, uv1=[1 1]] [, tintCol=[1 1 1 1]] [, spec...])";
+static const char kSigBi_ImPlot_SetupAxisLinks[] = "PsychImGui('ImPlot.SetupAxisLinks', axis, key)";
+static const char kSigBi_ImPlot_SetNextAxisLinks[] = "PsychImGui('ImPlot.SetNextAxisLinks', axis, key)";
+static const char kSigBi_ImPlot_AxisLink[] = "range = PsychImGui('ImPlot.AxisLink', key [, range])";
+static const char kSigBi_ImPlot3D_PlotImage[] = "PsychImGui('ImPlot3D.PlotImage', labelId, tex, corners [, tintCol=[1 1 1 1]] [, spec...])";
 static const char kSigBi_Enum[] = "v = PsychImGui('Enum' [, 'ImGuiWindowFlags_NoTitleBar'])";
 static const char kSigBi_FileDialog_Close[] = "PsychImGui('FileDialog.Close')";
 static const char kSigBi_FileDialog_Display[] = "[done, open] = PsychImGui('FileDialog.Display', key [, minSize=[0 0]] [, maxSize=[FLT_MAX FLT_MAX]] [, windowFlags=ImGuiWindowFlags_NoCollapse])";
@@ -3823,64 +5678,103 @@ static const char kSigBi_WantCapture[] = "[mouse, keyboard, text] = PsychImGui('
 namespace pig {
 const Entry kTable[] = {
     {"AddFontFromFileTTF", bi_AddFontFromFileTTF, kSigBi_AddFontFromFileTTF, kEntryNeedsInit | kEntryNeedsGL},
-    {"ArrowButton", h_ArrowButton, kSig_ArrowButton, kEntryNeedsInit},
-    {"Begin", h_Begin, kSig_Begin, kEntryNeedsInit},
-    {"BeginChild", h_BeginChild, kSig_BeginChild, kEntryNeedsInit},
-    {"BeginCombo", h_BeginCombo, kSig_BeginCombo, kEntryNeedsInit},
-    {"BeginDisabled", h_BeginDisabled, kSig_BeginDisabled, kEntryNeedsInit},
-    {"BeginGroup", h_BeginGroup, kSig_BeginGroup, kEntryNeedsInit},
-    {"BeginListBox", h_BeginListBox, kSig_BeginListBox, kEntryNeedsInit},
-    {"BeginMenu", h_BeginMenu, kSig_BeginMenu, kEntryNeedsInit},
-    {"BeginMenuBar", h_BeginMenuBar, kSig_BeginMenuBar, kEntryNeedsInit},
-    {"BeginPopup", h_BeginPopup, kSig_BeginPopup, kEntryNeedsInit},
-    {"BeginPopupModal", h_BeginPopupModal, kSig_BeginPopupModal, kEntryNeedsInit},
-    {"BeginTabBar", h_BeginTabBar, kSig_BeginTabBar, kEntryNeedsInit},
-    {"BeginTabItem", h_BeginTabItem, kSig_BeginTabItem, kEntryNeedsInit},
-    {"BeginTable", h_BeginTable, kSig_BeginTable, kEntryNeedsInit},
-    {"BeginTooltip", h_BeginTooltip, kSig_BeginTooltip, kEntryNeedsInit},
-    {"Bullet", h_Bullet, kSig_Bullet, kEntryNeedsInit},
-    {"BulletText", h_BulletText, kSig_BulletText, kEntryNeedsInit},
-    {"Button", h_Button, kSig_Button, kEntryNeedsInit},
-    {"CalcTextSize", h_CalcTextSize, kSig_CalcTextSize, kEntryNeedsInit},
-    {"Checkbox", h_Checkbox, kSig_Checkbox, kEntryNeedsInit},
-    {"CheckboxFlags", h_CheckboxFlags, kSig_CheckboxFlags, kEntryNeedsInit},
-    {"CloseCurrentPopup", h_CloseCurrentPopup, kSig_CloseCurrentPopup, kEntryNeedsInit},
-    {"CollapsingHeader", h_CollapsingHeader, kSig_CollapsingHeader, kEntryNeedsInit},
-    {"ColorButton", h_ColorButton, kSig_ColorButton, kEntryNeedsInit},
-    {"ColorEdit3", h_ColorEdit3, kSig_ColorEdit3, kEntryNeedsInit},
-    {"ColorEdit4", h_ColorEdit4, kSig_ColorEdit4, kEntryNeedsInit},
-    {"Combo", h_Combo, kSig_Combo, kEntryNeedsInit},
-    {"DragFloat", h_DragFloat, kSig_DragFloat, kEntryNeedsInit},
-    {"DragFloat2", h_DragFloat2, kSig_DragFloat2, kEntryNeedsInit},
-    {"DragFloat3", h_DragFloat3, kSig_DragFloat3, kEntryNeedsInit},
-    {"DragInt", h_DragInt, kSig_DragInt, kEntryNeedsInit},
+    {"AlignTextToFramePadding", h_AlignTextToFramePadding, kSig_AlignTextToFramePadding, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ArrowButton", h_ArrowButton, kSig_ArrowButton, kEntryNeedsInit | kEntryNeedsFrame},
+    {"Begin", h_Begin, kSig_Begin, kEntryNeedsInit | kEntryNeedsFrame},
+    {"BeginChild", h_BeginChild, kSig_BeginChild, kEntryNeedsInit | kEntryNeedsFrame},
+    {"BeginCombo", h_BeginCombo, kSig_BeginCombo, kEntryNeedsInit | kEntryNeedsFrame},
+    {"BeginDisabled", h_BeginDisabled, kSig_BeginDisabled, kEntryNeedsInit | kEntryNeedsFrame},
+    {"BeginGroup", h_BeginGroup, kSig_BeginGroup, kEntryNeedsInit | kEntryNeedsFrame},
+    {"BeginItemTooltip", h_BeginItemTooltip, kSig_BeginItemTooltip, kEntryNeedsInit | kEntryNeedsFrame},
+    {"BeginListBox", h_BeginListBox, kSig_BeginListBox, kEntryNeedsInit | kEntryNeedsFrame},
+    {"BeginMainMenuBar", h_BeginMainMenuBar, kSig_BeginMainMenuBar, kEntryNeedsInit | kEntryNeedsFrame},
+    {"BeginMenu", h_BeginMenu, kSig_BeginMenu, kEntryNeedsInit | kEntryNeedsFrame},
+    {"BeginMenuBar", h_BeginMenuBar, kSig_BeginMenuBar, kEntryNeedsInit | kEntryNeedsFrame},
+    {"BeginPopup", h_BeginPopup, kSig_BeginPopup, kEntryNeedsInit | kEntryNeedsFrame},
+    {"BeginPopupContextItem", h_BeginPopupContextItem, kSig_BeginPopupContextItem, kEntryNeedsInit | kEntryNeedsFrame},
+    {"BeginPopupContextVoid", h_BeginPopupContextVoid, kSig_BeginPopupContextVoid, kEntryNeedsInit | kEntryNeedsFrame},
+    {"BeginPopupContextWindow", h_BeginPopupContextWindow, kSig_BeginPopupContextWindow, kEntryNeedsInit | kEntryNeedsFrame},
+    {"BeginPopupModal", h_BeginPopupModal, kSig_BeginPopupModal, kEntryNeedsInit | kEntryNeedsFrame},
+    {"BeginTabBar", h_BeginTabBar, kSig_BeginTabBar, kEntryNeedsInit | kEntryNeedsFrame},
+    {"BeginTabItem", h_BeginTabItem, kSig_BeginTabItem, kEntryNeedsInit | kEntryNeedsFrame},
+    {"BeginTable", h_BeginTable, kSig_BeginTable, kEntryNeedsInit | kEntryNeedsFrame},
+    {"BeginTooltip", h_BeginTooltip, kSig_BeginTooltip, kEntryNeedsInit | kEntryNeedsFrame},
+    {"Bullet", h_Bullet, kSig_Bullet, kEntryNeedsInit | kEntryNeedsFrame},
+    {"BulletText", h_BulletText, kSig_BulletText, kEntryNeedsInit | kEntryNeedsFrame},
+    {"Button", h_Button, kSig_Button, kEntryNeedsInit | kEntryNeedsFrame},
+    {"CalcItemWidth", h_CalcItemWidth, kSig_CalcItemWidth, kEntryNeedsInit | kEntryNeedsFrame},
+    {"CalcTextSize", h_CalcTextSize, kSig_CalcTextSize, kEntryNeedsInit | kEntryNeedsFrame},
+    {"Checkbox", h_Checkbox, kSig_Checkbox, kEntryNeedsInit | kEntryNeedsFrame},
+    {"CheckboxFlags", h_CheckboxFlags, kSig_CheckboxFlags, kEntryNeedsInit | kEntryNeedsFrame},
+    {"CloseCurrentPopup", h_CloseCurrentPopup, kSig_CloseCurrentPopup, kEntryNeedsInit | kEntryNeedsFrame},
+    {"CollapsingHeader", h_CollapsingHeader, kSig_CollapsingHeader, kEntryNeedsInit | kEntryNeedsFrame},
+    {"CollapsingHeaderClosable", h_CollapsingHeaderClosable, kSig_CollapsingHeaderClosable, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ColorButton", h_ColorButton, kSig_ColorButton, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ColorEdit3", h_ColorEdit3, kSig_ColorEdit3, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ColorEdit4", h_ColorEdit4, kSig_ColorEdit4, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ColorPicker3", h_ColorPicker3, kSig_ColorPicker3, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ColorPicker4", h_ColorPicker4, kSig_ColorPicker4, kEntryNeedsInit | kEntryNeedsFrame},
+    {"Combo", h_Combo, kSig_Combo, kEntryNeedsInit | kEntryNeedsFrame},
+    {"DragDouble", bi_DragDouble, kSigBi_DragDouble, kEntryNeedsInit | kEntryNeedsFrame},
+    {"DragFloat", h_DragFloat, kSig_DragFloat, kEntryNeedsInit | kEntryNeedsFrame},
+    {"DragFloat2", h_DragFloat2, kSig_DragFloat2, kEntryNeedsInit | kEntryNeedsFrame},
+    {"DragFloat3", h_DragFloat3, kSig_DragFloat3, kEntryNeedsInit | kEntryNeedsFrame},
+    {"DragFloat4", h_DragFloat4, kSig_DragFloat4, kEntryNeedsInit | kEntryNeedsFrame},
+    {"DragFloatRange2", h_DragFloatRange2, kSig_DragFloatRange2, kEntryNeedsInit | kEntryNeedsFrame},
+    {"DragInt", h_DragInt, kSig_DragInt, kEntryNeedsInit | kEntryNeedsFrame},
+    {"DragInt2", h_DragInt2, kSig_DragInt2, kEntryNeedsInit | kEntryNeedsFrame},
+    {"DragInt3", h_DragInt3, kSig_DragInt3, kEntryNeedsInit | kEntryNeedsFrame},
+    {"DragInt4", h_DragInt4, kSig_DragInt4, kEntryNeedsInit | kEntryNeedsFrame},
+    {"DragIntRange2", h_DragIntRange2, kSig_DragIntRange2, kEntryNeedsInit | kEntryNeedsFrame},
+    {"DrawList.AddBezierCubic", h_DrawList_AddBezierCubic, kSig_DrawList_AddBezierCubic, kEntryNeedsInit},
+    {"DrawList.AddBezierQuadratic", h_DrawList_AddBezierQuadratic, kSig_DrawList_AddBezierQuadratic, kEntryNeedsInit},
     {"DrawList.AddCircle", h_DrawList_AddCircle, kSig_DrawList_AddCircle, kEntryNeedsInit},
     {"DrawList.AddCircleFilled", h_DrawList_AddCircleFilled, kSig_DrawList_AddCircleFilled, kEntryNeedsInit},
+    {"DrawList.AddConcavePolyFilled", h_DrawList_AddConcavePolyFilled, kSig_DrawList_AddConcavePolyFilled, kEntryNeedsInit},
     {"DrawList.AddConvexPolyFilled", h_DrawList_AddConvexPolyFilled, kSig_DrawList_AddConvexPolyFilled, kEntryNeedsInit},
+    {"DrawList.AddEllipse", h_DrawList_AddEllipse, kSig_DrawList_AddEllipse, kEntryNeedsInit},
+    {"DrawList.AddEllipseFilled", h_DrawList_AddEllipseFilled, kSig_DrawList_AddEllipseFilled, kEntryNeedsInit},
     {"DrawList.AddLine", h_DrawList_AddLine, kSig_DrawList_AddLine, kEntryNeedsInit},
+    {"DrawList.AddNgon", h_DrawList_AddNgon, kSig_DrawList_AddNgon, kEntryNeedsInit},
+    {"DrawList.AddNgonFilled", h_DrawList_AddNgonFilled, kSig_DrawList_AddNgonFilled, kEntryNeedsInit},
     {"DrawList.AddPolyline", h_DrawList_AddPolyline, kSig_DrawList_AddPolyline, kEntryNeedsInit},
+    {"DrawList.AddQuad", h_DrawList_AddQuad, kSig_DrawList_AddQuad, kEntryNeedsInit},
+    {"DrawList.AddQuadFilled", h_DrawList_AddQuadFilled, kSig_DrawList_AddQuadFilled, kEntryNeedsInit},
     {"DrawList.AddRect", h_DrawList_AddRect, kSig_DrawList_AddRect, kEntryNeedsInit},
     {"DrawList.AddRectFilled", h_DrawList_AddRectFilled, kSig_DrawList_AddRectFilled, kEntryNeedsInit},
+    {"DrawList.AddRectFilledMultiColor", h_DrawList_AddRectFilledMultiColor, kSig_DrawList_AddRectFilledMultiColor, kEntryNeedsInit},
     {"DrawList.AddText", h_DrawList_AddText, kSig_DrawList_AddText, kEntryNeedsInit},
     {"DrawList.AddTriangle", h_DrawList_AddTriangle, kSig_DrawList_AddTriangle, kEntryNeedsInit},
     {"DrawList.AddTriangleFilled", h_DrawList_AddTriangleFilled, kSig_DrawList_AddTriangleFilled, kEntryNeedsInit},
+    {"DrawList.PathArcTo", h_DrawList_PathArcTo, kSig_DrawList_PathArcTo, kEntryNeedsInit},
+    {"DrawList.PathBezierCubicCurveTo", h_DrawList_PathBezierCubicCurveTo, kSig_DrawList_PathBezierCubicCurveTo, kEntryNeedsInit},
+    {"DrawList.PathBezierQuadraticCurveTo", h_DrawList_PathBezierQuadraticCurveTo, kSig_DrawList_PathBezierQuadraticCurveTo, kEntryNeedsInit},
+    {"DrawList.PathClear", h_DrawList_PathClear, kSig_DrawList_PathClear, kEntryNeedsInit},
+    {"DrawList.PathEllipticalArcTo", h_DrawList_PathEllipticalArcTo, kSig_DrawList_PathEllipticalArcTo, kEntryNeedsInit},
+    {"DrawList.PathFillConcave", h_DrawList_PathFillConcave, kSig_DrawList_PathFillConcave, kEntryNeedsInit},
+    {"DrawList.PathFillConvex", h_DrawList_PathFillConvex, kSig_DrawList_PathFillConvex, kEntryNeedsInit},
+    {"DrawList.PathLineTo", h_DrawList_PathLineTo, kSig_DrawList_PathLineTo, kEntryNeedsInit},
+    {"DrawList.PathLineToMergeDuplicate", h_DrawList_PathLineToMergeDuplicate, kSig_DrawList_PathLineToMergeDuplicate, kEntryNeedsInit},
+    {"DrawList.PathRect", h_DrawList_PathRect, kSig_DrawList_PathRect, kEntryNeedsInit},
+    {"DrawList.PathStroke", h_DrawList_PathStroke, kSig_DrawList_PathStroke, kEntryNeedsInit},
     {"DrawList.PopClipRect", h_DrawList_PopClipRect, kSig_DrawList_PopClipRect, kEntryNeedsInit},
     {"DrawList.PushClipRect", h_DrawList_PushClipRect, kSig_DrawList_PushClipRect, kEntryNeedsInit},
-    {"Dummy", h_Dummy, kSig_Dummy, kEntryNeedsInit},
-    {"End", h_End, kSig_End, kEntryNeedsInit},
-    {"EndChild", h_EndChild, kSig_EndChild, kEntryNeedsInit},
-    {"EndCombo", h_EndCombo, kSig_EndCombo, kEntryNeedsInit},
-    {"EndDisabled", h_EndDisabled, kSig_EndDisabled, kEntryNeedsInit},
+    {"Dummy", h_Dummy, kSig_Dummy, kEntryNeedsInit | kEntryNeedsFrame},
+    {"End", h_End, kSig_End, kEntryNeedsInit | kEntryNeedsFrame},
+    {"EndChild", h_EndChild, kSig_EndChild, kEntryNeedsInit | kEntryNeedsFrame},
+    {"EndCombo", h_EndCombo, kSig_EndCombo, kEntryNeedsInit | kEntryNeedsFrame},
+    {"EndDisabled", h_EndDisabled, kSig_EndDisabled, kEntryNeedsInit | kEntryNeedsFrame},
     {"EndFrame", bi_EndFrame, kSigBi_EndFrame, kEntryNeedsInit},
-    {"EndGroup", h_EndGroup, kSig_EndGroup, kEntryNeedsInit},
-    {"EndListBox", h_EndListBox, kSig_EndListBox, kEntryNeedsInit},
-    {"EndMenu", h_EndMenu, kSig_EndMenu, kEntryNeedsInit},
-    {"EndMenuBar", h_EndMenuBar, kSig_EndMenuBar, kEntryNeedsInit},
-    {"EndPopup", h_EndPopup, kSig_EndPopup, kEntryNeedsInit},
-    {"EndTabBar", h_EndTabBar, kSig_EndTabBar, kEntryNeedsInit},
-    {"EndTabItem", h_EndTabItem, kSig_EndTabItem, kEntryNeedsInit},
-    {"EndTable", h_EndTable, kSig_EndTable, kEntryNeedsInit},
-    {"EndTooltip", h_EndTooltip, kSig_EndTooltip, kEntryNeedsInit},
+    {"EndGroup", h_EndGroup, kSig_EndGroup, kEntryNeedsInit | kEntryNeedsFrame},
+    {"EndListBox", h_EndListBox, kSig_EndListBox, kEntryNeedsInit | kEntryNeedsFrame},
+    {"EndMainMenuBar", h_EndMainMenuBar, kSig_EndMainMenuBar, kEntryNeedsInit | kEntryNeedsFrame},
+    {"EndMenu", h_EndMenu, kSig_EndMenu, kEntryNeedsInit | kEntryNeedsFrame},
+    {"EndMenuBar", h_EndMenuBar, kSig_EndMenuBar, kEntryNeedsInit | kEntryNeedsFrame},
+    {"EndPopup", h_EndPopup, kSig_EndPopup, kEntryNeedsInit | kEntryNeedsFrame},
+    {"EndTabBar", h_EndTabBar, kSig_EndTabBar, kEntryNeedsInit | kEntryNeedsFrame},
+    {"EndTabItem", h_EndTabItem, kSig_EndTabItem, kEntryNeedsInit | kEntryNeedsFrame},
+    {"EndTable", h_EndTable, kSig_EndTable, kEntryNeedsInit | kEntryNeedsFrame},
+    {"EndTooltip", h_EndTooltip, kSig_EndTooltip, kEntryNeedsInit | kEntryNeedsFrame},
     {"Enum", bi_Enum, kSigBi_Enum, 0},
     {"FileDialog.Close", bi_FileDialogClose, kSigBi_FileDialog_Close, kEntryNeedsInit},
     {"FileDialog.Display", bi_FileDialogDisplay, kSigBi_FileDialog_Display, kEntryNeedsInit},
@@ -3890,55 +5784,98 @@ const Entry kTable[] = {
     {"FileDialog.IsOk", bi_FileDialogIsOk, kSigBi_FileDialog_IsOk, kEntryNeedsInit},
     {"FileDialog.IsOpened", bi_FileDialogIsOpened, kSigBi_FileDialog_IsOpened, kEntryNeedsInit},
     {"FileDialog.Open", bi_FileDialogOpen, kSigBi_FileDialog_Open, kEntryNeedsInit},
-    {"GetBackgroundDrawList", h_GetBackgroundDrawList, kSig_GetBackgroundDrawList, kEntryNeedsInit},
-    {"GetContentRegionAvail", h_GetContentRegionAvail, kSig_GetContentRegionAvail, kEntryNeedsInit},
+    {"GetBackgroundDrawList", h_GetBackgroundDrawList, kSig_GetBackgroundDrawList, kEntryNeedsInit | kEntryNeedsFrame},
+    {"GetContentRegionAvail", h_GetContentRegionAvail, kSig_GetContentRegionAvail, kEntryNeedsInit | kEntryNeedsFrame},
     {"GetContext", bi_GetContext, kSigBi_GetContext, 0},
-    {"GetCursorScreenPos", h_GetCursorScreenPos, kSig_GetCursorScreenPos, kEntryNeedsInit},
-    {"GetForegroundDrawList", h_GetForegroundDrawList, kSig_GetForegroundDrawList, kEntryNeedsInit},
+    {"GetCursorPos", h_GetCursorPos, kSig_GetCursorPos, kEntryNeedsInit | kEntryNeedsFrame},
+    {"GetCursorScreenPos", h_GetCursorScreenPos, kSig_GetCursorScreenPos, kEntryNeedsInit | kEntryNeedsFrame},
+    {"GetFontSize", h_GetFontSize, kSig_GetFontSize, kEntryNeedsInit},
+    {"GetForegroundDrawList", h_GetForegroundDrawList, kSig_GetForegroundDrawList, kEntryNeedsInit | kEntryNeedsFrame},
     {"GetFrameCount", h_GetFrameCount, kSig_GetFrameCount, kEntryNeedsInit},
-    {"GetItemRectMax", h_GetItemRectMax, kSig_GetItemRectMax, kEntryNeedsInit},
-    {"GetItemRectMin", h_GetItemRectMin, kSig_GetItemRectMin, kEntryNeedsInit},
+    {"GetFrameHeight", h_GetFrameHeight, kSig_GetFrameHeight, kEntryNeedsInit},
+    {"GetFrameHeightWithSpacing", h_GetFrameHeightWithSpacing, kSig_GetFrameHeightWithSpacing, kEntryNeedsInit},
+    {"GetItemRectMax", h_GetItemRectMax, kSig_GetItemRectMax, kEntryNeedsInit | kEntryNeedsFrame},
+    {"GetItemRectMin", h_GetItemRectMin, kSig_GetItemRectMin, kEntryNeedsInit | kEntryNeedsFrame},
+    {"GetItemRectSize", h_GetItemRectSize, kSig_GetItemRectSize, kEntryNeedsInit | kEntryNeedsFrame},
+    {"GetKeyName", h_GetKeyName, kSig_GetKeyName, kEntryNeedsInit},
+    {"GetMouseClickedCount", h_GetMouseClickedCount, kSig_GetMouseClickedCount, kEntryNeedsInit},
+    {"GetMouseDragDelta", h_GetMouseDragDelta, kSig_GetMouseDragDelta, kEntryNeedsInit},
     {"GetMousePos", h_GetMousePos, kSig_GetMousePos, kEntryNeedsInit},
+    {"GetScrollMaxX", h_GetScrollMaxX, kSig_GetScrollMaxX, kEntryNeedsInit | kEntryNeedsFrame},
+    {"GetScrollMaxY", h_GetScrollMaxY, kSig_GetScrollMaxY, kEntryNeedsInit | kEntryNeedsFrame},
+    {"GetScrollX", h_GetScrollX, kSig_GetScrollX, kEntryNeedsInit | kEntryNeedsFrame},
+    {"GetScrollY", h_GetScrollY, kSig_GetScrollY, kEntryNeedsInit | kEntryNeedsFrame},
+    {"GetTextLineHeight", h_GetTextLineHeight, kSig_GetTextLineHeight, kEntryNeedsInit},
+    {"GetTextLineHeightWithSpacing", h_GetTextLineHeightWithSpacing, kSig_GetTextLineHeightWithSpacing, kEntryNeedsInit},
     {"GetTime", h_GetTime, kSig_GetTime, kEntryNeedsInit},
-    {"GetWindowDrawList", h_GetWindowDrawList, kSig_GetWindowDrawList, kEntryNeedsInit},
-    {"GetWindowPos", h_GetWindowPos, kSig_GetWindowPos, kEntryNeedsInit},
-    {"GetWindowSize", h_GetWindowSize, kSig_GetWindowSize, kEntryNeedsInit},
+    {"GetWindowDrawList", h_GetWindowDrawList, kSig_GetWindowDrawList, kEntryNeedsInit | kEntryNeedsFrame},
+    {"GetWindowHeight", h_GetWindowHeight, kSig_GetWindowHeight, kEntryNeedsInit | kEntryNeedsFrame},
+    {"GetWindowPos", h_GetWindowPos, kSig_GetWindowPos, kEntryNeedsInit | kEntryNeedsFrame},
+    {"GetWindowSize", h_GetWindowSize, kSig_GetWindowSize, kEntryNeedsInit | kEntryNeedsFrame},
+    {"GetWindowWidth", h_GetWindowWidth, kSig_GetWindowWidth, kEntryNeedsInit | kEntryNeedsFrame},
     {"ImPlot.AddColormap", PIG_IMPLOT_FN(pig_implot::h_AddColormap), pig_implot::kSig_AddColormap, kEntryNeedsInit},
-    {"ImPlot.Annotation", PIG_IMPLOT_FN(pig_implot::h_Annotation), pig_implot::kSig_Annotation, kEntryNeedsInit},
-    {"ImPlot.BeginPlot", PIG_IMPLOT_FN(pig_implot::h_BeginPlot), pig_implot::kSig_BeginPlot, kEntryNeedsInit},
-    {"ImPlot.BeginSubplots", PIG_IMPLOT_FN(pig_implot::h_BeginSubplots), pig_implot::kSig_BeginSubplots, kEntryNeedsInit},
-    {"ImPlot.ColormapScale", PIG_IMPLOT_FN(pig_implot::h_ColormapScale), pig_implot::kSig_ColormapScale, kEntryNeedsInit},
-    {"ImPlot.DragLineX", PIG_IMPLOT_FN(pig_implot::h_DragLineX), pig_implot::kSig_DragLineX, kEntryNeedsInit},
-    {"ImPlot.DragLineY", PIG_IMPLOT_FN(pig_implot::h_DragLineY), pig_implot::kSig_DragLineY, kEntryNeedsInit},
-    {"ImPlot.DragPoint", PIG_IMPLOT_FN(pig_implot::h_DragPoint), pig_implot::kSig_DragPoint, kEntryNeedsInit},
-    {"ImPlot.DragRect", PIG_IMPLOT_FN(pig_implot::h_DragRect), pig_implot::kSig_DragRect, kEntryNeedsInit},
-    {"ImPlot.EndPlot", PIG_IMPLOT_FN(pig_implot::h_EndPlot), pig_implot::kSig_EndPlot, kEntryNeedsInit},
-    {"ImPlot.EndSubplots", PIG_IMPLOT_FN(pig_implot::h_EndSubplots), pig_implot::kSig_EndSubplots, kEntryNeedsInit},
+    {"ImPlot.Annotation", PIG_IMPLOT_FN(pig_implot::h_Annotation), pig_implot::kSig_Annotation, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.AxisLink", PIG_IMPLOT_FN(bi_ImPlotAxisLink), kSigBi_ImPlot_AxisLink, 0},
+    {"ImPlot.BeginAlignedPlots", PIG_IMPLOT_FN(pig_implot::h_BeginAlignedPlots), pig_implot::kSig_BeginAlignedPlots, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.BeginLegendPopup", PIG_IMPLOT_FN(pig_implot::h_BeginLegendPopup), pig_implot::kSig_BeginLegendPopup, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.BeginPlot", PIG_IMPLOT_FN(pig_implot::h_BeginPlot), pig_implot::kSig_BeginPlot, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.BeginSubplots", PIG_IMPLOT_FN(pig_implot::h_BeginSubplots), pig_implot::kSig_BeginSubplots, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.BustColorCache", PIG_IMPLOT_FN(pig_implot::h_BustColorCache), pig_implot::kSig_BustColorCache, kEntryNeedsInit},
+    {"ImPlot.CancelPlotSelection", PIG_IMPLOT_FN(pig_implot::h_CancelPlotSelection), pig_implot::kSig_CancelPlotSelection, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.ColormapButton", PIG_IMPLOT_FN(pig_implot::h_ColormapButton), pig_implot::kSig_ColormapButton, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.ColormapIcon", PIG_IMPLOT_FN(pig_implot::h_ColormapIcon), pig_implot::kSig_ColormapIcon, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.ColormapScale", PIG_IMPLOT_FN(pig_implot::h_ColormapScale), pig_implot::kSig_ColormapScale, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.ColormapSlider", PIG_IMPLOT_FN(pig_implot::h_ColormapSlider), pig_implot::kSig_ColormapSlider, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.DragLineX", PIG_IMPLOT_FN(pig_implot::h_DragLineX), pig_implot::kSig_DragLineX, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.DragLineY", PIG_IMPLOT_FN(pig_implot::h_DragLineY), pig_implot::kSig_DragLineY, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.DragPoint", PIG_IMPLOT_FN(pig_implot::h_DragPoint), pig_implot::kSig_DragPoint, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.DragRect", PIG_IMPLOT_FN(pig_implot::h_DragRect), pig_implot::kSig_DragRect, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.EndAlignedPlots", PIG_IMPLOT_FN(pig_implot::h_EndAlignedPlots), pig_implot::kSig_EndAlignedPlots, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.EndLegendPopup", PIG_IMPLOT_FN(pig_implot::h_EndLegendPopup), pig_implot::kSig_EndLegendPopup, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.EndPlot", PIG_IMPLOT_FN(pig_implot::h_EndPlot), pig_implot::kSig_EndPlot, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.EndSubplots", PIG_IMPLOT_FN(pig_implot::h_EndSubplots), pig_implot::kSig_EndSubplots, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.GetColormapColor", PIG_IMPLOT_FN(pig_implot::h_GetColormapColor), pig_implot::kSig_GetColormapColor, kEntryNeedsInit},
     {"ImPlot.GetColormapCount", PIG_IMPLOT_FN(pig_implot::h_GetColormapCount), pig_implot::kSig_GetColormapCount, kEntryNeedsInit},
+    {"ImPlot.GetColormapIndex", PIG_IMPLOT_FN(pig_implot::h_GetColormapIndex), pig_implot::kSig_GetColormapIndex, kEntryNeedsInit},
     {"ImPlot.GetColormapName", PIG_IMPLOT_FN(pig_implot::h_GetColormapName), pig_implot::kSig_GetColormapName, kEntryNeedsInit},
-    {"ImPlot.GetPlotLimits", PIG_IMPLOT_FN(pig_implot::h_GetPlotLimits), pig_implot::kSig_GetPlotLimits, kEntryNeedsInit},
-    {"ImPlot.GetPlotMousePos", PIG_IMPLOT_FN(pig_implot::h_GetPlotMousePos), pig_implot::kSig_GetPlotMousePos, kEntryNeedsInit},
-    {"ImPlot.GetPlotPos", PIG_IMPLOT_FN(pig_implot::h_GetPlotPos), pig_implot::kSig_GetPlotPos, kEntryNeedsInit},
-    {"ImPlot.GetPlotSize", PIG_IMPLOT_FN(pig_implot::h_GetPlotSize), pig_implot::kSig_GetPlotSize, kEntryNeedsInit},
-    {"ImPlot.IsAxisHovered", PIG_IMPLOT_FN(pig_implot::h_IsAxisHovered), pig_implot::kSig_IsAxisHovered, kEntryNeedsInit},
-    {"ImPlot.IsLegendEntryHovered", PIG_IMPLOT_FN(pig_implot::h_IsLegendEntryHovered), pig_implot::kSig_IsLegendEntryHovered, kEntryNeedsInit},
-    {"ImPlot.IsPlotHovered", PIG_IMPLOT_FN(pig_implot::h_IsPlotHovered), pig_implot::kSig_IsPlotHovered, kEntryNeedsInit},
-    {"ImPlot.PixelsToPlot", PIG_IMPLOT_FN(pig_implot::h_PixelsToPlot), pig_implot::kSig_PixelsToPlot, kEntryNeedsInit},
-    {"ImPlot.PlotBars", PIG_IMPLOT_FN(pig_implot::h_PlotBars), pig_implot::kSig_PlotBars, kEntryNeedsInit},
-    {"ImPlot.PlotDigital", PIG_IMPLOT_FN(pig_implot::h_PlotDigital), pig_implot::kSig_PlotDigital, kEntryNeedsInit},
-    {"ImPlot.PlotDummy", PIG_IMPLOT_FN(pig_implot::h_PlotDummy), pig_implot::kSig_PlotDummy, kEntryNeedsInit},
-    {"ImPlot.PlotErrorBars", PIG_IMPLOT_FN(pig_implot::h_PlotErrorBars), pig_implot::kSig_PlotErrorBars, kEntryNeedsInit},
-    {"ImPlot.PlotHeatmap", PIG_IMPLOT_FN(pig_implot::h_PlotHeatmap), pig_implot::kSig_PlotHeatmap, kEntryNeedsInit},
-    {"ImPlot.PlotHistogram", PIG_IMPLOT_FN(pig_implot::h_PlotHistogram), pig_implot::kSig_PlotHistogram, kEntryNeedsInit},
-    {"ImPlot.PlotHistogram2D", PIG_IMPLOT_FN(pig_implot::h_PlotHistogram2D), pig_implot::kSig_PlotHistogram2D, kEntryNeedsInit},
-    {"ImPlot.PlotInfLines", PIG_IMPLOT_FN(pig_implot::h_PlotInfLines), pig_implot::kSig_PlotInfLines, kEntryNeedsInit},
-    {"ImPlot.PlotLine", PIG_IMPLOT_FN(pig_implot::h_PlotLine), pig_implot::kSig_PlotLine, kEntryNeedsInit},
-    {"ImPlot.PlotScatter", PIG_IMPLOT_FN(pig_implot::h_PlotScatter), pig_implot::kSig_PlotScatter, kEntryNeedsInit},
-    {"ImPlot.PlotShaded", PIG_IMPLOT_FN(pig_implot::h_PlotShaded), pig_implot::kSig_PlotShaded, kEntryNeedsInit},
-    {"ImPlot.PlotStairs", PIG_IMPLOT_FN(pig_implot::h_PlotStairs), pig_implot::kSig_PlotStairs, kEntryNeedsInit},
-    {"ImPlot.PlotStems", PIG_IMPLOT_FN(pig_implot::h_PlotStems), pig_implot::kSig_PlotStems, kEntryNeedsInit},
-    {"ImPlot.PlotText", PIG_IMPLOT_FN(pig_implot::h_PlotText), pig_implot::kSig_PlotText, kEntryNeedsInit},
-    {"ImPlot.PlotToPixels", PIG_IMPLOT_FN(pig_implot::h_PlotToPixels), pig_implot::kSig_PlotToPixels, kEntryNeedsInit},
+    {"ImPlot.GetColormapSize", PIG_IMPLOT_FN(pig_implot::h_GetColormapSize), pig_implot::kSig_GetColormapSize, kEntryNeedsInit},
+    {"ImPlot.GetLastItemColor", PIG_IMPLOT_FN(pig_implot::h_GetLastItemColor), pig_implot::kSig_GetLastItemColor, kEntryNeedsInit},
+    {"ImPlot.GetPlotDrawList", PIG_IMPLOT_FN(pig_implot::h_GetPlotDrawList), pig_implot::kSig_GetPlotDrawList, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.GetPlotLimits", PIG_IMPLOT_FN(pig_implot::h_GetPlotLimits), pig_implot::kSig_GetPlotLimits, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.GetPlotMousePos", PIG_IMPLOT_FN(pig_implot::h_GetPlotMousePos), pig_implot::kSig_GetPlotMousePos, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.GetPlotPos", PIG_IMPLOT_FN(pig_implot::h_GetPlotPos), pig_implot::kSig_GetPlotPos, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.GetPlotSelection", PIG_IMPLOT_FN(pig_implot::h_GetPlotSelection), pig_implot::kSig_GetPlotSelection, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.GetPlotSize", PIG_IMPLOT_FN(pig_implot::h_GetPlotSize), pig_implot::kSig_GetPlotSize, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.HideNextItem", PIG_IMPLOT_FN(pig_implot::h_HideNextItem), pig_implot::kSig_HideNextItem, kEntryNeedsInit},
+    {"ImPlot.IsAxisHovered", PIG_IMPLOT_FN(pig_implot::h_IsAxisHovered), pig_implot::kSig_IsAxisHovered, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.IsLegendEntryHovered", PIG_IMPLOT_FN(pig_implot::h_IsLegendEntryHovered), pig_implot::kSig_IsLegendEntryHovered, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.IsPlotHovered", PIG_IMPLOT_FN(pig_implot::h_IsPlotHovered), pig_implot::kSig_IsPlotHovered, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.IsPlotSelected", PIG_IMPLOT_FN(pig_implot::h_IsPlotSelected), pig_implot::kSig_IsPlotSelected, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.IsSubplotsHovered", PIG_IMPLOT_FN(pig_implot::h_IsSubplotsHovered), pig_implot::kSig_IsSubplotsHovered, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.MapInputDefault", PIG_IMPLOT_FN(pig_implot::h_MapInputDefault), pig_implot::kSig_MapInputDefault, kEntryNeedsInit},
+    {"ImPlot.MapInputReverse", PIG_IMPLOT_FN(pig_implot::h_MapInputReverse), pig_implot::kSig_MapInputReverse, kEntryNeedsInit},
+    {"ImPlot.NextColormapColor", PIG_IMPLOT_FN(pig_implot::h_NextColormapColor), pig_implot::kSig_NextColormapColor, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.PixelsToPlot", PIG_IMPLOT_FN(pig_implot::h_PixelsToPlot), pig_implot::kSig_PixelsToPlot, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.PlotBarGroups", PIG_IMPLOT_FN(bi_ImPlotPlotBarGroups), kSigBi_ImPlot_PlotBarGroups, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.PlotBars", PIG_IMPLOT_FN(pig_implot::h_PlotBars), pig_implot::kSig_PlotBars, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.PlotBubbles", PIG_IMPLOT_FN(pig_implot::h_PlotBubbles), pig_implot::kSig_PlotBubbles, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.PlotDigital", PIG_IMPLOT_FN(pig_implot::h_PlotDigital), pig_implot::kSig_PlotDigital, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.PlotDummy", PIG_IMPLOT_FN(pig_implot::h_PlotDummy), pig_implot::kSig_PlotDummy, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.PlotErrorBars", PIG_IMPLOT_FN(pig_implot::h_PlotErrorBars), pig_implot::kSig_PlotErrorBars, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.PlotHeatmap", PIG_IMPLOT_FN(pig_implot::h_PlotHeatmap), pig_implot::kSig_PlotHeatmap, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.PlotHistogram", PIG_IMPLOT_FN(pig_implot::h_PlotHistogram), pig_implot::kSig_PlotHistogram, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.PlotHistogram2D", PIG_IMPLOT_FN(pig_implot::h_PlotHistogram2D), pig_implot::kSig_PlotHistogram2D, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.PlotImage", PIG_IMPLOT_FN(bi_ImPlotPlotImage), kSigBi_ImPlot_PlotImage, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.PlotInfLines", PIG_IMPLOT_FN(pig_implot::h_PlotInfLines), pig_implot::kSig_PlotInfLines, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.PlotLine", PIG_IMPLOT_FN(pig_implot::h_PlotLine), pig_implot::kSig_PlotLine, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.PlotPieChart", PIG_IMPLOT_FN(bi_ImPlotPlotPieChart), kSigBi_ImPlot_PlotPieChart, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.PlotPolygon", PIG_IMPLOT_FN(pig_implot::h_PlotPolygon), pig_implot::kSig_PlotPolygon, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.PlotScatter", PIG_IMPLOT_FN(pig_implot::h_PlotScatter), pig_implot::kSig_PlotScatter, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.PlotShaded", PIG_IMPLOT_FN(pig_implot::h_PlotShaded), pig_implot::kSig_PlotShaded, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.PlotStairs", PIG_IMPLOT_FN(pig_implot::h_PlotStairs), pig_implot::kSig_PlotStairs, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.PlotStems", PIG_IMPLOT_FN(pig_implot::h_PlotStems), pig_implot::kSig_PlotStems, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.PlotText", PIG_IMPLOT_FN(pig_implot::h_PlotText), pig_implot::kSig_PlotText, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.PlotToPixels", PIG_IMPLOT_FN(pig_implot::h_PlotToPixels), pig_implot::kSig_PlotToPixels, kEntryNeedsInit | kEntryNeedsFrame},
     {"ImPlot.PopColormap", PIG_IMPLOT_FN(pig_implot::h_PopColormap), pig_implot::kSig_PopColormap, kEntryNeedsInit},
     {"ImPlot.PopStyleColor", PIG_IMPLOT_FN(pig_implot::h_PopStyleColor), pig_implot::kSig_PopStyleColor, kEntryNeedsInit},
     {"ImPlot.PopStyleVar", PIG_IMPLOT_FN(pig_implot::h_PopStyleVar), pig_implot::kSig_PopStyleVar, kEntryNeedsInit},
@@ -3949,40 +5886,61 @@ const Entry kTable[] = {
     {"ImPlot.PushStyleVarInt", PIG_IMPLOT_FN(pig_implot::h_PushStyleVarInt), pig_implot::kSig_PushStyleVarInt, kEntryNeedsInit},
     {"ImPlot.PushStyleVarVec2", PIG_IMPLOT_FN(pig_implot::h_PushStyleVarVec2), pig_implot::kSig_PushStyleVarVec2, kEntryNeedsInit},
     {"ImPlot.SampleColormap", PIG_IMPLOT_FN(pig_implot::h_SampleColormap), pig_implot::kSig_SampleColormap, kEntryNeedsInit},
+    {"ImPlot.SetAxes", PIG_IMPLOT_FN(pig_implot::h_SetAxes), pig_implot::kSig_SetAxes, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.SetAxis", PIG_IMPLOT_FN(pig_implot::h_SetAxis), pig_implot::kSig_SetAxis, kEntryNeedsInit | kEntryNeedsFrame},
     {"ImPlot.SetNextAxesLimits", PIG_IMPLOT_FN(pig_implot::h_SetNextAxesLimits), pig_implot::kSig_SetNextAxesLimits, kEntryNeedsInit},
     {"ImPlot.SetNextAxesToFit", PIG_IMPLOT_FN(pig_implot::h_SetNextAxesToFit), pig_implot::kSig_SetNextAxesToFit, kEntryNeedsInit},
     {"ImPlot.SetNextAxisLimits", PIG_IMPLOT_FN(pig_implot::h_SetNextAxisLimits), pig_implot::kSig_SetNextAxisLimits, kEntryNeedsInit},
-    {"ImPlot.SetupAxes", PIG_IMPLOT_FN(pig_implot::h_SetupAxes), pig_implot::kSig_SetupAxes, kEntryNeedsInit},
-    {"ImPlot.SetupAxesLimits", PIG_IMPLOT_FN(pig_implot::h_SetupAxesLimits), pig_implot::kSig_SetupAxesLimits, kEntryNeedsInit},
-    {"ImPlot.SetupAxis", PIG_IMPLOT_FN(pig_implot::h_SetupAxis), pig_implot::kSig_SetupAxis, kEntryNeedsInit},
-    {"ImPlot.SetupAxisFormat", PIG_IMPLOT_FN(pig_implot::h_SetupAxisFormat), pig_implot::kSig_SetupAxisFormat, kEntryNeedsInit},
-    {"ImPlot.SetupAxisLimits", PIG_IMPLOT_FN(pig_implot::h_SetupAxisLimits), pig_implot::kSig_SetupAxisLimits, kEntryNeedsInit},
-    {"ImPlot.SetupAxisTicks", PIG_IMPLOT_FN(pig_implot::h_SetupAxisTicks), pig_implot::kSig_SetupAxisTicks, kEntryNeedsInit},
-    {"ImPlot.SetupFinish", PIG_IMPLOT_FN(pig_implot::h_SetupFinish), pig_implot::kSig_SetupFinish, kEntryNeedsInit},
-    {"ImPlot.SetupLegend", PIG_IMPLOT_FN(pig_implot::h_SetupLegend), pig_implot::kSig_SetupLegend, kEntryNeedsInit},
-    {"ImPlot.SetupMouseText", PIG_IMPLOT_FN(pig_implot::h_SetupMouseText), pig_implot::kSig_SetupMouseText, kEntryNeedsInit},
-    {"ImPlot.ShowDemoWindow", PIG_IMPLOT_FN(pig_implot::h_ShowDemoWindow), pig_implot::kSig_ShowDemoWindow, kEntryNeedsInit},
-    {"ImPlot.ShowMetricsWindow", PIG_IMPLOT_FN(pig_implot::h_ShowMetricsWindow), pig_implot::kSig_ShowMetricsWindow, kEntryNeedsInit},
+    {"ImPlot.SetNextAxisLinks", PIG_IMPLOT_FN(bi_ImPlotSetNextAxisLinks), kSigBi_ImPlot_SetNextAxisLinks, kEntryNeedsInit},
+    {"ImPlot.SetNextAxisToFit", PIG_IMPLOT_FN(pig_implot::h_SetNextAxisToFit), pig_implot::kSig_SetNextAxisToFit, kEntryNeedsInit},
+    {"ImPlot.SetupAxes", PIG_IMPLOT_FN(pig_implot::h_SetupAxes), pig_implot::kSig_SetupAxes, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.SetupAxesLimits", PIG_IMPLOT_FN(pig_implot::h_SetupAxesLimits), pig_implot::kSig_SetupAxesLimits, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.SetupAxis", PIG_IMPLOT_FN(pig_implot::h_SetupAxis), pig_implot::kSig_SetupAxis, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.SetupAxisFormat", PIG_IMPLOT_FN(pig_implot::h_SetupAxisFormat), pig_implot::kSig_SetupAxisFormat, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.SetupAxisLimits", PIG_IMPLOT_FN(pig_implot::h_SetupAxisLimits), pig_implot::kSig_SetupAxisLimits, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.SetupAxisLimitsConstraints", PIG_IMPLOT_FN(pig_implot::h_SetupAxisLimitsConstraints), pig_implot::kSig_SetupAxisLimitsConstraints, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.SetupAxisLinks", PIG_IMPLOT_FN(bi_ImPlotSetupAxisLinks), kSigBi_ImPlot_SetupAxisLinks, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.SetupAxisScale", PIG_IMPLOT_FN(pig_implot::h_SetupAxisScale), pig_implot::kSig_SetupAxisScale, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.SetupAxisTicks", PIG_IMPLOT_FN(pig_implot::h_SetupAxisTicks), pig_implot::kSig_SetupAxisTicks, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.SetupAxisZoomConstraints", PIG_IMPLOT_FN(pig_implot::h_SetupAxisZoomConstraints), pig_implot::kSig_SetupAxisZoomConstraints, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.SetupFinish", PIG_IMPLOT_FN(pig_implot::h_SetupFinish), pig_implot::kSig_SetupFinish, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.SetupLegend", PIG_IMPLOT_FN(pig_implot::h_SetupLegend), pig_implot::kSig_SetupLegend, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.SetupMouseText", PIG_IMPLOT_FN(pig_implot::h_SetupMouseText), pig_implot::kSig_SetupMouseText, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.ShowColormapSelector", PIG_IMPLOT_FN(pig_implot::h_ShowColormapSelector), pig_implot::kSig_ShowColormapSelector, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.ShowDemoWindow", PIG_IMPLOT_FN(pig_implot::h_ShowDemoWindow), pig_implot::kSig_ShowDemoWindow, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.ShowMetricsWindow", PIG_IMPLOT_FN(pig_implot::h_ShowMetricsWindow), pig_implot::kSig_ShowMetricsWindow, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.ShowStyleEditor", PIG_IMPLOT_FN(pig_implot::h_ShowStyleEditor), pig_implot::kSig_ShowStyleEditor, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.ShowUserGuide", PIG_IMPLOT_FN(pig_implot::h_ShowUserGuide), pig_implot::kSig_ShowUserGuide, kEntryNeedsInit | kEntryNeedsFrame},
     {"ImPlot.StyleColorsAuto", PIG_IMPLOT_FN(pig_implot::h_StyleColorsAuto), pig_implot::kSig_StyleColorsAuto, kEntryNeedsInit},
     {"ImPlot.StyleColorsClassic", PIG_IMPLOT_FN(pig_implot::h_StyleColorsClassic), pig_implot::kSig_StyleColorsClassic, kEntryNeedsInit},
     {"ImPlot.StyleColorsDark", PIG_IMPLOT_FN(pig_implot::h_StyleColorsDark), pig_implot::kSig_StyleColorsDark, kEntryNeedsInit},
     {"ImPlot.StyleColorsLight", PIG_IMPLOT_FN(pig_implot::h_StyleColorsLight), pig_implot::kSig_StyleColorsLight, kEntryNeedsInit},
-    {"ImPlot.TagX", PIG_IMPLOT_FN(pig_implot::h_TagX), pig_implot::kSig_TagX, kEntryNeedsInit},
-    {"ImPlot.TagY", PIG_IMPLOT_FN(pig_implot::h_TagY), pig_implot::kSig_TagY, kEntryNeedsInit},
-    {"ImPlot3D.BeginPlot", PIG_IMPLOT3D_FN(pig_implot3d::h_BeginPlot), pig_implot3d::kSig_BeginPlot, kEntryNeedsInit},
-    {"ImPlot3D.EndPlot", PIG_IMPLOT3D_FN(pig_implot3d::h_EndPlot), pig_implot3d::kSig_EndPlot, kEntryNeedsInit},
+    {"ImPlot.TagX", PIG_IMPLOT_FN(pig_implot::h_TagX), pig_implot::kSig_TagX, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot.TagY", PIG_IMPLOT_FN(pig_implot::h_TagY), pig_implot::kSig_TagY, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.AddColormap", PIG_IMPLOT3D_FN(pig_implot3d::h_AddColormap), pig_implot3d::kSig_AddColormap, kEntryNeedsInit},
+    {"ImPlot3D.BeginPlot", PIG_IMPLOT3D_FN(pig_implot3d::h_BeginPlot), pig_implot3d::kSig_BeginPlot, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.EndPlot", PIG_IMPLOT3D_FN(pig_implot3d::h_EndPlot), pig_implot3d::kSig_EndPlot, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.GetColormapColor", PIG_IMPLOT3D_FN(pig_implot3d::h_GetColormapColor), pig_implot3d::kSig_GetColormapColor, kEntryNeedsInit},
     {"ImPlot3D.GetColormapCount", PIG_IMPLOT3D_FN(pig_implot3d::h_GetColormapCount), pig_implot3d::kSig_GetColormapCount, kEntryNeedsInit},
+    {"ImPlot3D.GetColormapIndex", PIG_IMPLOT3D_FN(pig_implot3d::h_GetColormapIndex), pig_implot3d::kSig_GetColormapIndex, kEntryNeedsInit},
     {"ImPlot3D.GetColormapName", PIG_IMPLOT3D_FN(pig_implot3d::h_GetColormapName), pig_implot3d::kSig_GetColormapName, kEntryNeedsInit},
-    {"ImPlot3D.GetPlotRectPos", PIG_IMPLOT3D_FN(pig_implot3d::h_GetPlotRectPos), pig_implot3d::kSig_GetPlotRectPos, kEntryNeedsInit},
-    {"ImPlot3D.GetPlotRectSize", PIG_IMPLOT3D_FN(pig_implot3d::h_GetPlotRectSize), pig_implot3d::kSig_GetPlotRectSize, kEntryNeedsInit},
-    {"ImPlot3D.PlotLine", PIG_IMPLOT3D_FN(pig_implot3d::h_PlotLine), pig_implot3d::kSig_PlotLine, kEntryNeedsInit},
-    {"ImPlot3D.PlotMesh", PIG_IMPLOT3D_FN(pig_implot3d::h_PlotMesh), pig_implot3d::kSig_PlotMesh, kEntryNeedsInit},
-    {"ImPlot3D.PlotQuad", PIG_IMPLOT3D_FN(pig_implot3d::h_PlotQuad), pig_implot3d::kSig_PlotQuad, kEntryNeedsInit},
-    {"ImPlot3D.PlotScatter", PIG_IMPLOT3D_FN(pig_implot3d::h_PlotScatter), pig_implot3d::kSig_PlotScatter, kEntryNeedsInit},
-    {"ImPlot3D.PlotSurface", PIG_IMPLOT3D_FN(pig_implot3d::h_PlotSurface), pig_implot3d::kSig_PlotSurface, kEntryNeedsInit},
-    {"ImPlot3D.PlotText", PIG_IMPLOT3D_FN(pig_implot3d::h_PlotText), pig_implot3d::kSig_PlotText, kEntryNeedsInit},
-    {"ImPlot3D.PlotToPixels", PIG_IMPLOT3D_FN(pig_implot3d::h_PlotToPixels), pig_implot3d::kSig_PlotToPixels, kEntryNeedsInit},
-    {"ImPlot3D.PlotTriangle", PIG_IMPLOT3D_FN(pig_implot3d::h_PlotTriangle), pig_implot3d::kSig_PlotTriangle, kEntryNeedsInit},
+    {"ImPlot3D.GetColormapSize", PIG_IMPLOT3D_FN(pig_implot3d::h_GetColormapSize), pig_implot3d::kSig_GetColormapSize, kEntryNeedsInit},
+    {"ImPlot3D.GetPlotDrawList", PIG_IMPLOT3D_FN(pig_implot3d::h_GetPlotDrawList), pig_implot3d::kSig_GetPlotDrawList, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.GetPlotRectPos", PIG_IMPLOT3D_FN(pig_implot3d::h_GetPlotRectPos), pig_implot3d::kSig_GetPlotRectPos, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.GetPlotRectSize", PIG_IMPLOT3D_FN(pig_implot3d::h_GetPlotRectSize), pig_implot3d::kSig_GetPlotRectSize, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.NextColormapColor", PIG_IMPLOT3D_FN(pig_implot3d::h_NextColormapColor), pig_implot3d::kSig_NextColormapColor, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.PixelsToPlotPlane", PIG_IMPLOT3D_FN(pig_implot3d::h_PixelsToPlotPlane), pig_implot3d::kSig_PixelsToPlotPlane, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.PixelsToPlotRay", PIG_IMPLOT3D_FN(pig_implot3d::h_PixelsToPlotRay), pig_implot3d::kSig_PixelsToPlotRay, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.PlotDummy", PIG_IMPLOT3D_FN(pig_implot3d::h_PlotDummy), pig_implot3d::kSig_PlotDummy, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.PlotImage", PIG_IMPLOT3D_FN(bi_ImPlot3DPlotImage), kSigBi_ImPlot3D_PlotImage, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.PlotLine", PIG_IMPLOT3D_FN(pig_implot3d::h_PlotLine), pig_implot3d::kSig_PlotLine, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.PlotMesh", PIG_IMPLOT3D_FN(pig_implot3d::h_PlotMesh), pig_implot3d::kSig_PlotMesh, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.PlotQuad", PIG_IMPLOT3D_FN(pig_implot3d::h_PlotQuad), pig_implot3d::kSig_PlotQuad, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.PlotScatter", PIG_IMPLOT3D_FN(pig_implot3d::h_PlotScatter), pig_implot3d::kSig_PlotScatter, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.PlotSurface", PIG_IMPLOT3D_FN(pig_implot3d::h_PlotSurface), pig_implot3d::kSig_PlotSurface, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.PlotText", PIG_IMPLOT3D_FN(pig_implot3d::h_PlotText), pig_implot3d::kSig_PlotText, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.PlotToPixels", PIG_IMPLOT3D_FN(pig_implot3d::h_PlotToPixels), pig_implot3d::kSig_PlotToPixels, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.PlotTriangle", PIG_IMPLOT3D_FN(pig_implot3d::h_PlotTriangle), pig_implot3d::kSig_PlotTriangle, kEntryNeedsInit | kEntryNeedsFrame},
     {"ImPlot3D.PopColormap", PIG_IMPLOT3D_FN(pig_implot3d::h_PopColormap), pig_implot3d::kSig_PopColormap, kEntryNeedsInit},
     {"ImPlot3D.PopStyleColor", PIG_IMPLOT3D_FN(pig_implot3d::h_PopStyleColor), pig_implot3d::kSig_PopStyleColor, kEntryNeedsInit},
     {"ImPlot3D.PopStyleVar", PIG_IMPLOT3D_FN(pig_implot3d::h_PopStyleVar), pig_implot3d::kSig_PopStyleVar, kEntryNeedsInit},
@@ -3990,127 +5948,192 @@ const Entry kTable[] = {
     {"ImPlot3D.PushColormapIndex", PIG_IMPLOT3D_FN(pig_implot3d::h_PushColormapIndex), pig_implot3d::kSig_PushColormapIndex, kEntryNeedsInit},
     {"ImPlot3D.PushStyleColor", PIG_IMPLOT3D_FN(pig_implot3d::h_PushStyleColor), pig_implot3d::kSig_PushStyleColor, kEntryNeedsInit},
     {"ImPlot3D.PushStyleVar", PIG_IMPLOT3D_FN(pig_implot3d::h_PushStyleVar), pig_implot3d::kSig_PushStyleVar, kEntryNeedsInit},
+    {"ImPlot3D.PushStyleVarInt", PIG_IMPLOT3D_FN(pig_implot3d::h_PushStyleVarInt), pig_implot3d::kSig_PushStyleVarInt, kEntryNeedsInit},
     {"ImPlot3D.PushStyleVarVec2", PIG_IMPLOT3D_FN(pig_implot3d::h_PushStyleVarVec2), pig_implot3d::kSig_PushStyleVarVec2, kEntryNeedsInit},
     {"ImPlot3D.SampleColormap", PIG_IMPLOT3D_FN(pig_implot3d::h_SampleColormap), pig_implot3d::kSig_SampleColormap, kEntryNeedsInit},
-    {"ImPlot3D.SetupAxes", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupAxes), pig_implot3d::kSig_SetupAxes, kEntryNeedsInit},
-    {"ImPlot3D.SetupAxesLimits", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupAxesLimits), pig_implot3d::kSig_SetupAxesLimits, kEntryNeedsInit},
-    {"ImPlot3D.SetupAxis", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupAxis), pig_implot3d::kSig_SetupAxis, kEntryNeedsInit},
-    {"ImPlot3D.SetupAxisLimits", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupAxisLimits), pig_implot3d::kSig_SetupAxisLimits, kEntryNeedsInit},
-    {"ImPlot3D.SetupAxisTicks", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupAxisTicks), pig_implot3d::kSig_SetupAxisTicks, kEntryNeedsInit},
-    {"ImPlot3D.SetupBoxRotation", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupBoxRotation), pig_implot3d::kSig_SetupBoxRotation, kEntryNeedsInit},
-    {"ImPlot3D.SetupBoxScale", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupBoxScale), pig_implot3d::kSig_SetupBoxScale, kEntryNeedsInit},
-    {"ImPlot3D.SetupLegend", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupLegend), pig_implot3d::kSig_SetupLegend, kEntryNeedsInit},
-    {"ImPlot3D.ShowDemoWindow", PIG_IMPLOT3D_FN(pig_implot3d::h_ShowDemoWindow), pig_implot3d::kSig_ShowDemoWindow, kEntryNeedsInit},
-    {"ImPlot3D.ShowMetricsWindow", PIG_IMPLOT3D_FN(pig_implot3d::h_ShowMetricsWindow), pig_implot3d::kSig_ShowMetricsWindow, kEntryNeedsInit},
+    {"ImPlot3D.SetupAxes", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupAxes), pig_implot3d::kSig_SetupAxes, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.SetupAxesLimits", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupAxesLimits), pig_implot3d::kSig_SetupAxesLimits, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.SetupAxis", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupAxis), pig_implot3d::kSig_SetupAxis, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.SetupAxisLimits", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupAxisLimits), pig_implot3d::kSig_SetupAxisLimits, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.SetupAxisLimitsConstraints", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupAxisLimitsConstraints), pig_implot3d::kSig_SetupAxisLimitsConstraints, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.SetupAxisScale", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupAxisScale), pig_implot3d::kSig_SetupAxisScale, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.SetupAxisTicks", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupAxisTicks), pig_implot3d::kSig_SetupAxisTicks, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.SetupAxisZoomConstraints", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupAxisZoomConstraints), pig_implot3d::kSig_SetupAxisZoomConstraints, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.SetupBoxInitialRotation", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupBoxInitialRotation), pig_implot3d::kSig_SetupBoxInitialRotation, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.SetupBoxRotation", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupBoxRotation), pig_implot3d::kSig_SetupBoxRotation, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.SetupBoxScale", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupBoxScale), pig_implot3d::kSig_SetupBoxScale, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.SetupLegend", PIG_IMPLOT3D_FN(pig_implot3d::h_SetupLegend), pig_implot3d::kSig_SetupLegend, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.ShowDemoWindow", PIG_IMPLOT3D_FN(pig_implot3d::h_ShowDemoWindow), pig_implot3d::kSig_ShowDemoWindow, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.ShowMetricsWindow", PIG_IMPLOT3D_FN(pig_implot3d::h_ShowMetricsWindow), pig_implot3d::kSig_ShowMetricsWindow, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ImPlot3D.ShowStyleEditor", PIG_IMPLOT3D_FN(pig_implot3d::h_ShowStyleEditor), pig_implot3d::kSig_ShowStyleEditor, kEntryNeedsInit | kEntryNeedsFrame},
     {"ImPlot3D.StyleColorsAuto", PIG_IMPLOT3D_FN(pig_implot3d::h_StyleColorsAuto), pig_implot3d::kSig_StyleColorsAuto, kEntryNeedsInit},
     {"ImPlot3D.StyleColorsClassic", PIG_IMPLOT3D_FN(pig_implot3d::h_StyleColorsClassic), pig_implot3d::kSig_StyleColorsClassic, kEntryNeedsInit},
     {"ImPlot3D.StyleColorsDark", PIG_IMPLOT3D_FN(pig_implot3d::h_StyleColorsDark), pig_implot3d::kSig_StyleColorsDark, kEntryNeedsInit},
     {"ImPlot3D.StyleColorsLight", PIG_IMPLOT3D_FN(pig_implot3d::h_StyleColorsLight), pig_implot3d::kSig_StyleColorsLight, kEntryNeedsInit},
     {"Image", bi_Image, kSigBi_Image, kEntryNeedsInit},
     {"ImageButton", bi_ImageButton, kSigBi_ImageButton, kEntryNeedsInit},
-    {"Indent", h_Indent, kSig_Indent, kEntryNeedsInit},
+    {"Indent", h_Indent, kSig_Indent, kEntryNeedsInit | kEntryNeedsFrame},
     {"Init", bi_Init, kSigBi_Init, 0},
-    {"InputDouble", h_InputDouble, kSig_InputDouble, kEntryNeedsInit},
-    {"InputFloat", h_InputFloat, kSig_InputFloat, kEntryNeedsInit},
-    {"InputInt", h_InputInt, kSig_InputInt, kEntryNeedsInit},
-    {"InputText", h_InputText, kSig_InputText, kEntryNeedsInit},
-    {"InputTextMultiline", h_InputTextMultiline, kSig_InputTextMultiline, kEntryNeedsInit},
-    {"InputTextWithHint", h_InputTextWithHint, kSig_InputTextWithHint, kEntryNeedsInit},
-    {"InvisibleButton", h_InvisibleButton, kSig_InvisibleButton, kEntryNeedsInit},
+    {"InputDouble", h_InputDouble, kSig_InputDouble, kEntryNeedsInit | kEntryNeedsFrame},
+    {"InputFloat", h_InputFloat, kSig_InputFloat, kEntryNeedsInit | kEntryNeedsFrame},
+    {"InputFloat2", h_InputFloat2, kSig_InputFloat2, kEntryNeedsInit | kEntryNeedsFrame},
+    {"InputFloat3", h_InputFloat3, kSig_InputFloat3, kEntryNeedsInit | kEntryNeedsFrame},
+    {"InputFloat4", h_InputFloat4, kSig_InputFloat4, kEntryNeedsInit | kEntryNeedsFrame},
+    {"InputInt", h_InputInt, kSig_InputInt, kEntryNeedsInit | kEntryNeedsFrame},
+    {"InputInt2", h_InputInt2, kSig_InputInt2, kEntryNeedsInit | kEntryNeedsFrame},
+    {"InputInt3", h_InputInt3, kSig_InputInt3, kEntryNeedsInit | kEntryNeedsFrame},
+    {"InputInt4", h_InputInt4, kSig_InputInt4, kEntryNeedsInit | kEntryNeedsFrame},
+    {"InputText", h_InputText, kSig_InputText, kEntryNeedsInit | kEntryNeedsFrame},
+    {"InputTextMultiline", h_InputTextMultiline, kSig_InputTextMultiline, kEntryNeedsInit | kEntryNeedsFrame},
+    {"InputTextWithHint", h_InputTextWithHint, kSig_InputTextWithHint, kEntryNeedsInit | kEntryNeedsFrame},
+    {"InvisibleButton", h_InvisibleButton, kSig_InvisibleButton, kEntryNeedsInit | kEntryNeedsFrame},
     {"IsAnyItemActive", h_IsAnyItemActive, kSig_IsAnyItemActive, kEntryNeedsInit},
-    {"IsItemActive", h_IsItemActive, kSig_IsItemActive, kEntryNeedsInit},
-    {"IsItemClicked", h_IsItemClicked, kSig_IsItemClicked, kEntryNeedsInit},
-    {"IsItemDeactivatedAfterEdit", h_IsItemDeactivatedAfterEdit, kSig_IsItemDeactivatedAfterEdit, kEntryNeedsInit},
-    {"IsItemEdited", h_IsItemEdited, kSig_IsItemEdited, kEntryNeedsInit},
-    {"IsItemHovered", h_IsItemHovered, kSig_IsItemHovered, kEntryNeedsInit},
+    {"IsAnyItemHovered", h_IsAnyItemHovered, kSig_IsAnyItemHovered, kEntryNeedsInit},
+    {"IsItemActivated", h_IsItemActivated, kSig_IsItemActivated, kEntryNeedsInit | kEntryNeedsFrame},
+    {"IsItemActive", h_IsItemActive, kSig_IsItemActive, kEntryNeedsInit | kEntryNeedsFrame},
+    {"IsItemClicked", h_IsItemClicked, kSig_IsItemClicked, kEntryNeedsInit | kEntryNeedsFrame},
+    {"IsItemDeactivated", h_IsItemDeactivated, kSig_IsItemDeactivated, kEntryNeedsInit | kEntryNeedsFrame},
+    {"IsItemDeactivatedAfterEdit", h_IsItemDeactivatedAfterEdit, kSig_IsItemDeactivatedAfterEdit, kEntryNeedsInit | kEntryNeedsFrame},
+    {"IsItemEdited", h_IsItemEdited, kSig_IsItemEdited, kEntryNeedsInit | kEntryNeedsFrame},
+    {"IsItemFocused", h_IsItemFocused, kSig_IsItemFocused, kEntryNeedsInit | kEntryNeedsFrame},
+    {"IsItemHovered", h_IsItemHovered, kSig_IsItemHovered, kEntryNeedsInit | kEntryNeedsFrame},
+    {"IsItemToggledOpen", h_IsItemToggledOpen, kSig_IsItemToggledOpen, kEntryNeedsInit | kEntryNeedsFrame},
+    {"IsItemVisible", h_IsItemVisible, kSig_IsItemVisible, kEntryNeedsInit | kEntryNeedsFrame},
+    {"IsKeyChordPressed", h_IsKeyChordPressed, kSig_IsKeyChordPressed, kEntryNeedsInit},
     {"IsKeyDown", h_IsKeyDown, kSig_IsKeyDown, kEntryNeedsInit},
     {"IsKeyPressed", h_IsKeyPressed, kSig_IsKeyPressed, kEntryNeedsInit},
+    {"IsKeyReleased", h_IsKeyReleased, kSig_IsKeyReleased, kEntryNeedsInit},
     {"IsMouseClicked", h_IsMouseClicked, kSig_IsMouseClicked, kEntryNeedsInit},
+    {"IsMouseDoubleClicked", h_IsMouseDoubleClicked, kSig_IsMouseDoubleClicked, kEntryNeedsInit},
     {"IsMouseDown", h_IsMouseDown, kSig_IsMouseDown, kEntryNeedsInit},
-    {"IsWindowFocused", h_IsWindowFocused, kSig_IsWindowFocused, kEntryNeedsInit},
-    {"IsWindowHovered", h_IsWindowHovered, kSig_IsWindowHovered, kEntryNeedsInit},
-    {"LabelText", h_LabelText, kSig_LabelText, kEntryNeedsInit},
-    {"ListBox", h_ListBox, kSig_ListBox, kEntryNeedsInit},
-    {"MenuItem", h_MenuItem, kSig_MenuItem, kEntryNeedsInit},
+    {"IsMouseDragging", h_IsMouseDragging, kSig_IsMouseDragging, kEntryNeedsInit},
+    {"IsMouseReleased", h_IsMouseReleased, kSig_IsMouseReleased, kEntryNeedsInit},
+    {"IsPopupOpen", h_IsPopupOpen, kSig_IsPopupOpen, kEntryNeedsInit | kEntryNeedsFrame},
+    {"IsWindowAppearing", h_IsWindowAppearing, kSig_IsWindowAppearing, kEntryNeedsInit | kEntryNeedsFrame},
+    {"IsWindowCollapsed", h_IsWindowCollapsed, kSig_IsWindowCollapsed, kEntryNeedsInit | kEntryNeedsFrame},
+    {"IsWindowFocused", h_IsWindowFocused, kSig_IsWindowFocused, kEntryNeedsInit | kEntryNeedsFrame},
+    {"IsWindowHovered", h_IsWindowHovered, kSig_IsWindowHovered, kEntryNeedsInit | kEntryNeedsFrame},
+    {"LabelText", h_LabelText, kSig_LabelText, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ListBox", h_ListBox, kSig_ListBox, kEntryNeedsInit | kEntryNeedsFrame},
+    {"LoadIniSettingsFromMemory", h_LoadIniSettingsFromMemory, kSig_LoadIniSettingsFromMemory, kEntryNeedsInit},
+    {"MenuItem", h_MenuItem, kSig_MenuItem, kEntryNeedsInit | kEntryNeedsFrame},
     {"NewFrame", bi_NewFrame, kSigBi_NewFrame, kEntryNeedsInit | kEntryNeedsGL},
-    {"NewLine", h_NewLine, kSig_NewLine, kEntryNeedsInit},
+    {"NewLine", h_NewLine, kSig_NewLine, kEntryNeedsInit | kEntryNeedsFrame},
     {"Opcode", bi_Opcode, kSigBi_Opcode, 0},
-    {"OpenPopup", h_OpenPopup, kSig_OpenPopup, kEntryNeedsInit},
-    {"PlotHistogram", h_PlotHistogram, kSig_PlotHistogram, kEntryNeedsInit},
-    {"PlotLines", h_PlotLines, kSig_PlotLines, kEntryNeedsInit},
+    {"OpenPopup", h_OpenPopup, kSig_OpenPopup, kEntryNeedsInit | kEntryNeedsFrame},
+    {"OpenPopupOnItemClick", h_OpenPopupOnItemClick, kSig_OpenPopupOnItemClick, kEntryNeedsInit | kEntryNeedsFrame},
+    {"PlotHistogram", h_PlotHistogram, kSig_PlotHistogram, kEntryNeedsInit | kEntryNeedsFrame},
+    {"PlotLines", h_PlotLines, kSig_PlotLines, kEntryNeedsInit | kEntryNeedsFrame},
     {"PopFont", bi_PopFont, kSigBi_PopFont, kEntryNeedsInit},
-    {"PopID", h_PopID, kSig_PopID, kEntryNeedsInit},
-    {"PopItemWidth", h_PopItemWidth, kSig_PopItemWidth, kEntryNeedsInit},
+    {"PopID", h_PopID, kSig_PopID, kEntryNeedsInit | kEntryNeedsFrame},
+    {"PopItemFlag", h_PopItemFlag, kSig_PopItemFlag, kEntryNeedsInit | kEntryNeedsFrame},
+    {"PopItemWidth", h_PopItemWidth, kSig_PopItemWidth, kEntryNeedsInit | kEntryNeedsFrame},
     {"PopStyleColor", h_PopStyleColor, kSig_PopStyleColor, kEntryNeedsInit},
     {"PopStyleVar", h_PopStyleVar, kSig_PopStyleVar, kEntryNeedsInit},
-    {"ProgressBar", h_ProgressBar, kSig_ProgressBar, kEntryNeedsInit},
+    {"PopTextWrapPos", h_PopTextWrapPos, kSig_PopTextWrapPos, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ProgressBar", h_ProgressBar, kSig_ProgressBar, kEntryNeedsInit | kEntryNeedsFrame},
     {"PushFont", bi_PushFont, kSigBi_PushFont, kEntryNeedsInit},
-    {"PushID", h_PushID, kSig_PushID, kEntryNeedsInit},
-    {"PushIDInt", h_PushIDInt, kSig_PushIDInt, kEntryNeedsInit},
-    {"PushItemWidth", h_PushItemWidth, kSig_PushItemWidth, kEntryNeedsInit},
+    {"PushID", h_PushID, kSig_PushID, kEntryNeedsInit | kEntryNeedsFrame},
+    {"PushIDInt", h_PushIDInt, kSig_PushIDInt, kEntryNeedsInit | kEntryNeedsFrame},
+    {"PushItemFlag", h_PushItemFlag, kSig_PushItemFlag, kEntryNeedsInit | kEntryNeedsFrame},
+    {"PushItemWidth", h_PushItemWidth, kSig_PushItemWidth, kEntryNeedsInit | kEntryNeedsFrame},
     {"PushStyleColor", h_PushStyleColor, kSig_PushStyleColor, kEntryNeedsInit},
     {"PushStyleVar", h_PushStyleVar, kSig_PushStyleVar, kEntryNeedsInit},
     {"PushStyleVarVec2", h_PushStyleVarVec2, kSig_PushStyleVarVec2, kEntryNeedsInit},
-    {"RadioButton", h_RadioButton, kSig_RadioButton, kEntryNeedsInit},
-    {"RadioButtonInt", h_RadioButtonInt, kSig_RadioButtonInt, kEntryNeedsInit},
+    {"PushStyleVarX", h_PushStyleVarX, kSig_PushStyleVarX, kEntryNeedsInit},
+    {"PushStyleVarY", h_PushStyleVarY, kSig_PushStyleVarY, kEntryNeedsInit},
+    {"PushTextWrapPos", h_PushTextWrapPos, kSig_PushTextWrapPos, kEntryNeedsInit | kEntryNeedsFrame},
+    {"RadioButton", h_RadioButton, kSig_RadioButton, kEntryNeedsInit | kEntryNeedsFrame},
+    {"RadioButtonInt", h_RadioButtonInt, kSig_RadioButtonInt, kEntryNeedsInit | kEntryNeedsFrame},
     {"Render", bi_Render, kSigBi_Render, kEntryNeedsInit | kEntryNeedsGL},
     {"RenderAgain", bi_RenderAgain, kSigBi_RenderAgain, kEntryNeedsInit | kEntryNeedsGL},
-    {"SameLine", h_SameLine, kSig_SameLine, kEntryNeedsInit},
-    {"Selectable", h_Selectable, kSig_Selectable, kEntryNeedsInit},
-    {"Separator", h_Separator, kSig_Separator, kEntryNeedsInit},
-    {"SeparatorText", h_SeparatorText, kSig_SeparatorText, kEntryNeedsInit},
+    {"ResetMouseDragDelta", h_ResetMouseDragDelta, kSig_ResetMouseDragDelta, kEntryNeedsInit},
+    {"SameLine", h_SameLine, kSig_SameLine, kEntryNeedsInit | kEntryNeedsFrame},
+    {"SaveIniSettingsToMemory", h_SaveIniSettingsToMemory, kSig_SaveIniSettingsToMemory, kEntryNeedsInit},
+    {"Selectable", h_Selectable, kSig_Selectable, kEntryNeedsInit | kEntryNeedsFrame},
+    {"Separator", h_Separator, kSig_Separator, kEntryNeedsInit | kEntryNeedsFrame},
+    {"SeparatorText", h_SeparatorText, kSig_SeparatorText, kEntryNeedsInit | kEntryNeedsFrame},
     {"SetContext", bi_SetContext, kSigBi_SetContext, 0},
-    {"SetCursorPos", h_SetCursorPos, kSig_SetCursorPos, kEntryNeedsInit},
+    {"SetCursorPos", h_SetCursorPos, kSig_SetCursorPos, kEntryNeedsInit | kEntryNeedsFrame},
+    {"SetCursorPosX", h_SetCursorPosX, kSig_SetCursorPosX, kEntryNeedsInit | kEntryNeedsFrame},
+    {"SetCursorPosY", h_SetCursorPosY, kSig_SetCursorPosY, kEntryNeedsInit | kEntryNeedsFrame},
+    {"SetCursorScreenPos", h_SetCursorScreenPos, kSig_SetCursorScreenPos, kEntryNeedsInit | kEntryNeedsFrame},
     {"SetGlobalScale", bi_SetGlobalScale, kSigBi_SetGlobalScale, kEntryNeedsInit},
-    {"SetItemDefaultFocus", h_SetItemDefaultFocus, kSig_SetItemDefaultFocus, kEntryNeedsInit},
-    {"SetItemTooltip", h_SetItemTooltip, kSig_SetItemTooltip, kEntryNeedsInit},
-    {"SetKeyboardFocusHere", h_SetKeyboardFocusHere, kSig_SetKeyboardFocusHere, kEntryNeedsInit},
+    {"SetItemDefaultFocus", h_SetItemDefaultFocus, kSig_SetItemDefaultFocus, kEntryNeedsInit | kEntryNeedsFrame},
+    {"SetItemTooltip", h_SetItemTooltip, kSig_SetItemTooltip, kEntryNeedsInit | kEntryNeedsFrame},
+    {"SetKeyboardFocusHere", h_SetKeyboardFocusHere, kSig_SetKeyboardFocusHere, kEntryNeedsInit | kEntryNeedsFrame},
     {"SetNextItemOpen", h_SetNextItemOpen, kSig_SetNextItemOpen, kEntryNeedsInit},
     {"SetNextItemWidth", h_SetNextItemWidth, kSig_SetNextItemWidth, kEntryNeedsInit},
     {"SetNextWindowBgAlpha", h_SetNextWindowBgAlpha, kSig_SetNextWindowBgAlpha, kEntryNeedsInit},
     {"SetNextWindowCollapsed", h_SetNextWindowCollapsed, kSig_SetNextWindowCollapsed, kEntryNeedsInit},
+    {"SetNextWindowContentSize", h_SetNextWindowContentSize, kSig_SetNextWindowContentSize, kEntryNeedsInit},
     {"SetNextWindowFocus", h_SetNextWindowFocus, kSig_SetNextWindowFocus, kEntryNeedsInit},
     {"SetNextWindowPos", h_SetNextWindowPos, kSig_SetNextWindowPos, kEntryNeedsInit},
     {"SetNextWindowSize", h_SetNextWindowSize, kSig_SetNextWindowSize, kEntryNeedsInit},
-    {"SetScrollHereY", h_SetScrollHereY, kSig_SetScrollHereY, kEntryNeedsInit},
+    {"SetNextWindowSizeConstraints", h_SetNextWindowSizeConstraints, kSig_SetNextWindowSizeConstraints, kEntryNeedsInit},
+    {"SetScrollFromPosX", h_SetScrollFromPosX, kSig_SetScrollFromPosX, kEntryNeedsInit | kEntryNeedsFrame},
+    {"SetScrollFromPosY", h_SetScrollFromPosY, kSig_SetScrollFromPosY, kEntryNeedsInit | kEntryNeedsFrame},
+    {"SetScrollHereX", h_SetScrollHereX, kSig_SetScrollHereX, kEntryNeedsInit | kEntryNeedsFrame},
+    {"SetScrollHereY", h_SetScrollHereY, kSig_SetScrollHereY, kEntryNeedsInit | kEntryNeedsFrame},
+    {"SetScrollX", h_SetScrollX, kSig_SetScrollX, kEntryNeedsInit | kEntryNeedsFrame},
+    {"SetScrollY", h_SetScrollY, kSig_SetScrollY, kEntryNeedsInit | kEntryNeedsFrame},
     {"SetTextureFilter", bi_SetTextureFilter, kSigBi_SetTextureFilter, kEntryNeedsInit | kEntryNeedsGL},
-    {"SetTooltip", h_SetTooltip, kSig_SetTooltip, kEntryNeedsInit},
+    {"SetTooltip", h_SetTooltip, kSig_SetTooltip, kEntryNeedsInit | kEntryNeedsFrame},
+    {"Shortcut", h_Shortcut, kSig_Shortcut, kEntryNeedsInit | kEntryNeedsFrame},
+    {"ShowDebugLogWindow", h_ShowDebugLogWindow, kSig_ShowDebugLogWindow, kEntryNeedsInit | kEntryNeedsFrame},
     {"ShowDemoWindow", bi_ShowDemoWindow, kSigBi_ShowDemoWindow, kEntryNeedsInit},
+    {"ShowIDStackToolWindow", h_ShowIDStackToolWindow, kSig_ShowIDStackToolWindow, kEntryNeedsInit | kEntryNeedsFrame},
     {"ShowMetricsWindow", bi_ShowMetricsWindow, kSigBi_ShowMetricsWindow, kEntryNeedsInit},
+    {"ShowStyleEditor", h_ShowStyleEditor, kSig_ShowStyleEditor, kEntryNeedsInit | kEntryNeedsFrame},
     {"Shutdown", bi_Shutdown, kSigBi_Shutdown, 0},
-    {"SliderAngle", h_SliderAngle, kSig_SliderAngle, kEntryNeedsInit},
-    {"SliderFloat", h_SliderFloat, kSig_SliderFloat, kEntryNeedsInit},
-    {"SliderFloat2", h_SliderFloat2, kSig_SliderFloat2, kEntryNeedsInit},
-    {"SliderFloat3", h_SliderFloat3, kSig_SliderFloat3, kEntryNeedsInit},
-    {"SliderInt", h_SliderInt, kSig_SliderInt, kEntryNeedsInit},
-    {"SmallButton", h_SmallButton, kSig_SmallButton, kEntryNeedsInit},
-    {"Spacing", h_Spacing, kSig_Spacing, kEntryNeedsInit},
+    {"SliderAngle", h_SliderAngle, kSig_SliderAngle, kEntryNeedsInit | kEntryNeedsFrame},
+    {"SliderDouble", bi_SliderDouble, kSigBi_SliderDouble, kEntryNeedsInit | kEntryNeedsFrame},
+    {"SliderFloat", h_SliderFloat, kSig_SliderFloat, kEntryNeedsInit | kEntryNeedsFrame},
+    {"SliderFloat2", h_SliderFloat2, kSig_SliderFloat2, kEntryNeedsInit | kEntryNeedsFrame},
+    {"SliderFloat3", h_SliderFloat3, kSig_SliderFloat3, kEntryNeedsInit | kEntryNeedsFrame},
+    {"SliderFloat4", h_SliderFloat4, kSig_SliderFloat4, kEntryNeedsInit | kEntryNeedsFrame},
+    {"SliderInt", h_SliderInt, kSig_SliderInt, kEntryNeedsInit | kEntryNeedsFrame},
+    {"SliderInt2", h_SliderInt2, kSig_SliderInt2, kEntryNeedsInit | kEntryNeedsFrame},
+    {"SliderInt3", h_SliderInt3, kSig_SliderInt3, kEntryNeedsInit | kEntryNeedsFrame},
+    {"SliderInt4", h_SliderInt4, kSig_SliderInt4, kEntryNeedsInit | kEntryNeedsFrame},
+    {"SmallButton", h_SmallButton, kSig_SmallButton, kEntryNeedsInit | kEntryNeedsFrame},
+    {"Spacing", h_Spacing, kSig_Spacing, kEntryNeedsInit | kEntryNeedsFrame},
     {"Stats", bi_Stats, kSigBi_Stats, 0},
     {"StyleColorsClassic", bi_StyleColorsClassic, kSigBi_StyleColorsClassic, kEntryNeedsInit},
     {"StyleColorsDark", bi_StyleColorsDark, kSigBi_StyleColorsDark, kEntryNeedsInit},
     {"StyleColorsLight", bi_StyleColorsLight, kSigBi_StyleColorsLight, kEntryNeedsInit},
-    {"TableGetColumnCount", h_TableGetColumnCount, kSig_TableGetColumnCount, kEntryNeedsInit},
-    {"TableGetColumnIndex", h_TableGetColumnIndex, kSig_TableGetColumnIndex, kEntryNeedsInit},
-    {"TableHeader", h_TableHeader, kSig_TableHeader, kEntryNeedsInit},
-    {"TableHeadersRow", h_TableHeadersRow, kSig_TableHeadersRow, kEntryNeedsInit},
-    {"TableNextColumn", h_TableNextColumn, kSig_TableNextColumn, kEntryNeedsInit},
-    {"TableNextRow", h_TableNextRow, kSig_TableNextRow, kEntryNeedsInit},
-    {"TableSetBgColor", h_TableSetBgColor, kSig_TableSetBgColor, kEntryNeedsInit},
-    {"TableSetColumnIndex", h_TableSetColumnIndex, kSig_TableSetColumnIndex, kEntryNeedsInit},
-    {"TableSetupColumn", h_TableSetupColumn, kSig_TableSetupColumn, kEntryNeedsInit},
-    {"TableSetupScrollFreeze", h_TableSetupScrollFreeze, kSig_TableSetupScrollFreeze, kEntryNeedsInit},
-    {"Text", h_Text, kSig_Text, kEntryNeedsInit},
-    {"TextColored", h_TextColored, kSig_TextColored, kEntryNeedsInit},
-    {"TextDisabled", h_TextDisabled, kSig_TextDisabled, kEntryNeedsInit},
-    {"TextWrapped", h_TextWrapped, kSig_TextWrapped, kEntryNeedsInit},
-    {"TreeNode", h_TreeNode, kSig_TreeNode, kEntryNeedsInit},
-    {"TreePop", h_TreePop, kSig_TreePop, kEntryNeedsInit},
-    {"Unindent", h_Unindent, kSig_Unindent, kEntryNeedsInit},
-    {"VSliderFloat", h_VSliderFloat, kSig_VSliderFloat, kEntryNeedsInit},
-    {"VSliderInt", h_VSliderInt, kSig_VSliderInt, kEntryNeedsInit},
+    {"TabItemButton", h_TabItemButton, kSig_TabItemButton, kEntryNeedsInit | kEntryNeedsFrame},
+    {"TableAngledHeadersRow", h_TableAngledHeadersRow, kSig_TableAngledHeadersRow, kEntryNeedsInit | kEntryNeedsFrame},
+    {"TableGetColumnCount", h_TableGetColumnCount, kSig_TableGetColumnCount, kEntryNeedsInit | kEntryNeedsFrame},
+    {"TableGetColumnFlags", h_TableGetColumnFlags, kSig_TableGetColumnFlags, kEntryNeedsInit | kEntryNeedsFrame},
+    {"TableGetColumnIndex", h_TableGetColumnIndex, kSig_TableGetColumnIndex, kEntryNeedsInit | kEntryNeedsFrame},
+    {"TableGetColumnName", h_TableGetColumnName, kSig_TableGetColumnName, kEntryNeedsInit | kEntryNeedsFrame},
+    {"TableGetHoveredColumn", h_TableGetHoveredColumn, kSig_TableGetHoveredColumn, kEntryNeedsInit},
+    {"TableGetRowIndex", h_TableGetRowIndex, kSig_TableGetRowIndex, kEntryNeedsInit},
+    {"TableGetSortSpecs", bi_TableGetSortSpecs, kSigBi_TableGetSortSpecs, kEntryNeedsInit | kEntryNeedsFrame},
+    {"TableHeader", h_TableHeader, kSig_TableHeader, kEntryNeedsInit | kEntryNeedsFrame},
+    {"TableHeadersRow", h_TableHeadersRow, kSig_TableHeadersRow, kEntryNeedsInit | kEntryNeedsFrame},
+    {"TableNextColumn", h_TableNextColumn, kSig_TableNextColumn, kEntryNeedsInit | kEntryNeedsFrame},
+    {"TableNextRow", h_TableNextRow, kSig_TableNextRow, kEntryNeedsInit | kEntryNeedsFrame},
+    {"TableSetBgColor", h_TableSetBgColor, kSig_TableSetBgColor, kEntryNeedsInit | kEntryNeedsFrame},
+    {"TableSetColumnEnabled", h_TableSetColumnEnabled, kSig_TableSetColumnEnabled, kEntryNeedsInit | kEntryNeedsFrame},
+    {"TableSetColumnIndex", h_TableSetColumnIndex, kSig_TableSetColumnIndex, kEntryNeedsInit | kEntryNeedsFrame},
+    {"TableSetupColumn", h_TableSetupColumn, kSig_TableSetupColumn, kEntryNeedsInit | kEntryNeedsFrame},
+    {"TableSetupScrollFreeze", h_TableSetupScrollFreeze, kSig_TableSetupScrollFreeze, kEntryNeedsInit | kEntryNeedsFrame},
+    {"Text", h_Text, kSig_Text, kEntryNeedsInit | kEntryNeedsFrame},
+    {"TextColored", h_TextColored, kSig_TextColored, kEntryNeedsInit | kEntryNeedsFrame},
+    {"TextDisabled", h_TextDisabled, kSig_TextDisabled, kEntryNeedsInit | kEntryNeedsFrame},
+    {"TextLink", h_TextLink, kSig_TextLink, kEntryNeedsInit | kEntryNeedsFrame},
+    {"TextWrapped", h_TextWrapped, kSig_TextWrapped, kEntryNeedsInit | kEntryNeedsFrame},
+    {"TreeNode", h_TreeNode, kSig_TreeNode, kEntryNeedsInit | kEntryNeedsFrame},
+    {"TreeNodeEx", h_TreeNodeEx, kSig_TreeNodeEx, kEntryNeedsInit | kEntryNeedsFrame},
+    {"TreePop", h_TreePop, kSig_TreePop, kEntryNeedsInit | kEntryNeedsFrame},
+    {"Unindent", h_Unindent, kSig_Unindent, kEntryNeedsInit | kEntryNeedsFrame},
+    {"VSliderFloat", h_VSliderFloat, kSig_VSliderFloat, kEntryNeedsInit | kEntryNeedsFrame},
+    {"VSliderInt", h_VSliderInt, kSig_VSliderInt, kEntryNeedsInit | kEntryNeedsFrame},
     {"Version", bi_Version, kSigBi_Version, 0},
     {"WantCapture", bi_WantCapture, kSigBi_WantCapture, kEntryNeedsInit},
 };
-const int kTableCount = 288;
+const int kTableCount = 456;
 }  // namespace pig
 
